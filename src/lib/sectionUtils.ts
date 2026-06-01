@@ -1,5 +1,14 @@
-import { COUNTS_PER_SECTION, createCountSlots, createDefaultSections } from "./constants";
+import {
+  COUNTS_PER_SECTION,
+  OUTRO_SECTION_NAME,
+  createCountSlots,
+  createDefaultSections,
+} from "./constants";
 import type { CountSlot, FlatSlot, Section } from "./types";
+
+export function sectionHidesCountButtons(section: Pick<Section, "name">): boolean {
+  return section.name === OUTRO_SECTION_NAME;
+}
 
 export function slotLabel(slot: CountSlot): string {
   return slot.type === "half" ? "&" : String(slot.num);

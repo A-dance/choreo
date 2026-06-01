@@ -11,6 +11,7 @@ import { gridCellCenter, normalizeStage } from "./gridUtils";
 import {
   getTotalSlots,
   migrateSections,
+  flattenTimeline,
 } from "./sectionUtils";
 import type { ChoreoState, CountData, FormationClipboard, Member, Position } from "./types";
 
@@ -23,10 +24,60 @@ export {
   insertHalfSlot,
   removeHalfSlot,
   renameSection,
+  sectionHidesCountButtons,
   shiftCountDataInsert,
   shiftCountDataRemove,
   slotGlobalIndex,
 } from "./sectionUtils";
+
+export interface PositionDisplayInfo {
+  sectionName: string;
+  sectionIndex: number;
+  sectionCount: number;
+  countLabel: string;
+  isHalf: boolean;
+  indexInSection: number;
+  slotsInSection: number;
+  globalIndex: number;
+  totalSlots: number;
+}
+
+export function getPositionDisplayInfo(
+  sections: import("./types").Section[],
+  globalIndex: number,
+): PositionDisplayInfo {
+  const flat = flattenTimeline(sections);
+  const totalSlots = flat.length;
+  const slot = flat[globalIndex - 1];
+  if (!slot) {
+    return {
+      sectionName: sections[0]?.name ?? "—",
+      sectionIndex: 1,
+      sectionCount: sections.length,
+      countLabel: String(globalIndex),
+      isHalf: false,
+      indexInSection: 1,
+      slotsInSection: 1,
+      globalIndex,
+      totalSlots: Math.max(1, totalSlots),
+    };
+  }
+  const sectionSlots = flat.filter((f) => f.sectionId === slot.sectionId);
+  const sectionIndex =
+    sections.findIndex((s) => s.id === slot.sectionId) + 1;
+  return {
+    sectionName: slot.sectionName,
+    sectionIndex: Math.max(1, sectionIndex),
+    sectionCount: sections.length,
+    countLabel: slot.label,
+    isHalf: slot.isHalf,
+    indexInSection:
+      sectionSlots.findIndex((f) => f.globalIndex === globalIndex) + 1,
+    slotsInSection: sectionSlots.length,
+    globalIndex,
+    totalSlots: Math.max(1, totalSlots),
+  };
+}
 
 export function clampMemberCount(n: number): number {
   return Math.max(MIN_MEMBERS, Math.min(MAX_MEMBERS, Math.round(n)));
@@ -87,8 +138,183 @@ export function applyMemberCount(state: ChoreoState, rawCount: number): ChoreoSt
   };
 }
 
+/** 1拍（ms）。テンポは常にこれを基準にする。 */
 export function beatIntervalMs(bpm: number): number {
   return (60 / Math.max(40, bpm)) * 1000;
+}
+
+export interface PlaybackPhase {
+  globalIndex: number;
+  durationMs: number;
+  animationSec: number;
+  posCount: number;
+}
+
+/** 再生フェーズ列。& は拍を増やさず、直前カウントの後半に割り当てる。 */
+export function buildPlaybackPhases(
+  sections: import("./types").Section[],
+  bpm: number,
+): PlaybackPhase[] {
+  const flat = flattenTimeline(sections);
+  const beat = beatIntervalMs(bpm);
+  const halfBeat = beat / 2;
+  const phases: PlaybackPhase[] = [];
+
+  for (let i = 0; i < flat.length; ) {
+    const slot = flat[i];
+    const next = flat[i + 1];
+
+    if (!slot.isHalf && next?.isHalf) {
+      phases.push({
+        globalIndex: slot.globalIndex,
+        durationMs: halfBeat,
+        animationSec: 0,
+        posCount: slot.globalIndex,
+      });
+      phases.push({
+        globalIndex: next.globalIndex,
+        durationMs: halfBeat,
+        animationSec: halfBeat / 1000,
+        posCount: next.globalIndex,
+      });
+      i += 2;
+      continue;
+    }
+
+    if (slot.isHalf) {
+      phases.push({
+        globalIndex: slot.globalIndex,
+        durationMs: halfBeat,
+        animationSec: halfBeat / 1000,
+        posCount: slot.globalIndex,
+      });
+      i += 1;
+      continue;
+    }
+
+    phases.push({
+      globalIndex: slot.globalIndex,
+      durationMs: beat,
+      animationSec: beat / 1000,
+      posCount: slot.globalIndex,
+    });
+    i += 1;
+  }
+
+  return phases;
+}
+
+export function findFirstPhaseForGlobal(
+  phases: PlaybackPhase[],
+  globalIndex: number,
+): number {
+  const idx = phases.findIndex((p) => p.globalIndex === globalIndex);
+  return idx >= 0 ? idx : 0;
+}
+
+export function getElapsedMsThroughPhase(
+  phases: PlaybackPhase[],
+  phaseIndex: number,
+): number {
+  let total = 0;
+  for (let i = 0; i <= phaseIndex && i < phases.length; i++) {
+    total += phases[i].durationMs;
+  }
+  return total;
+}
+
+export function getElapsedMsBeforePhase(
+  phases: PlaybackPhase[],
+  phaseIndex: number,
+): number {
+  if (phaseIndex <= 0) return 0;
+  return getElapsedMsThroughPhase(phases, phaseIndex - 1);
+}
+
+/** @deprecated スロット単位。再生スケジュールは buildPlaybackPhases を使用。 */
+export function getSlotDurationMs(
+  sections: import("./types").Section[],
+  globalIndex: number,
+  bpm: number,
+): number {
+  const flat = flattenTimeline(sections);
+  const slot = flat[globalIndex - 1];
+  if (!slot) return beatIntervalMs(bpm);
+  const beat = beatIntervalMs(bpm);
+  if (slot.isHalf) return beat / 2;
+  const next = flat[globalIndex];
+  if (next?.isHalf) return beat / 2;
+  return beat;
+}
+
+export function getElapsedMsThroughSlot(
+  sections: import("./types").Section[],
+  globalIndex: number,
+  bpm: number,
+): number {
+  const phases = buildPlaybackPhases(sections, bpm);
+  let last = -1;
+  for (let i = 0; i < phases.length; i++) {
+    if (phases[i].globalIndex === globalIndex) last = i;
+  }
+  if (last < 0) return 0;
+  return getElapsedMsThroughPhase(phases, last);
+}
+
+export function getElapsedMsBeforeSlot(
+  sections: import("./types").Section[],
+  globalIndex: number,
+  bpm: number,
+): number {
+  const phases = buildPlaybackPhases(sections, bpm);
+  const idx = findFirstPhaseForGlobal(phases, globalIndex);
+  return getElapsedMsBeforePhase(phases, idx);
+}
+
+export function getSectionDurationMs(
+  sections: import("./types").Section[],
+  sectionId: string,
+  bpm: number,
+): number {
+  const sec = sections.find((s) => s.id === sectionId);
+  if (!sec) return 0;
+  const beat = beatIntervalMs(bpm);
+  const countSlots = sec.slots.filter((s) => s.type === "count").length;
+  return countSlots * beat;
+}
+
+export interface PlaybackSlotTiming {
+  waitMs: number;
+  animationSec: number;
+  targetCount: number;
+}
+
+export function getPlaybackPhaseTiming(
+  sections: import("./types").Section[],
+  globalIndex: number,
+  bpm: number,
+): PlaybackSlotTiming {
+  const phases = buildPlaybackPhases(sections, bpm);
+  const idx = findFirstPhaseForGlobal(phases, globalIndex);
+  const phase = phases[idx];
+  if (!phase) {
+    const beat = beatIntervalMs(bpm);
+    return { waitMs: beat, animationSec: beat / 1000, targetCount: globalIndex };
+  }
+  return {
+    waitMs: phase.durationMs,
+    animationSec: phase.animationSec,
+    targetCount: phase.posCount,
+  };
+}
+
+/** @deprecated getPlaybackPhaseTiming を使用 */
+export function getPlaybackSlotTiming(
+  sections: import("./types").Section[],
+  globalIndex: number,
+  bpm: number,
+): PlaybackSlotTiming {
+  return getPlaybackPhaseTiming(sections, globalIndex, bpm);
 }
 
 export function getCountData(
@@ -164,6 +390,7 @@ function emptyState(): ChoreoState {
     songTitle: "新曲タイトル",
     sections: createDefaultSections(),
     members: [],
+    removedMembers: [],
     bpm: DEFAULT_BPM,
     currentCount: 1,
     countData: {},
@@ -208,6 +435,7 @@ interface LegacyPayload {
   bpm?: number;
   nextId?: number;
   members?: Member[];
+  removedMembers?: Member[];
   cdata?: Record<number, LegacyCountData>;
   countData?: Record<number, LegacyCountData>;
   stage?: Partial<ChoreoState["stage"]> & {
@@ -248,6 +476,7 @@ function migrateLegacy(raw: LegacyPayload): ChoreoState | null {
     songTitle: raw.songTitle ?? "新曲タイトル",
     sections,
     members: raw.members,
+    removedMembers: raw.removedMembers ?? [],
     bpm: raw.bpm ?? DEFAULT_BPM,
     currentCount: Math.min(Math.max(1, currentCount), total),
     countData: migrateCountData(raw.cdata ?? raw.countData ?? {}),

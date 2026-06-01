@@ -1,54 +1,33 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BAMIRI_DEPTH_MAX,
   BAMIRI_DEPTH_MIN,
   BAMIRI_HALF_MAX,
   BAMIRI_HALF_MIN,
 } from "@/lib/constants";
-import {
-  countHasData,
-  flattenTimeline,
-  getCurrentSection,
-  getFlatSlot,
-} from "@/lib/choreoUtils";
 import { MemberPanel } from "@/components/MemberPanel";
 import { useChoreo } from "@/context/ChoreoContext";
 
 export function SmartHeader() {
   const {
     state,
-    totalSlots,
     setSongTitle,
     setBpm,
     togglePlayback,
     setBamiriHalfWidth,
     setBamiriDepth,
-    navigateTo,
+    saveProject,
     copyFormation,
     pasteFormation,
     hasClipboard,
-    insertHalfAfter,
-    removeHalfAt,
-    renameSectionName,
-    addSection,
   } = useChoreo();
 
-  const timelineRef = useRef<HTMLDivElement>(null);
   const [halfWInp, setHalfWInp] = useState(String(state.stage.bamiriHalfWidth));
   const [depthInp, setDepthInp] = useState(String(state.stage.bamiriDepth));
+  const [bpmInp, setBpmInp] = useState(String(state.bpm));
   const [memberPanelOpen, setMemberPanelOpen] = useState(false);
-  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
-  const [sectionNameDraft, setSectionNameDraft] = useState("");
-
-  const flatSlots = useMemo(
-    () => flattenTimeline(state.sections),
-    [state.sections],
-  );
-  const currentFlat = getFlatSlot(state.sections, state.currentCount);
-  const currentSection = getCurrentSection(state.sections, state.currentCount);
-  const activeSectionId = currentFlat?.sectionId ?? null;
 
   useEffect(() => {
     setHalfWInp(String(state.stage.bamiriHalfWidth));
@@ -56,22 +35,17 @@ export function SmartHeader() {
   }, [state.stage.bamiriHalfWidth, state.stage.bamiriDepth]);
 
   useEffect(() => {
-    if (!activeSectionId || !timelineRef.current) return;
-    const group = timelineRef.current.querySelector(
-      `[data-section-id="${activeSectionId}"]`,
-    );
-    group?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-      inline: "center",
-    });
-  }, [activeSectionId]);
+    setBpmInp(String(state.bpm));
+  }, [state.bpm]);
 
-  useEffect(() => {
-    timelineRef.current
-      ?.querySelector(".cnt-btn.active")
-      ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-  }, [state.currentCount]);
+  const applyBpm = () => {
+    const n = parseInt(bpmInp, 10);
+    if (!Number.isFinite(n)) {
+      setBpmInp(String(state.bpm));
+      return;
+    }
+    setBpm(n);
+  };
 
   const applyHalfW = () => {
     const n = parseInt(halfWInp, 10);
@@ -90,19 +64,6 @@ export function SmartHeader() {
     }
     setBamiriDepth(n);
   };
-
-  const startEditSection = (sectionId: string, name: string) => {
-    setEditingSectionId(sectionId);
-    setSectionNameDraft(name);
-  };
-
-  const commitSectionName = (sectionId: string) => {
-    renameSectionName(sectionId, sectionNameDraft);
-    setEditingSectionId(null);
-  };
-
-  const firstGlobalInSection = (sectionId: string) =>
-    flatSlots.find((s) => s.sectionId === sectionId)?.globalIndex ?? 1;
 
   return (
     <>
@@ -124,8 +85,10 @@ export function SmartHeader() {
               type="number"
               min={40}
               max={240}
-              value={state.bpm}
-              onChange={(e) => setBpm(parseInt(e.target.value, 10) || 128)}
+              value={bpmInp}
+              onChange={(e) => setBpmInp(e.target.value)}
+              onBlur={applyBpm}
+              onKeyDown={(e) => e.key === "Enter" && applyBpm()}
               aria-label="BPM"
             />
           </div>
@@ -171,17 +134,34 @@ export function SmartHeader() {
             </label>
           </div>
 
-          <button
-            type="button"
-            className="member-open-btn"
-            onClick={() => setMemberPanelOpen(true)}
-            title="メンバー編集"
-          >
-            <span className="bamiri-lbl">👥</span>
-            <span className="member-open-num">{state.members.length}</span>
-          </button>
+          <div className="member-dropdown">
+            <button
+              type="button"
+              className={
+                "member-select-trigger" + (memberPanelOpen ? " open" : "")
+              }
+              onClick={() => setMemberPanelOpen((v) => !v)}
+              aria-expanded={memberPanelOpen}
+              aria-haspopup="dialog"
+              title="メンバー一覧を開く"
+            >
+              <span className="member-select-lbl">人数</span>
+              <span className="member-select-val">{state.members.length}</span>
+              <span className="member-select-chevron" aria-hidden>
+                ▾
+              </span>
+            </button>
+          </div>
 
           <div className="hdr-actions">
+            <button
+              type="button"
+              className="save-btn"
+              onClick={saveProject}
+              title="保存（⌘S / Ctrl+S）"
+            >
+              保存
+            </button>
             <button
               type="button"
               className="copy-btn"
@@ -208,135 +188,12 @@ export function SmartHeader() {
             </button>
           </div>
 
-          <span className="cnt-now">
-            {currentFlat?.label ?? state.currentCount}/{totalSlots}
-            {currentSection?.name ? ` · ${currentSection.name}` : ""}
-          </span>
-        </div>
-
-        <div className="timeline-bar compact">
-          <div className="timeline timeline-focus" ref={timelineRef}>
-            {state.sections.map((sec) => {
-              const expanded = activeSectionId === sec.id;
-              const sectionSlots = flatSlots.filter(
-                (f) => f.sectionId === sec.id,
-              );
-              const hasSectionData = sectionSlots.some((f) =>
-                countHasData(state.countData[f.globalIndex]),
-              );
-              return (
-                <div
-                  key={sec.id}
-                  data-section-id={sec.id}
-                  className={
-                    "tl-group" + (expanded ? " expanded" : " collapsed")
-                  }
-                >
-                  {editingSectionId === sec.id ? (
-                    <input
-                      className="sec-name-inp"
-                      value={sectionNameDraft}
-                      autoFocus
-                      onChange={(e) => setSectionNameDraft(e.target.value)}
-                      onBlur={() => commitSectionName(sec.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitSectionName(sec.id);
-                        if (e.key === "Escape") setEditingSectionId(null);
-                      }}
-                      aria-label="セクション名"
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      className={
-                        "sec-pill" + (expanded ? " cur" : "") +
-                        (hasSectionData ? " has-d" : "")
-                      }
-                      onClick={() => navigateTo(firstGlobalInSection(sec.id))}
-                      onDoubleClick={() => startEditSection(sec.id, sec.name)}
-                      title="ダブルクリックで名前変更"
-                    >
-                      {sec.name}
-                    </button>
-                  )}
-
-                  <div className="tl-body" aria-hidden={!expanded}>
-                    <div className="tl-div" />
-                    <div className="tl-counts">
-                      {sec.slots.map((slot, slotIdx) => {
-                        const global = flatSlots.find(
-                          (f) =>
-                            f.sectionId === sec.id && f.slotIndex === slotIdx,
-                        )?.globalIndex;
-                        if (!global) return null;
-                        const hasD = countHasData(state.countData[global]);
-                        const isHalf = slot.type === "half";
-                        const label = isHalf ? "&" : String(slot.num);
-                        return (
-                          <Fragment key={`${sec.id}-${slotIdx}`}>
-                            {slotIdx > 0 && (
-                              <button
-                                type="button"
-                                className="ins-half-btn"
-                                onClick={() =>
-                                  insertHalfAfter(sec.id, slotIdx - 1)
-                                }
-                                title="＆を挿入（半カウント）"
-                              >
-                                +
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className={
-                                "cnt-btn" +
-                                (global === state.currentCount
-                                  ? " active"
-                                  : "") +
-                                (hasD ? " has-d" : "") +
-                                (isHalf ? " half" : "")
-                              }
-                              onClick={() => navigateTo(global)}
-                              onDoubleClick={
-                                isHalf
-                                  ? () => removeHalfAt(sec.id, slotIdx)
-                                  : undefined
-                              }
-                              title={
-                                isHalf
-                                  ? "半カウント — ダブルクリックで削除"
-                                  : undefined
-                              }
-                            >
-                              {label}
-                            </button>
-                          </Fragment>
-                        );
-                      })}
-                      <button
-                        type="button"
-                        className="ins-half-btn"
-                        onClick={() =>
-                          insertHalfAfter(sec.id, sec.slots.length - 1)
-                        }
-                        title="＆を挿入（半カウント）"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            <button
-              type="button"
-              className="add-sec-btn"
-              onClick={() => addSection()}
-              title="セクションを追加（8カウント）"
-            >
-              + 追加
-            </button>
-          </div>
+          {state.isPlaying && (
+            <span className="hdr-playing-badge">
+              <span className="cnt-now-dot" />
+              再生中
+            </span>
+          )}
         </div>
       </div>
 

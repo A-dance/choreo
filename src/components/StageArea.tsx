@@ -9,23 +9,34 @@ import { StageFloor } from "@/components/StageFloor";
 
 type ResizeAxis = "e" | "s" | "se";
 
+const DRAG_THRESHOLD_PX = 8;
+
 export function StageArea() {
   const {
     state,
-    beatIntervalSec,
+    currentBeatSec,
     draggingMemberId,
+    selectedMemberId,
+    selectMember,
+    isMemberVisibleOnCurrent,
     stopPlayback,
     updateMemberPosition,
     setDraggingMemberId,
     setStageScaleW,
     setStageScaleH,
     getMemberPos,
-    isMemberVisibleOnCurrent,
   } = useChoreo();
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const conRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: number; ox: number; oy: number } | null>(null);
+  const pendingPointerRef = useRef<{
+    id: number;
+    ox: number;
+    oy: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
   const resizeRef = useRef<{
     axis: ResizeAxis;
     startX: number;
@@ -61,6 +72,22 @@ export function StageArea() {
 
   const onMove = useCallback(
     (cx: number, cy: number) => {
+      const pending = pendingPointerRef.current;
+      if (pending && !dragRef.current) {
+        if (
+          Math.hypot(cx - pending.startX, cy - pending.startY) >
+          DRAG_THRESHOLD_PX
+        ) {
+          dragRef.current = {
+            id: pending.id,
+            ox: pending.ox,
+            oy: pending.oy,
+          };
+          setDraggingMemberId(pending.id);
+          pendingPointerRef.current = null;
+        }
+      }
+
       const d = dragRef.current;
       const con = conRef.current;
       if (!d || !con) return;
@@ -69,7 +96,7 @@ export function StageArea() {
       const y = ((cy - d.oy - rect.top) / rect.height) * 100;
       updateMemberPosition(d.id, x, y);
     },
-    [updateMemberPosition],
+    [updateMemberPosition, setDraggingMemberId],
   );
 
   const endDrag = useCallback(() => {
@@ -108,13 +135,22 @@ export function StageArea() {
     resizeRef.current = null;
   }, []);
 
+  const finishPointer = useCallback(() => {
+    const pending = pendingPointerRef.current;
+    if (pending && !dragRef.current) {
+      selectMember(pending.id);
+    }
+    pendingPointerRef.current = null;
+    endDrag();
+  }, [selectMember, endDrag]);
+
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       onMove(e.clientX, e.clientY);
       onResizeMove(e.clientX, e.clientY);
     };
     const onTouchMove = (e: TouchEvent) => {
-      if (dragRef.current) {
+      if (pendingPointerRef.current || dragRef.current) {
         e.preventDefault();
         onMove(e.touches[0].clientX, e.touches[0].clientY);
       } else if (resizeRef.current) {
@@ -123,7 +159,7 @@ export function StageArea() {
       }
     };
     const onEnd = () => {
-      endDrag();
+      finishPointer();
       endResize();
     };
     document.addEventListener("mousemove", onMouseMove);
@@ -136,9 +172,9 @@ export function StageArea() {
       document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", onEnd);
     };
-  }, [onMove, onResizeMove, endDrag, endResize]);
+  }, [onMove, onResizeMove, finishPointer, endResize]);
 
-  const startMemberDrag = (
+  const startMemberPointer = (
     e: React.MouseEvent | React.TouchEvent,
     mid: number,
   ) => {
@@ -151,12 +187,18 @@ export function StageArea() {
     const p = getMemberPos(mid);
     const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
     const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
-    dragRef.current = {
+    pendingPointerRef.current = {
       id: mid,
       ox: cx - (rect.left + (p.x / 100) * rect.width),
       oy: cy - (rect.top + (p.y / 100) * rect.height),
+      startX: cx,
+      startY: cy,
     };
-    setDraggingMemberId(mid);
+  };
+
+  const onStageBackgroundDown = (e: React.MouseEvent | React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest(".m-dot")) return;
+    selectMember(null);
   };
 
   const startResize = (
@@ -185,7 +227,9 @@ export function StageArea() {
     draggingMemberId !== null
       ? "none"
       : state.isPlaying
-        ? `left ${beatIntervalSec}s linear, top ${beatIntervalSec}s linear`
+        ? currentBeatSec <= 0
+          ? "none"
+          : `left ${currentBeatSec}s linear, top ${currentBeatSec}s linear, opacity ${Math.min(currentBeatSec, 0.25)}s ease`
         : "left 0.28s ease-in-out, top 0.28s ease-in-out";
 
   return (
@@ -196,7 +240,12 @@ export function StageArea() {
             className="stage-frame"
             style={{ width: stageSize.w, height: stageSize.h }}
           >
-            <div className="stage-con" ref={conRef}>
+            <div
+              className="stage-con"
+              ref={conRef}
+              onMouseDown={onStageBackgroundDown}
+              onTouchStart={onStageBackgroundDown}
+            >
               <StageFloor
                 key={`${bamiriHalfWidth}-${bamiriDepth}`}
                 halfW={bamiriHalfWidth}
@@ -206,13 +255,17 @@ export function StageArea() {
               <div className="s-lbl front">A U D I E N C E</div>
 
               {state.members.map((m) => {
-                if (!isMemberVisibleOnCurrent(m.id)) return null;
+                const visible = isMemberVisibleOnCurrent(m.id);
+                if (!visible && !state.isPlaying) return null;
                 const pos = getMemberPos(m.id);
+                const selected = selectedMemberId === m.id;
                 return (
                   <div
                     key={m.id}
                     className={
-                      "m-dot" + (draggingMemberId === m.id ? " dragging" : "")
+                      "m-dot" +
+                      (draggingMemberId === m.id ? " dragging" : "") +
+                      (selected ? " selected" : "")
                     }
                     style={{
                       background: m.color,
@@ -221,10 +274,12 @@ export function StageArea() {
                       width: dotPx,
                       height: dotPx,
                       fontSize: dotFont,
+                      opacity: visible ? 1 : 0,
+                      pointerEvents: visible ? "auto" : "none",
                       transition: dotTransition,
                     }}
-                    onMouseDown={(e) => startMemberDrag(e, m.id)}
-                    onTouchStart={(e) => startMemberDrag(e, m.id)}
+                    onMouseDown={(e) => startMemberPointer(e, m.id)}
+                    onTouchStart={(e) => startMemberPointer(e, m.id)}
                     title={m.name}
                   >
                     {dotPx >= 24 ? m.name : m.name.slice(0, 3)}

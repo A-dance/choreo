@@ -14,6 +14,8 @@ export const DEFAULT_SECTION_NAMES = [
   "アウトロ",
 ] as const;
 
+export const OUTRO_SECTION_NAME = "アウトロ";
+
 export function createCountSlots(count = COUNTS_PER_SECTION): import("./types").CountSlot[] {
   return Array.from({ length: count }, (_, i) => ({
     type: "count" as const,
@@ -25,7 +27,10 @@ export function createDefaultSections(): import("./types").Section[] {
   return DEFAULT_SECTION_NAMES.map((name, i) => ({
     id: `sec-${i + 1}`,
     name,
-    slots: createCountSlots(),
+    slots:
+      name === OUTRO_SECTION_NAME
+        ? [{ type: "count" as const, num: 1 }]
+        : createCountSlots(),
   }));
 }
 

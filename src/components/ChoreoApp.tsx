@@ -4,6 +4,7 @@ import { ChoreoProvider } from "@/context/ChoreoContext";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { SmartHeader } from "@/components/SmartHeader";
 import { StageArea } from "@/components/StageArea";
+import { TimelineFooter } from "@/components/TimelineFooter";
 import { Toast } from "@/components/Toast";
 
 export function ChoreoApp() {
@@ -13,6 +14,7 @@ export function ChoreoApp() {
         <KeyboardShortcuts />
         <SmartHeader />
         <StageArea />
+        <TimelineFooter />
         <Toast />
       </div>
     </ChoreoProvider>

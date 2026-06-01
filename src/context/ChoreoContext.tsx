@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -13,13 +14,18 @@ import { STORAGE_KEY } from "@/lib/constants";
 import {
   applyMemberCount,
   beatIntervalMs,
+  buildPlaybackPhases,
   clampStagePos,
   createInitialState,
   deserializeState,
-  flattenTimeline,
+  findFirstPhaseForGlobal,
   getCountData,
   getFlatSlot,
   getMemberPos,
+  getPlaybackPhaseTiming,
+  getSectionDurationMs,
+  getElapsedMsBeforePhase,
+  getElapsedMsThroughPhase,
   getTotalSlots,
   insertHalfSlot,
   appendSection,
@@ -41,7 +47,10 @@ interface ChoreoContextValue {
   totalSlots: number;
   toast: string | null;
   draggingMemberId: number | null;
+  selectedMemberId: number | null;
+  selectMember: (memberId: number | null) => void;
   beatIntervalSec: number;
+  currentBeatSec: number;
   setSongTitle: (v: string) => void;
   setBpm: (bpm: number) => void;
   setBamiriHalfWidth: (v: number) => void;
@@ -50,6 +59,8 @@ interface ChoreoContextValue {
   setStageScaleH: (v: number) => void;
   setMemberCount: (n: number) => void;
   renameMember: (memberId: number, name: string) => void;
+  deleteMember: (memberId: number) => void;
+  restoreMember: (memberId: number) => void;
   toggleMemberVisibility: (memberId: number) => void;
   isMemberVisibleOnCurrent: (memberId: number) => boolean;
   renameSectionName: (sectionId: string, name: string) => void;
@@ -61,6 +72,7 @@ interface ChoreoContextValue {
   nextCount: () => void;
   togglePlayback: () => void;
   stopPlayback: () => void;
+  saveProject: () => void;
   copyFormation: () => void;
   pasteFormation: () => void;
   hasClipboard: boolean;
@@ -71,11 +83,12 @@ interface ChoreoContextValue {
 
 const ChoreoContext = createContext<ChoreoContextValue | null>(null);
 
-function persist(state: ChoreoState) {
+function persist(state: ChoreoState): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, serializeState(state));
+    return true;
   } catch {
-    /* ignore */
+    return false;
   }
 }
 
@@ -95,16 +108,53 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ChoreoState>(createInitialState);
   const [toast, setToast] = useState<string | null>(null);
   const [draggingMemberId, setDraggingMemberId] = useState<number | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const [clipboard, setClipboard] = useState<FormationClipboard | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   const stateRef = useRef(state);
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playbackAnchorRef = useRef<number | null>(null);
+  const playbackPhaseRef = useRef<number>(0);
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   stateRef.current = state;
 
   const totalSlots = getTotalSlots(state.sections);
   const beatIntervalSec = beatIntervalMs(state.bpm) / 1000;
+  const playbackPhases = useMemo(
+    () => buildPlaybackPhases(state.sections, state.bpm),
+    [state.sections, state.bpm],
+  );
+  const playbackTiming = useMemo(() => {
+    if (!state.isPlaying) {
+      return {
+        animationSec: beatIntervalSec,
+        targetCount: state.currentCount,
+      };
+    }
+    const phase = playbackPhases.find(
+      (p) => p.globalIndex === state.currentCount,
+    );
+    if (!phase) {
+      return {
+        animationSec: beatIntervalSec,
+        targetCount: state.currentCount,
+      };
+    }
+    return {
+      animationSec: phase.animationSec,
+      targetCount: phase.posCount,
+    };
+  }, [
+    state.isPlaying,
+    state.currentCount,
+    playbackPhases,
+    beatIntervalSec,
+  ]);
+  const currentBeatSec = playbackTiming.animationSec;
+  const playbackPosCount = state.isPlaying
+    ? playbackTiming.targetCount
+    : state.currentCount;
 
   useEffect(() => {
     setState(load());
@@ -130,33 +180,69 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
   const stopPlayback = useCallback(() => {
     clearPlaybackTimer();
+    playbackAnchorRef.current = null;
+    playbackPhaseRef.current = 0;
     setState((s) => (s.isPlaying ? { ...s, isPlaying: false } : s));
   }, [clearPlaybackTimer]);
 
-  const scheduleNextBeat = useCallback(() => {
+  const scheduleNextPhase = useCallback(() => {
     clearPlaybackTimer();
     const s = stateRef.current;
     if (!s.isPlaying) return;
 
-    const flat = flattenTimeline(s.sections);
-    const current = flat[s.currentCount - 1];
-    const ms = current?.isHalf
-      ? beatIntervalMs(s.bpm) / 2
-      : beatIntervalMs(s.bpm);
+    const phases = buildPlaybackPhases(s.sections, s.bpm);
+    if (!phases.length) return;
+
+    if (playbackPhaseRef.current < 0 || playbackPhaseRef.current >= phases.length) {
+      playbackPhaseRef.current = findFirstPhaseForGlobal(
+        phases,
+        s.currentCount,
+      );
+    }
+
+    if (playbackAnchorRef.current === null) {
+      playbackAnchorRef.current =
+        performance.now() -
+        getElapsedMsBeforePhase(phases, playbackPhaseRef.current);
+    }
+
+    const phase = phases[playbackPhaseRef.current];
+    setState((prev) =>
+      prev.currentCount === phase.globalIndex
+        ? prev
+        : { ...prev, currentCount: phase.globalIndex },
+    );
+
+    const target =
+      playbackAnchorRef.current +
+      getElapsedMsThroughPhase(phases, playbackPhaseRef.current);
+    const delay = Math.max(0, target - performance.now());
 
     playbackTimerRef.current = setTimeout(() => {
       const cur = stateRef.current;
       if (!cur.isPlaying) return;
-      const total = getTotalSlots(cur.sections);
-      const next = cur.currentCount >= total ? 1 : cur.currentCount + 1;
-      setState((prev) => ({ ...prev, currentCount: next }));
-      scheduleNextBeat();
-    }, ms);
+      const nextPhases = buildPlaybackPhases(cur.sections, cur.bpm);
+      if (!nextPhases.length) return;
+
+      const nextPhaseIndex =
+        playbackPhaseRef.current + 1 >= nextPhases.length
+          ? 0
+          : playbackPhaseRef.current + 1;
+
+      if (nextPhaseIndex === 0) {
+        playbackAnchorRef.current = performance.now();
+      }
+
+      playbackPhaseRef.current = nextPhaseIndex;
+      const nextPhase = nextPhases[nextPhaseIndex];
+      setState((prev) => ({ ...prev, currentCount: nextPhase.globalIndex }));
+      scheduleNextPhase();
+    }, delay);
   }, [clearPlaybackTimer]);
 
   const startPlaybackLoop = useCallback(() => {
-    scheduleNextBeat();
-  }, [scheduleNextBeat]);
+    scheduleNextPhase();
+  }, [scheduleNextPhase]);
 
   const togglePlayback = useCallback(() => {
     if (stateRef.current.isPlaying) {
@@ -164,48 +250,83 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       showToast("⏸ 停止");
     } else {
       setState((s) => ({ ...s, isPlaying: true }));
-      startPlaybackLoop();
       showToast("▶ 再生中");
     }
-  }, [stopPlayback, startPlaybackLoop, showToast]);
+  }, [stopPlayback, showToast]);
 
   useEffect(() => {
-    if (!state.isPlaying) return;
+    if (!state.isPlaying) {
+      clearPlaybackTimer();
+      playbackAnchorRef.current = null;
+      playbackPhaseRef.current = 0;
+      return;
+    }
+    playbackPhaseRef.current = findFirstPhaseForGlobal(
+      buildPlaybackPhases(state.sections, state.bpm),
+      state.currentCount,
+    );
+    playbackAnchorRef.current =
+      performance.now() -
+      getElapsedMsBeforePhase(
+        buildPlaybackPhases(state.sections, state.bpm),
+        playbackPhaseRef.current,
+      );
     startPlaybackLoop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.bpm]);
+    return clearPlaybackTimer;
+  }, [state.isPlaying, state.bpm, state.sections, startPlaybackLoop, clearPlaybackTimer]);
 
   useEffect(() => {
     return () => clearPlaybackTimer();
   }, [clearPlaybackTimer]);
 
-  const navigateTo = useCallback((count: number) => {
-    setState((s) => {
+  const restartPlaybackAt = useCallback(
+    (globalIndex: number) => {
+      const s = stateRef.current;
+      if (!s.isPlaying) return;
+      clearPlaybackTimer();
+      const phases = buildPlaybackPhases(s.sections, s.bpm);
+      playbackPhaseRef.current = findFirstPhaseForGlobal(phases, globalIndex);
+      playbackAnchorRef.current =
+        performance.now() -
+        getElapsedMsBeforePhase(phases, playbackPhaseRef.current);
+      scheduleNextPhase();
+    },
+    [clearPlaybackTimer, scheduleNextPhase],
+  );
+
+  const navigateTo = useCallback(
+    (count: number) => {
+      const s = stateRef.current;
       const total = getTotalSlots(s.sections);
-      return {
-        ...s,
-        currentCount: Math.max(1, Math.min(total, count)),
-      };
-    });
-  }, []);
+      const next = Math.max(1, Math.min(total, count));
+      if (next === s.currentCount) return;
+      setState((prev) => ({ ...prev, currentCount: next }));
+      if (s.isPlaying) restartPlaybackAt(next);
+    },
+    [restartPlaybackAt],
+  );
 
   const prevCount = useCallback(() => {
-    setState((s) => ({
-      ...s,
-      currentCount: s.currentCount > 1 ? s.currentCount - 1 : s.currentCount,
-    }));
-  }, []);
+    const s = stateRef.current;
+    if (s.currentCount <= 1) return;
+    const next = s.currentCount - 1;
+    setState((prev) => ({ ...prev, currentCount: next }));
+    if (s.isPlaying) restartPlaybackAt(next);
+  }, [restartPlaybackAt]);
 
   const nextCount = useCallback(() => {
-    setState((s) => {
-      const total = getTotalSlots(s.sections);
-      return {
-        ...s,
-        currentCount:
-          s.currentCount < total ? s.currentCount + 1 : s.currentCount,
-      };
-    });
-  }, []);
+    const s = stateRef.current;
+    const total = getTotalSlots(s.sections);
+    if (s.currentCount >= total) return;
+    const next = s.currentCount + 1;
+    setState((prev) => ({ ...prev, currentCount: next }));
+    if (s.isPlaying) restartPlaybackAt(next);
+  }, [restartPlaybackAt]);
+
+  const saveProject = useCallback(() => {
+    const ok = persist(stateRef.current);
+    showToast(ok ? "保存しました" : "保存に失敗しました");
+  }, [showToast]);
 
   const copyFormation = useCallback(() => {
     stopPlayback();
@@ -256,8 +377,52 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       members: s.members.map((m) =>
         m.id === memberId ? { ...m, name: trimmed } : m,
       ),
+      removedMembers: s.removedMembers.map((m) =>
+        m.id === memberId ? { ...m, name: trimmed } : m,
+      ),
     }));
   }, []);
+
+  const selectMember = useCallback((memberId: number | null) => {
+    setSelectedMemberId(memberId);
+  }, []);
+
+  const deleteMember = useCallback(
+    (memberId: number) => {
+      const name =
+        stateRef.current.members.find((m) => m.id === memberId)?.name ??
+        "メンバー";
+      setState((s) => {
+        const member = s.members.find((m) => m.id === memberId);
+        if (!member) return s;
+        return {
+          ...s,
+          members: s.members.filter((m) => m.id !== memberId),
+          removedMembers: [...s.removedMembers, member],
+        };
+      });
+      setSelectedMemberId((id) => (id === memberId ? null : id));
+      showToast(`${name} を削除`);
+    },
+    [showToast],
+  );
+
+  const restoreMember = useCallback(
+    (memberId: number) => {
+      setState((s) => {
+        const member = s.removedMembers.find((m) => m.id === memberId);
+        if (!member) return s;
+        const members = [...s.members, member].sort((a, b) => a.id - b.id);
+        return {
+          ...s,
+          members,
+          removedMembers: s.removedMembers.filter((m) => m.id !== memberId),
+        };
+      });
+      showToast("表示に戻しました");
+    },
+    [showToast],
+  );
 
   const toggleMemberVisibility = useCallback((memberId: number) => {
     setState((s) => {
@@ -274,8 +439,12 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
   const isMemberVisibleOnCurrent = useCallback(
     (memberId: number) =>
-      isMemberVisible(memberId, state.currentCount, state.countData),
-    [state.currentCount, state.countData],
+      isMemberVisible(
+        memberId,
+        state.isPlaying ? playbackPosCount : state.currentCount,
+        state.countData,
+      ),
+    [state.isPlaying, state.currentCount, state.countData, playbackPosCount],
   );
 
   const renameSectionName = useCallback((sectionId: string, name: string) => {
@@ -336,7 +505,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         const sections = appendSection(s.sections, name);
         return { ...s, sections, currentCount: firstNew };
       });
-      showToast("セクションを追加しました");
+      showToast("Section added");
     },
     [stopPlayback, showToast],
   );
@@ -346,7 +515,10 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     totalSlots,
     toast,
     draggingMemberId,
+    selectedMemberId,
+    selectMember,
     beatIntervalSec,
+    currentBeatSec,
     setSongTitle: (v) => setState((s) => ({ ...s, songTitle: v })),
     setBpm: (bpm) =>
       setState((s) => ({
@@ -375,6 +547,8 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       })),
     setMemberCount,
     renameMember,
+    deleteMember,
+    restoreMember,
     toggleMemberVisibility,
     isMemberVisibleOnCurrent,
     renameSectionName,
@@ -386,6 +560,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     nextCount,
     togglePlayback,
     stopPlayback,
+    saveProject,
     copyFormation,
     pasteFormation,
     hasClipboard: clipboard !== null,
@@ -394,7 +569,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     getMemberPos: (memberId) =>
       getMemberPos(
         memberId,
-        state.currentCount,
+        state.isPlaying ? playbackPosCount : state.currentCount,
         state.countData,
         state.members,
       ),

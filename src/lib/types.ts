@@ -53,6 +53,8 @@ export interface ChoreoState {
   songTitle: string;
   sections: Section[];
   members: Member[];
+  /** 削除済み（リスト非表示）。表示ボタンで members に復帰 */
+  removedMembers: Member[];
   bpm: number;
   currentCount: number;
   countData: Record<number, CountData>;
