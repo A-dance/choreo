@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CHOREO
 
-## Getting Started
+ダンスフォーメーション（配置）を **人数・空間・移動・BPM** で組み立てる Web アプリです。  
+ステップ名入力や Markdown 出力などは含まず、**ステージ上の配置** に特化しています。
 
-First, run the development server:
+## 起動
 
 ```bash
+cd choreo
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build   # 本番ビルド
+npm run start   # 本番サーバー
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 画面構成
 
-## Learn More
+```
+┌ SmartHeader ─────────────────────────────────────────┐
+│ 曲名 / BPM / ばみり / 人数 / 保存 / コピー / 再生   │
+├ StageArea ───────────────────────────────────────────┤
+│  ステージ（メンバー配置・D&D・選択）                  │
+├ TimelineFooter ──────────────────────────────────────┤
+│  Now · 位置表示 / セクション・カウントタイムライン   │
+└──────────────────────────────────────────────────────┘
+```
 
-To learn more about Next.js, take a look at the following resources:
+| 領域 | コンポーネント | 役割 |
+|------|----------------|------|
+| 上部 | `SmartHeader` | 曲名・BPM・ばみり・人数・保存・配置コピペ・再生 |
+| 中央 | `StageArea` | ステージ・メンバー丸ポチ・ドラッグ配置 |
+| 下部 | `TimelineFooter` | 現在位置（Now）・セクション／カウント操作 |
+| 共通 | `MemberPanel` | メンバー名・表示/非表示・削除・復元 |
+| 共通 | `ChoreoContext` | 状態管理・再生ループ・localStorage 永続化 |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 主な機能
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### フォーメーション編集
+- メンバーをドラッグ＆ドロップで配置（% 座標）
+- カウント切替時に滑らかにアニメーション
+- 配置の **コピー / ペースト**（⌘C / ⌘V）
 
-## Deploy on Vercel
+### タイムライン
+- セクション（イントロ / Aメロ / サビ / アウトロ 等）を横スクロールで管理
+- 各セクション **8 カウント**（アウトロは 1 カウント）
+- カウント間に **＆（半カウント）** を挿入可能（拍は増やさず後半で移動）
+- **+ Add section** でセクション追加
+- セクション名はダブルクリックで編集
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### BPM 再生
+- BPM に合わせてカウントを自動進行
+- **一定テンポ**（1 拍 = 60/BPM 秒）。＆ がある場合のみ移動タイミングが前半/後半に分かれる
+- 再生中にカウントをクリックすると **その位置から再開**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### メンバー管理
+- 人数の変更・名前編集
+- **非表示** … 編集中の位置だけステージに出さない
+- **削除** … リストから外す（削除済みから **表示** で復元）
+- ステージ上で丸ポチをクリックして選択 → Delete / Backspace で削除
+
+### ステージ
+- **ばみり**（横・縦）で方眼グリッドを調整
+- ステージ枠をドラッグして **横幅・高さ** を独立調整
+- 床に 0 番・1 番… の番号付き方眼を表示
+
+### 保存
+- 編集内容は **localStorage** に自動保存（キー: `choreo-v2-state`）
+- **保存** ボタン / ⌘S で明示保存
+
+## キーボードショートカット
+
+| 操作 | キー |
+|------|------|
+| 前のカウント | `←` / `[` |
+| 次のカウント | `→` / `]` |
+| 再生 / 停止 | `Space` |
+| 保存 | `⌘S` / `Ctrl+S` |
+| 配置コピー | `⌘C` / `Ctrl+C` |
+| 配置ペースト | `⌘V` / `Ctrl+V` |
+| 選択解除 / 再生停止 | `Esc` |
+| 選択メンバーを削除 | `Delete` / `Backspace` |
+
+## プロジェクト構成
+
+```
+choreo/
+├── src/
+│   ├── app/                 # Next.js App Router
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── globals.css
+│   ├── components/
+│   │   ├── ChoreoApp.tsx    # シェル（Header + Stage + Footer）
+│   │   ├── SmartHeader.tsx
+│   │   ├── StageArea.tsx
+│   │   ├── StageFloor.tsx   # 方眼・ばみり番号
+│   │   ├── TimelineFooter.tsx
+│   │   ├── MemberPanel.tsx
+│   │   ├── KeyboardShortcuts.tsx
+│   │   └── Toast.tsx
+│   ├── context/
+│   │   └── ChoreoContext.tsx
+│   └── lib/
+│       ├── types.ts
+│       ├── constants.ts
+│       ├── choreoUtils.ts   # 配置・再生・永続化
+│       ├── sectionUtils.ts  # セクション・＆スロット
+│       └── gridUtils.ts     # 方眼・ステージサイズ
+└── package.json
+```
+
+## データモデル（概要）
+
+```typescript
+ChoreoState {
+  songTitle: string
+  sections: Section[]       // 各セクションに count / & スロット
+  members: Member[]
+  removedMembers: Member[]  // 削除済み（復元用）
+  bpm: number
+  currentCount: number      // グローバルスロット index（1 始まり）
+  countData: Record<number, CountData>
+  stage: { bamiriHalfWidth, bamiriDepth, scaleW, scaleH }
+}
+```
+
+## 技術スタック
+
+- **Next.js 16**（App Router）
+- **React 19** / **TypeScript**
+- 状態: React Context + localStorage
+- スタイル: カスタム CSS（`globals.css`）
+
+## レガシー
+
+- `../choreo_prototype.html` … 初期プロトタイプ（単体 HTML）
+- `../CHOREO_要件定義書.md` … 要件定義書（Markdown・エディタで読める）
+- `../CHOREO_要件定義書.docx` … 要件定義書（Word 用。Cursor では文字化けするので MD を参照）
+
+### 要件定義書（.docx）の再生成
+
+プロジェクトルートで:
+
+```bash
+cd ..   # choreo/ から上へ
+.venv/bin/python gen_requirements.py
+```
+
+初回のみ venv が無い場合:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install python-docx
+.venv/bin/python gen_requirements.py
+```
