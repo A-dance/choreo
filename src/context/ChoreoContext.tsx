@@ -10,15 +10,15 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { STORAGE_KEY } from "@/lib/constants";
 import {
   applyMemberCount,
   beatIntervalMs,
   buildPlaybackPhases,
   clampStagePos,
   createInitialState,
-  deserializeState,
   findFirstPhaseForGlobal,
+  flattenTimeline,
+  countHasData,
   getCountData,
   getFlatSlot,
   getMemberPos,
@@ -29,21 +29,50 @@ import {
   getTotalSlots,
   insertHalfSlot,
   appendSection,
-  removeHalfSlot,
+  appendCountToSection,
+  moveSection as moveSectionOrder,
+  reorderSections as reorderSectionsOrder,
+  removeSlotAt,
+  removeSection,
   renameSection,
-  serializeState,
+  remapCountDataBySlots,
+  remapCurrentCount,
+  swapSections as swapSectionsOrder,
   shiftCountDataInsert,
   shiftCountDataRemove,
   slotGlobalIndex,
   getHiddenMembers,
   isMemberVisible,
+  resolveMemberDotPx,
   snapshotFormation,
+  setMemberHiddenAtCount,
 } from "@/lib/choreoUtils";
-import { normalizeStage } from "@/lib/gridUtils";
-import type { ChoreoState, FormationClipboard, Position } from "@/lib/types";
+import { MAX_COUNTS_PER_SECTION } from "@/lib/constants";
+import { clampMemberDotPx, normalizeStage } from "@/lib/gridUtils";
+import {
+  addProject,
+  getActiveState,
+  loadWorkspace,
+  patchActiveProject,
+  projectToSummary,
+  removeProject,
+  saveWorkspace,
+} from "@/lib/projectStore";
+import { getStrings, type ProjectLanguage, type UiStrings } from "@/lib/uiStrings";
+import type {
+  ChoreoState,
+  CountData,
+  FormationClipboard,
+  NewProjectParams,
+  Position,
+  ProjectSummary,
+  Workspace,
+} from "@/lib/types";
 
 interface ChoreoContextValue {
   state: ChoreoState;
+  language: ProjectLanguage;
+  strings: UiStrings;
   totalSlots: number;
   toast: string | null;
   draggingMemberId: number | null;
@@ -57,69 +86,112 @@ interface ChoreoContextValue {
   setBamiriDepth: (v: number) => void;
   setStageScaleW: (v: number) => void;
   setStageScaleH: (v: number) => void;
+  setMemberDotPx: (px: number) => void;
+  resetMemberDotPx: () => void;
+  memberDotPx: number;
   setMemberCount: (n: number) => void;
   renameMember: (memberId: number, name: string) => void;
   deleteMember: (memberId: number) => void;
+  hideMemberFromCurrentCount: (memberId: number) => void;
   restoreMember: (memberId: number) => void;
   toggleMemberVisibility: (memberId: number) => void;
   isMemberVisibleOnCurrent: (memberId: number) => boolean;
   renameSectionName: (sectionId: string, name: string) => void;
   insertHalfAfter: (sectionId: string, afterSlotIndex: number) => void;
   removeHalfAt: (sectionId: string, slotIndex: number) => void;
+  removeCountAt: (sectionId: string, slotIndex: number) => void;
+  removeCurrentCount: () => boolean;
   addSection: (name?: string) => void;
+  deleteSection: (sectionId: string) => void;
+  addCountToSection: (sectionId: string) => void;
+  moveSection: (sectionId: string, delta: -1 | 1) => void;
+  swapSections: (sectionIdA: string, sectionIdB: string) => void;
+  reorderSections: (fromIndex: number, toIndex: number) => void;
   navigateTo: (count: number) => void;
   prevCount: () => void;
   nextCount: () => void;
   togglePlayback: () => void;
   stopPlayback: () => void;
   saveProject: () => void;
+  undo: () => void;
+  canUndo: boolean;
+  pushUndoHistory: () => void;
   copyFormation: () => void;
   pasteFormation: () => void;
   hasClipboard: boolean;
   updateMemberPosition: (memberId: number, x: number, y: number) => void;
   setDraggingMemberId: (id: number | null) => void;
   getMemberPos: (memberId: number) => Position;
+  projects: ProjectSummary[];
+  activeProjectId: string;
+  switchProject: (projectId: string) => void;
+  createProject: (params: NewProjectParams) => void;
+  deleteProject: (projectId: string) => void;
 }
 
 const ChoreoContext = createContext<ChoreoContextValue | null>(null);
 
-function persist(state: ChoreoState): boolean {
-  try {
-    localStorage.setItem(STORAGE_KEY, serializeState(state));
-    return true;
-  } catch {
-    return false;
-  }
+const MAX_UNDO = 50;
+
+function persistWorkspace(
+  workspace: Workspace,
+  activeProjectId: string,
+  state: ChoreoState,
+): boolean {
+  return saveWorkspace(patchActiveProject(workspace, activeProjectId, state));
 }
 
-function load(): ChoreoState {
-  if (typeof window === "undefined") return createInitialState();
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    const parsed = deserializeState(saved);
-    if (parsed) {
-      return { ...parsed, stage: normalizeStage(parsed.stage) };
-    }
-  }
-  return createInitialState();
+function cloneChoreoState(state: ChoreoState): ChoreoState {
+  return JSON.parse(JSON.stringify(state)) as ChoreoState;
 }
 
 export function ChoreoProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ChoreoState>(createInitialState);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [activeProjectId, setActiveProjectId] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [draggingMemberId, setDraggingMemberId] = useState<number | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const [clipboard, setClipboard] = useState<FormationClipboard | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
 
   const stateRef = useRef(state);
+  const undoStackRef = useRef<ChoreoState[]>([]);
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playbackAnchorRef = useRef<number | null>(null);
   const playbackPhaseRef = useRef<number>(0);
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workspaceRef = useRef<Workspace | null>(null);
   stateRef.current = state;
+  workspaceRef.current = workspace;
+
+  const projects = useMemo((): ProjectSummary[] => {
+    if (!workspace) return [];
+    return workspace.projects.map((p) =>
+      p.id === activeProjectId
+        ? {
+            id: p.id,
+            songTitle: state.songTitle,
+            bpm: state.bpm,
+            updatedAt: p.updatedAt,
+          }
+        : projectToSummary(p),
+    );
+  }, [workspace, activeProjectId, state.songTitle, state.bpm]);
+
+  const language = state.language;
+  const strings = useMemo(() => getStrings(state.language), [state.language]);
+
+  useEffect(() => {
+    document.documentElement.lang = state.language;
+  }, [state.language]);
 
   const totalSlots = getTotalSlots(state.sections);
+  const memberDotPx = useMemo(
+    () => resolveMemberDotPx(state.stage, state.members.length),
+    [state.stage, state.members.length],
+  );
   const beatIntervalSec = beatIntervalMs(state.bpm) / 1000;
   const playbackPhases = useMemo(
     () => buildPlaybackPhases(state.sections, state.bpm),
@@ -157,19 +229,41 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     : state.currentCount;
 
   useEffect(() => {
-    setState(load());
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (hydrated) persist(state);
-  }, [state, hydrated]);
+    if (!hydrated || !activeProjectId) return;
+    const ws = workspaceRef.current;
+    if (!ws) return;
+    const next = patchActiveProject(ws, activeProjectId, state);
+    workspaceRef.current = next;
+    saveWorkspace(next);
+    setWorkspace(next);
+  }, [state, hydrated, activeProjectId]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     if (toastRef.current) clearTimeout(toastRef.current);
     toastRef.current = setTimeout(() => setToast(null), 2000);
   }, []);
+
+  const clearUndoHistory = useCallback(() => {
+    undoStackRef.current = [];
+    setCanUndo(false);
+  }, []);
+
+  const pushUndoHistory = useCallback(() => {
+    undoStackRef.current.push(cloneChoreoState(stateRef.current));
+    if (undoStackRef.current.length > MAX_UNDO) {
+      undoStackRef.current.shift();
+    }
+    setCanUndo(true);
+  }, []);
+
+  const mutateState = useCallback(
+    (updater: (s: ChoreoState) => ChoreoState, recordHistory = true) => {
+      if (recordHistory) pushUndoHistory();
+      setState(updater);
+    },
+    [pushUndoHistory],
+  );
 
   const clearPlaybackTimer = useCallback(() => {
     if (playbackTimerRef.current) {
@@ -184,6 +278,25 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     playbackPhaseRef.current = 0;
     setState((s) => (s.isPlaying ? { ...s, isPlaying: false } : s));
   }, [clearPlaybackTimer]);
+
+  const undo = useCallback(() => {
+    const stack = undoStackRef.current;
+    if (!stack.length) return;
+    stopPlayback();
+    const prev = stack.pop()!;
+    setCanUndo(stack.length > 0);
+    setState(prev);
+    showToast(getStrings(stateRef.current.language).undoDone);
+  }, [stopPlayback, showToast]);
+
+  useEffect(() => {
+    const loaded = loadWorkspace();
+    setWorkspace(loaded.workspace);
+    setActiveProjectId(loaded.workspace.activeProjectId);
+    setState(loaded.activeState);
+    clearUndoHistory();
+    setHydrated(true);
+  }, [clearUndoHistory]);
 
   const scheduleNextPhase = useCallback(() => {
     clearPlaybackTimer();
@@ -247,10 +360,10 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const togglePlayback = useCallback(() => {
     if (stateRef.current.isPlaying) {
       stopPlayback();
-      showToast("⏸ 停止");
+      showToast(getStrings(stateRef.current.language).paused);
     } else {
       setState((s) => ({ ...s, isPlaying: true }));
-      showToast("▶ 再生中");
+      showToast(getStrings(stateRef.current.language).playingToast);
     }
   }, [stopPlayback, showToast]);
 
@@ -324,55 +437,134 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   }, [restartPlaybackAt]);
 
   const saveProject = useCallback(() => {
-    const ok = persist(stateRef.current);
-    showToast(ok ? "保存しました" : "保存に失敗しました");
-  }, [showToast]);
+    const ws = workspaceRef.current;
+    if (!ws || !activeProjectId) {
+      showToast(getStrings(stateRef.current.language).saveFailed);
+      return;
+    }
+    const ok = persistWorkspace(ws, activeProjectId, stateRef.current);
+    showToast(ok ? getStrings(stateRef.current.language).saved : getStrings(stateRef.current.language).saveFailed);
+  }, [activeProjectId, showToast]);
+
+  const switchProject = useCallback(
+    (projectId: string) => {
+      if (projectId === activeProjectId) return;
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      stopPlayback();
+      const saved = patchActiveProject(ws, activeProjectId, stateRef.current);
+      const nextState = getActiveState(
+        { ...saved, activeProjectId: projectId },
+        projectId,
+      );
+      if (!nextState) return;
+      const nextWs = { ...saved, activeProjectId: projectId };
+      workspaceRef.current = nextWs;
+      saveWorkspace(nextWs);
+      setWorkspace(nextWs);
+      setActiveProjectId(projectId);
+      setState(nextState);
+      setSelectedMemberId(null);
+      clearUndoHistory();
+      showToast(getStrings(stateRef.current.language).switchedProject(nextState.songTitle));
+    },
+    [activeProjectId, stopPlayback, showToast, clearUndoHistory],
+  );
+
+  const createProject = useCallback(
+    (params: NewProjectParams) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      stopPlayback();
+      const saved = patchActiveProject(ws, activeProjectId, stateRef.current);
+      const { workspace: nextWs, record } = addProject(saved, params);
+      workspaceRef.current = nextWs;
+      saveWorkspace(nextWs);
+      setWorkspace(nextWs);
+      setActiveProjectId(record.id);
+      setState(record.state);
+      setSelectedMemberId(null);
+      clearUndoHistory();
+      showToast(getStrings(stateRef.current.language).createdProject(record.state.songTitle));
+    },
+    [activeProjectId, stopPlayback, showToast, clearUndoHistory],
+  );
+
+  const deleteProject = useCallback(
+    (projectId: string) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      if (ws.projects.length <= 1) {
+        showToast(getStrings(stateRef.current.language).cannotDeleteLastProject);
+        return;
+      }
+      stopPlayback();
+      const saved = patchActiveProject(ws, activeProjectId, stateRef.current);
+      const nextWs = removeProject(saved, projectId);
+      if (!nextWs) return;
+      workspaceRef.current = nextWs;
+      saveWorkspace(nextWs);
+      setWorkspace(nextWs);
+      if (activeProjectId === projectId) {
+        const nextState = getActiveState(nextWs, nextWs.activeProjectId);
+        if (nextState) {
+          setActiveProjectId(nextWs.activeProjectId);
+          setState(nextState);
+          setSelectedMemberId(null);
+        }
+      }
+      clearUndoHistory();
+      showToast(getStrings(stateRef.current.language).projectDeleted);
+    },
+    [activeProjectId, stopPlayback, showToast, clearUndoHistory],
+  );
 
   const copyFormation = useCallback(() => {
     stopPlayback();
     const s = stateRef.current;
     setClipboard(snapshotFormation(s.currentCount, s.countData, s.members));
-    showToast("コピーしました");
+    showToast(getStrings(stateRef.current.language).copied);
   }, [stopPlayback, showToast]);
 
   const pasteFormation = useCallback(() => {
     stopPlayback();
-    setState((s) => {
+    mutateState((s) => {
       if (!clipboard) return s;
       const countData = { ...s.countData };
-      const existing = getCountData(countData, s.currentCount);
+      const existing = countData[s.currentCount];
       countData[s.currentCount] = {
         positions: JSON.parse(JSON.stringify(clipboard.positions)),
-        hidden: [...clipboard.hidden],
-        memo: existing.memo,
+        memo: existing?.memo ?? "",
+        ...(existing?.hidden !== undefined ? { hidden: existing.hidden } : {}),
+        ...(existing?.shown !== undefined ? { shown: existing.shown } : {}),
       };
       return { ...s, countData };
     });
-    showToast("ペーストしました");
-  }, [stopPlayback, clipboard, showToast]);
+    showToast(getStrings(stateRef.current.language).pasted);
+  }, [stopPlayback, clipboard, showToast, mutateState]);
 
   const updateMemberPosition = useCallback(
     (memberId: number, x: number, y: number) => {
-      setState((s) => {
+      mutateState((s) => {
         const pos = clampStagePos(x, y);
         const countData = { ...s.countData };
         const cd = { ...getCountData(countData, s.currentCount) };
         cd.positions = { ...cd.positions, [memberId]: pos };
         countData[s.currentCount] = cd;
         return { ...s, countData };
-      });
+      }, false);
     },
-    [],
+    [mutateState],
   );
 
   const setMemberCount = useCallback((n: number) => {
-    setState((s) => applyMemberCount(s, n));
-  }, []);
+    mutateState((s) => applyMemberCount(s, n));
+  }, [mutateState]);
 
   const renameMember = useCallback((memberId: number, name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setState((s) => ({
+    mutateState((s) => ({
       ...s,
       members: s.members.map((m) =>
         m.id === memberId ? { ...m, name: trimmed } : m,
@@ -381,7 +573,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         m.id === memberId ? { ...m, name: trimmed } : m,
       ),
     }));
-  }, []);
+  }, [mutateState]);
 
   const selectMember = useCallback((memberId: number | null) => {
     setSelectedMemberId(memberId);
@@ -391,8 +583,8 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     (memberId: number) => {
       const name =
         stateRef.current.members.find((m) => m.id === memberId)?.name ??
-        "メンバー";
-      setState((s) => {
+        getStrings(stateRef.current.language).memberFallback;
+      mutateState((s) => {
         const member = s.members.find((m) => m.id === memberId);
         if (!member) return s;
         return {
@@ -402,14 +594,14 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         };
       });
       setSelectedMemberId((id) => (id === memberId ? null : id));
-      showToast(`${name} を削除`);
+      showToast(getStrings(stateRef.current.language).memberRemoved(name));
     },
-    [showToast],
+    [mutateState, showToast],
   );
 
   const restoreMember = useCallback(
     (memberId: number) => {
-      setState((s) => {
+      mutateState((s) => {
         const member = s.removedMembers.find((m) => m.id === memberId);
         if (!member) return s;
         const members = [...s.members, member].sort((a, b) => a.id - b.id);
@@ -419,23 +611,49 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           removedMembers: s.removedMembers.filter((m) => m.id !== memberId),
         };
       });
-      showToast("表示に戻しました");
+      showToast(getStrings(stateRef.current.language).memberRestored);
     },
-    [showToast],
+    [mutateState, showToast],
+  );
+
+  const hideMemberFromCurrentCount = useCallback(
+    (memberId: number) => {
+      mutateState((s) => {
+        if (getHiddenMembers(s.currentCount, s.countData).includes(memberId)) {
+          return s;
+        }
+        return {
+          ...s,
+          countData: setMemberHiddenAtCount(
+            s.countData,
+            s.currentCount,
+            memberId,
+            true,
+          ),
+        };
+      });
+      setSelectedMemberId((id) => (id === memberId ? null : id));
+    },
+    [mutateState],
   );
 
   const toggleMemberVisibility = useCallback((memberId: number) => {
-    setState((s) => {
-      const countData = { ...s.countData };
-      const cd = { ...getCountData(countData, s.currentCount) };
-      const hidden = new Set(getHiddenMembers(s.currentCount, s.countData));
-      if (hidden.has(memberId)) hidden.delete(memberId);
-      else hidden.add(memberId);
-      cd.hidden = Array.from(hidden);
-      countData[s.currentCount] = cd;
-      return { ...s, countData };
+    mutateState((s) => {
+      const isHidden = getHiddenMembers(
+        s.currentCount,
+        s.countData,
+      ).includes(memberId);
+      return {
+        ...s,
+        countData: setMemberHiddenAtCount(
+          s.countData,
+          s.currentCount,
+          memberId,
+          !isHidden,
+        ),
+      };
     });
-  }, []);
+  }, [mutateState]);
 
   const isMemberVisibleOnCurrent = useCallback(
     (memberId: number) =>
@@ -448,15 +666,15 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   );
 
   const renameSectionName = useCallback((sectionId: string, name: string) => {
-    setState((s) => ({
+    mutateState((s) => ({
       ...s,
       sections: renameSection(s.sections, sectionId, name),
     }));
-  }, []);
+  }, [mutateState]);
 
   const insertHalfAfter = useCallback(
     (sectionId: string, afterSlotIndex: number) => {
-      setState((s) => {
+      mutateState((s) => {
         const insertAt =
           slotGlobalIndex(s.sections, sectionId, afterSlotIndex) + 1;
         let currentCount = s.currentCount;
@@ -468,17 +686,19 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           currentCount,
         };
       });
-      showToast("＆ 半カウントを追加");
+      showToast(getStrings(stateRef.current.language).halfCountAdded);
     },
-    [showToast],
+    [mutateState, showToast],
   );
 
-  const removeHalfAt = useCallback(
+  const removeCountAt = useCallback(
     (sectionId: string, slotIndex: number) => {
-      setState((s) => {
+      mutateState((s) => {
         const sec = s.sections.find((x) => x.id === sectionId);
-        if (sec?.slots[slotIndex]?.type !== "half") return s;
+        if (!sec || sec.slots.length <= 1) return s;
         const removeAt = slotGlobalIndex(s.sections, sectionId, slotIndex);
+        const sections = removeSlotAt(s.sections, sectionId, slotIndex);
+        if (!sections) return s;
         let currentCount = s.currentCount;
         if (currentCount === removeAt) {
           currentCount = Math.max(1, removeAt - 1);
@@ -487,31 +707,192 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         }
         return {
           ...s,
-          sections: removeHalfSlot(s.sections, sectionId, slotIndex),
+          sections,
           countData: shiftCountDataRemove(s.countData, removeAt),
           currentCount,
         };
       });
-      showToast("＆ を削除");
+      showToast(getStrings(stateRef.current.language).countDeleted);
     },
-    [showToast],
+    [mutateState, showToast],
   );
+
+  const removeHalfAt = useCallback(
+    (sectionId: string, slotIndex: number) => {
+      removeCountAt(sectionId, slotIndex);
+    },
+    [removeCountAt],
+  );
+
+  const removeCurrentCount = useCallback((): boolean => {
+    const s = stateRef.current;
+    const flat = getFlatSlot(s.sections, s.currentCount);
+    if (!flat) return false;
+    const sec = s.sections.find((x) => x.id === flat.sectionId);
+    if (!sec || sec.slots.length <= 1) return false;
+    if (
+      countHasData(s.countData[s.currentCount]) &&
+      !window.confirm(getStrings(stateRef.current.language).deleteCountConfirm(flat.label))
+    ) {
+      return false;
+    }
+    removeCountAt(flat.sectionId, flat.slotIndex);
+    return true;
+  }, [removeCountAt]);
 
   const addSection = useCallback(
     (name?: string) => {
       stopPlayback();
-      setState((s) => {
+      mutateState((s) => {
         const firstNew = getTotalSlots(s.sections) + 1;
-        const sections = appendSection(s.sections, name);
+        const sections = appendSection(s.sections, name, s.language);
         return { ...s, sections, currentCount: firstNew };
       });
-      showToast("Section added");
     },
-    [stopPlayback, showToast],
+    [stopPlayback, mutateState],
   );
+
+  const deleteSection = useCallback(
+    (sectionId: string) => {
+      stopPlayback();
+      mutateState((s) => {
+        const sections = removeSection(s.sections, sectionId);
+        if (!sections) return s;
+        return {
+          ...s,
+          sections,
+          countData: remapCountDataBySlots(s.sections, sections, s.countData),
+          currentCount: remapCurrentCount(
+            s.sections,
+            sections,
+            s.currentCount,
+            sectionId,
+          ),
+        };
+      });
+      showToast(getStrings(stateRef.current.language).sectionDeletedToast);
+    },
+    [stopPlayback, mutateState, showToast],
+  );
+
+  const addCountToSection = useCallback(
+    (sectionId: string) => {
+      mutateState((s) => {
+        const sec = s.sections.find((x) => x.id === sectionId);
+        if (!sec) return s;
+        const fullCount = sec.slots.filter((sl) => sl.type === "count").length;
+        if (fullCount >= MAX_COUNTS_PER_SECTION) return s;
+        const sections = appendCountToSection(
+          s.sections,
+          sectionId,
+          MAX_COUNTS_PER_SECTION,
+        );
+        const newFlat = flattenTimeline(sections);
+        const added = newFlat.find(
+          (f) =>
+            f.sectionId === sectionId &&
+            f.slotIndex === sec.slots.length,
+        );
+        return {
+          ...s,
+          sections,
+          countData: remapCountDataBySlots(s.sections, sections, s.countData),
+          currentCount: added?.globalIndex ?? s.currentCount,
+        };
+      });
+    },
+    [mutateState],
+  );
+
+  const moveSection = useCallback(
+    (sectionId: string, delta: -1 | 1) => {
+      stopPlayback();
+      mutateState((s) => {
+        const sections = moveSectionOrder(s.sections, sectionId, delta);
+        if (sections === s.sections) return s;
+        return {
+          ...s,
+          sections,
+          countData: remapCountDataBySlots(s.sections, sections, s.countData),
+          currentCount: remapCurrentCount(
+            s.sections,
+            sections,
+            s.currentCount,
+          ),
+        };
+      });
+      showToast(delta === -1 ? getStrings(stateRef.current.language).sectionMovedLeft : getStrings(stateRef.current.language).sectionMovedRight);
+    },
+    [stopPlayback, mutateState, showToast],
+  );
+
+  const swapSections = useCallback(
+    (sectionIdA: string, sectionIdB: string) => {
+      if (sectionIdA === sectionIdB) return;
+      stopPlayback();
+      mutateState((s) => {
+        const sections = swapSectionsOrder(s.sections, sectionIdA, sectionIdB);
+        if (sections === s.sections) return s;
+        return {
+          ...s,
+          sections,
+          countData: remapCountDataBySlots(s.sections, sections, s.countData),
+          currentCount: remapCurrentCount(
+            s.sections,
+            sections,
+            s.currentCount,
+          ),
+        };
+      });
+      showToast(getStrings(stateRef.current.language).sectionsSwapped);
+    },
+    [stopPlayback, mutateState, showToast],
+  );
+
+  const reorderSections = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return;
+      stopPlayback();
+      mutateState((s) => {
+        const sections = reorderSectionsOrder(s.sections, fromIndex, toIndex);
+        if (sections === s.sections) return s;
+        return {
+          ...s,
+          sections,
+          countData: remapCountDataBySlots(s.sections, sections, s.countData),
+          currentCount: remapCurrentCount(
+            s.sections,
+            sections,
+            s.currentCount,
+          ),
+        };
+      });
+      showToast(getStrings(stateRef.current.language).sectionReordered);
+    },
+    [stopPlayback, mutateState, showToast],
+  );
+
+  const setMemberDotPx = useCallback((px: number) => {
+    mutateState((s) => ({
+      ...s,
+      stage: normalizeStage({
+        ...s.stage,
+        memberDotPx: clampMemberDotPx(px),
+      }),
+    }));
+  }, [mutateState]);
+
+  const resetMemberDotPx = useCallback(() => {
+    mutateState((s) => ({
+      ...s,
+      stage: normalizeStage({ ...s.stage, memberDotPx: null }),
+    }));
+  }, [mutateState]);
 
   const value: ChoreoContextValue = {
     state,
+    language,
+    strings,
     totalSlots,
     toast,
     draggingMemberId,
@@ -519,48 +900,68 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     selectMember,
     beatIntervalSec,
     currentBeatSec,
-    setSongTitle: (v) => setState((s) => ({ ...s, songTitle: v })),
+    setSongTitle: (v) => mutateState((s) => ({ ...s, songTitle: v })),
     setBpm: (bpm) =>
-      setState((s) => ({
+      mutateState((s) => ({
         ...s,
         bpm: Math.max(40, Math.min(240, Math.round(bpm))),
       })),
     setBamiriHalfWidth: (bamiriHalfWidth) =>
-      setState((s) => ({
+      mutateState((s) => ({
         ...s,
         stage: normalizeStage({ ...s.stage, bamiriHalfWidth }),
       })),
     setBamiriDepth: (bamiriDepth) =>
-      setState((s) => ({
+      mutateState((s) => ({
         ...s,
         stage: normalizeStage({ ...s.stage, bamiriDepth }),
       })),
     setStageScaleW: (scaleW) =>
-      setState((s) => ({
-        ...s,
-        stage: normalizeStage({ ...s.stage, scaleW }),
-      })),
+      mutateState(
+        (s) => ({
+          ...s,
+          stage: normalizeStage({ ...s.stage, scaleW }),
+        }),
+        false,
+      ),
     setStageScaleH: (scaleH) =>
-      setState((s) => ({
-        ...s,
-        stage: normalizeStage({ ...s.stage, scaleH }),
-      })),
+      mutateState(
+        (s) => ({
+          ...s,
+          stage: normalizeStage({ ...s.stage, scaleH }),
+        }),
+        false,
+      ),
+    setMemberDotPx,
+    resetMemberDotPx,
+    memberDotPx,
     setMemberCount,
     renameMember,
     deleteMember,
+    hideMemberFromCurrentCount,
     restoreMember,
     toggleMemberVisibility,
     isMemberVisibleOnCurrent,
     renameSectionName,
     insertHalfAfter,
     removeHalfAt,
+    removeCountAt,
+    removeCurrentCount,
     addSection,
+    deleteSection,
+    addCountToSection,
+    moveSection,
+    swapSections,
+    reorderSections,
     navigateTo,
     prevCount,
     nextCount,
     togglePlayback,
     stopPlayback,
     saveProject,
+    undo,
+    canUndo,
+    pushUndoHistory,
     copyFormation,
     pasteFormation,
     hasClipboard: clipboard !== null,
@@ -573,6 +974,11 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         state.countData,
         state.members,
       ),
+    projects,
+    activeProjectId,
+    switchProject,
+    createProject,
+    deleteProject,
   };
 
   if (!hydrated) {

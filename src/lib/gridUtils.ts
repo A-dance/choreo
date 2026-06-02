@@ -4,10 +4,17 @@ import {
   BAMIRI_HALF_MAX,
   BAMIRI_HALF_MIN,
   DEFAULT_STAGE,
+  MEMBER_DOT_MAX,
+  MEMBER_DOT_MIN,
   STAGE_SCALE_MAX,
   STAGE_SCALE_MIN,
 } from "./constants";
 import type { Position, StageConfig } from "./types";
+
+export function clampMemberDotPx(n: number): number {
+  if (!Number.isFinite(n)) return MEMBER_DOT_MIN;
+  return Math.max(MEMBER_DOT_MIN, Math.min(MEMBER_DOT_MAX, Math.round(n)));
+}
 
 export function clampBamiriHalf(n: number): number {
   if (!Number.isFinite(n)) return DEFAULT_STAGE.bamiriHalfWidth;
@@ -34,6 +41,10 @@ export function normalizeStage(stage: Partial<StageConfig>): StageConfig {
     ),
     scaleW: clampScale(stage.scaleW ?? DEFAULT_STAGE.scaleW, DEFAULT_STAGE.scaleW),
     scaleH: clampScale(stage.scaleH ?? DEFAULT_STAGE.scaleH, DEFAULT_STAGE.scaleH),
+    memberDotPx:
+      stage.memberDotPx != null && Number.isFinite(stage.memberDotPx)
+        ? clampMemberDotPx(stage.memberDotPx)
+        : null,
   };
 }
 

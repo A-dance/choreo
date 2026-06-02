@@ -1,29 +1,46 @@
 import {
   COLORS,
+  COUNTS_PER_SECTION,
   DEFAULT_BPM,
   DEFAULT_MEMBER_COUNT,
   DEFAULT_STAGE,
   MAX_MEMBERS,
+  MEMBER_DOT_MAX,
+  MEMBER_DOT_MIN,
   MIN_MEMBERS,
   createDefaultSections,
 } from "./constants";
-import { gridCellCenter, normalizeStage } from "./gridUtils";
+import {
+  detectBrowserLanguage,
+  getStrings,
+  normalizeLanguage,
+} from "./uiStrings";
+import { gridCellCenter, gridCols, gridRows, normalizeStage, clampMemberDotPx } from "./gridUtils";
 import {
   getTotalSlots,
   migrateSections,
   flattenTimeline,
 } from "./sectionUtils";
 import type { ChoreoState, CountData, FormationClipboard, Member, Position } from "./types";
+import type { ProjectLanguage } from "./uiStrings";
 
 export {
   appendSection,
+  appendCountToSection,
   flattenTimeline,
   getCurrentSection,
   getFlatSlot,
   getTotalSlots,
   insertHalfSlot,
+  moveSection,
+  reorderSections,
   removeHalfSlot,
+  removeSlotAt,
+  removeSection,
   renameSection,
+  remapCountDataBySlots,
+  remapCurrentCount,
+  swapSections,
   sectionHidesCountButtons,
   shiftCountDataInsert,
   shiftCountDataRemove,
@@ -101,9 +118,52 @@ export function defaultPosForIndex(index: number, total: number): Position {
   };
 }
 
-export function dotSizePx(memberCount: number): number {
+export function autoDotSizePx(
+  memberCount: number,
+  halfW: number = DEFAULT_STAGE.bamiriHalfWidth,
+  depth: number = DEFAULT_STAGE.bamiriDepth,
+): number {
   const n = Math.max(1, memberCount);
-  return Math.max(16, Math.min(44, Math.floor(520 / Math.sqrt(n))));
+  const byCount = Math.max(18, Math.min(48, Math.floor(560 / Math.sqrt(n))));
+
+  const defCols = gridCols(DEFAULT_STAGE.bamiriHalfWidth);
+  const defRows = gridRows(DEFAULT_STAGE.bamiriDepth);
+  const cols = gridCols(halfW);
+  const rows = gridRows(depth);
+  const ratio = Math.min(defCols / cols, defRows / rows);
+  const bamiriScale = Math.max(0.78, Math.sqrt(ratio));
+
+  return clampMemberDotPx(Math.round(byCount * bamiriScale));
+}
+
+/** @deprecated use resolveMemberDotPx */
+export function dotSizePx(
+  memberCount: number,
+  halfW?: number,
+  depth?: number,
+): number {
+  return autoDotSizePx(memberCount, halfW, depth);
+}
+
+export function resolveMemberDotPx(
+  stage: import("./types").StageConfig,
+  memberCount: number,
+): number {
+  if (stage.memberDotPx != null) {
+    return clampMemberDotPx(stage.memberDotPx);
+  }
+  return autoDotSizePx(
+    memberCount,
+    stage.bamiriHalfWidth,
+    stage.bamiriDepth,
+  );
+}
+
+export function dotFontPx(dotPx: number): number {
+  if (dotPx <= 20) return 7;
+  if (dotPx <= 28) return 8;
+  if (dotPx <= 36) return 9;
+  return 10;
 }
 
 export function createMembers(count: number, startId = 1): Member[] {
@@ -342,15 +402,62 @@ export function getMemberPos(
   return gridCellCenter(0, 0, DEFAULT_STAGE.bamiriHalfWidth, DEFAULT_STAGE.bamiriDepth);
 }
 
-export function getHiddenMembers(
+function getBackwardHiddenMembers(
   count: number,
   countData: Record<number, CountData>,
 ): number[] {
   for (let c = count; c >= 1; c--) {
-    const d = countData[c];
-    if (d?.hidden !== undefined) return d.hidden;
+    const hidden = countData[c]?.hidden;
+    if (hidden !== undefined) return [...hidden];
   }
   return [];
+}
+
+/** 旧形式（後方継承の absolute hidden）→ 前方累積の delta 形式へ */
+export function migrateCountDataVisibility(
+  countData: Record<number, CountData>,
+): Record<number, CountData> {
+  if (Object.values(countData).some((d) => d.shown !== undefined)) {
+    return countData;
+  }
+
+  const explicitCounts = Object.keys(countData)
+    .map(Number)
+    .filter((c) => countData[c]?.hidden !== undefined)
+    .sort((a, b) => a - b);
+
+  if (!explicitCounts.length) return countData;
+
+  const next: Record<number, CountData> = { ...countData };
+
+  for (const c of explicitCounts) {
+    const resolved = countData[c]!.hidden!;
+    const prevResolved = c > 1 ? getBackwardHiddenMembers(c - 1, countData) : [];
+    const added = resolved.filter((id) => !prevResolved.includes(id));
+    const removed = prevResolved.filter((id) => !resolved.includes(id));
+
+    const entry: CountData = { ...countData[c]! };
+    delete entry.hidden;
+    if (added.length) entry.hidden = added;
+    if (removed.length) entry.shown = removed;
+    next[c] = entry;
+  }
+
+  return next;
+}
+
+export function getHiddenMembers(
+  count: number,
+  countData: Record<number, CountData>,
+): number[] {
+  const hidden = new Set<number>();
+  for (let c = 1; c <= count; c++) {
+    const d = countData[c];
+    if (!d) continue;
+    for (const id of d.hidden ?? []) hidden.add(id);
+    for (const id of d.shown ?? []) hidden.delete(id);
+  }
+  return Array.from(hidden);
 }
 
 export function isMemberVisible(
@@ -361,6 +468,38 @@ export function isMemberVisible(
   return !getHiddenMembers(count, countData).includes(memberId);
 }
 
+export function setMemberHiddenAtCount(
+  countData: Record<number, CountData>,
+  count: number,
+  memberId: number,
+  hidden: boolean,
+): Record<number, CountData> {
+  const next = { ...countData };
+  const existing = next[count] ?? { positions: {}, memo: "" };
+  const cd: CountData = { ...existing, positions: { ...existing.positions } };
+
+  if (hidden) {
+    const hiddenIds = new Set(cd.hidden ?? []);
+    hiddenIds.add(memberId);
+    cd.hidden = Array.from(hiddenIds);
+    if (cd.shown?.length) {
+      cd.shown = cd.shown.filter((id) => id !== memberId);
+      if (!cd.shown.length) delete cd.shown;
+    }
+  } else {
+    const shownIds = new Set(cd.shown ?? []);
+    shownIds.add(memberId);
+    cd.shown = Array.from(shownIds);
+    if (cd.hidden?.length) {
+      cd.hidden = cd.hidden.filter((id) => id !== memberId);
+      if (!cd.hidden.length) delete cd.hidden;
+    }
+  }
+
+  next[count] = cd;
+  return next;
+}
+
 export function snapshotFormation(
   count: number,
   countData: Record<number, CountData>,
@@ -368,27 +507,25 @@ export function snapshotFormation(
 ): import("./types").FormationClipboard {
   const positions: Record<number, Position> = {};
   for (const m of members) {
-    if (isMemberVisible(m.id, count, countData)) {
-      positions[m.id] = getMemberPos(m.id, count, countData, members);
-    }
+    positions[m.id] = getMemberPos(m.id, count, countData, members);
   }
-  return {
-    positions,
-    hidden: [...getHiddenMembers(count, countData)],
-  };
+  return { positions };
 }
 
 export function countHasData(cd: CountData | undefined): boolean {
   if (!cd) return false;
   return (
-    Object.keys(cd.positions).length > 0 || (cd.hidden?.length ?? 0) > 0
+    Object.keys(cd.positions).length > 0 ||
+    (cd.hidden?.length ?? 0) > 0 ||
+    (cd.shown?.length ?? 0) > 0
   );
 }
 
-function emptyState(): ChoreoState {
+function emptyState(language: ProjectLanguage = detectBrowserLanguage()): ChoreoState {
   return {
-    songTitle: "新曲タイトル",
-    sections: createDefaultSections(),
+    songTitle: getStrings(language).defaultSongTitle,
+    language,
+    sections: createDefaultSections(COUNTS_PER_SECTION, language),
     members: [],
     removedMembers: [],
     bpm: DEFAULT_BPM,
@@ -415,6 +552,33 @@ export function createDemoState(): ChoreoState {
 
 export function createInitialState(): ChoreoState {
   return createDemoState();
+}
+
+export function createProjectState(params: {
+  songTitle: string;
+  bpm: number;
+  countsPerSection: number;
+  language: ProjectLanguage;
+}): ChoreoState {
+  const counts = Math.max(1, Math.min(64, Math.round(params.countsPerSection)));
+  const bpm = Math.max(40, Math.min(240, Math.round(params.bpm)));
+  const language = normalizeLanguage(params.language);
+  const strings = getStrings(language);
+  const title = params.songTitle.trim() || strings.defaultSongTitle;
+  const members = createMembers(DEFAULT_MEMBER_COUNT);
+  return {
+    songTitle: title,
+    language,
+    sections: createDefaultSections(counts, language),
+    members,
+    removedMembers: [],
+    bpm,
+    currentCount: 1,
+    countData: {},
+    stage: { ...DEFAULT_STAGE },
+    nextId: DEFAULT_MEMBER_COUNT + 1,
+    isPlaying: false,
+  };
 }
 
 interface LegacyCountData {
@@ -464,6 +628,7 @@ function migrateStage(raw: LegacyPayload): ChoreoState["stage"] {
     bamiriDepth: st.bamiriDepth,
     scaleW: raw.scaleW ?? st.scaleW,
     scaleH: raw.scaleH ?? st.scaleH,
+    memberDotPx: st.memberDotPx ?? null,
   });
 }
 
@@ -473,7 +638,8 @@ function migrateLegacy(raw: LegacyPayload): ChoreoState | null {
   const total = getTotalSlots(sections);
   const currentCount = raw.currentCount ?? raw.cur ?? 1;
   return {
-    songTitle: raw.songTitle ?? "新曲タイトル",
+    songTitle: raw.songTitle ?? getStrings("en").defaultSongTitle,
+    language: normalizeLanguage((raw as { language?: unknown }).language),
     sections,
     members: raw.members,
     removedMembers: raw.removedMembers ?? [],
@@ -483,6 +649,18 @@ function migrateLegacy(raw: LegacyPayload): ChoreoState | null {
     stage: migrateStage(raw),
     nextId: raw.nextId ?? raw.members.length + 1,
     isPlaying: false,
+  };
+}
+
+export function normalizeChoreoState(state: ChoreoState): ChoreoState {
+  const language = normalizeLanguage(state.language);
+  return {
+    ...state,
+    language,
+    songTitle: state.songTitle || getStrings(language).defaultSongTitle,
+    countData: migrateCountDataVisibility(state.countData),
+    isPlaying: false,
+    stage: normalizeStage(state.stage),
   };
 }
 

@@ -14,10 +14,11 @@ interface MemberPanelProps {
 interface MemberNameInputProps {
   memberId: number;
   name: string;
+  nameAria: (name: string) => string;
   onCommit: (memberId: number, name: string) => void;
 }
 
-function MemberNameInput({ memberId, name, onCommit }: MemberNameInputProps) {
+function MemberNameInput({ memberId, name, nameAria, onCommit }: MemberNameInputProps) {
   const [draft, setDraft] = useState(name);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ function MemberNameInput({ memberId, name, onCommit }: MemberNameInputProps) {
           e.currentTarget.blur();
         }
       }}
-      aria-label={`${name}の名前`}
+      aria-label={nameAria(name)}
     />
   );
 }
@@ -54,6 +55,7 @@ function MemberNameInput({ memberId, name, onCommit }: MemberNameInputProps) {
 export function MemberPanel({ open, onClose }: MemberPanelProps) {
   const {
     state,
+    strings: UI,
     setMemberCount,
     renameMember,
     deleteMember,
@@ -98,10 +100,10 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
       <div
         className="popup member-popup"
         role="dialog"
-        aria-label="メンバー編集"
+        aria-label={UI.editMembers}
       >
         <div className="popup-title">
-          <span>👥 メンバー編集</span>
+          <span>👥 {UI.editMembers}</span>
           <button type="button" className="popup-x" onClick={onClose}>
             ×
           </button>
@@ -109,7 +111,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
 
         <div className="member-hint">
           <p className="member-hint-position">
-            <span className="member-hint-label">編集中の位置</span>
+            <span className="member-hint-label">{UI.editingPosition}</span>
             <span className="member-hint-value">
               {currentFlat?.sectionName ?? "—"} ·{" "}
               {currentFlat?.label ?? state.currentCount}
@@ -118,7 +120,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
         </div>
 
         <div className="member-count-row">
-          <span className="member-count-lbl">人数</span>
+          <span className="member-count-lbl">{UI.memberCount}</span>
           <input
             className="member-count-inp"
             type="number"
@@ -135,7 +137,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
 
         <div className="m-cards">
           {state.members.length === 0 && (
-            <p className="member-empty-hint">表示中のメンバーがいません</p>
+            <p className="member-empty-hint">{UI.noVisibleMembers}</p>
           )}
           {state.members.map((m) => {
             const visible = isMemberVisibleOnCurrent(m.id);
@@ -148,6 +150,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                 <MemberNameInput
                   memberId={m.id}
                   name={m.name}
+                  nameAria={UI.memberNameAria}
                   onCommit={renameMember}
                 />
                 <div className="m-card-actions">
@@ -158,9 +161,9 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                     }
                     onClick={() => visible && toggleMemberVisibility(m.id)}
                     disabled={!visible}
-                    title="このカウントで非表示にする"
+                    title={UI.hideOnCount}
                   >
-                    非表示
+                    {UI.hide}
                   </button>
                   <button
                     type="button"
@@ -169,17 +172,17 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                     }
                     onClick={() => !visible && toggleMemberVisibility(m.id)}
                     disabled={visible}
-                    title="このカウントで表示する"
+                    title={UI.showOnCount}
                   >
-                    表示
+                    {UI.show}
                   </button>
                   <button
                     type="button"
                     className="del-member-btn"
                     onClick={() => deleteMember(m.id)}
-                    title="リストから削除"
+                    title={UI.removeFromList}
                   >
-                    削除
+                    {UI.delete}
                   </button>
                 </div>
               </div>
@@ -190,7 +193,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
         {state.removedMembers.length > 0 && (
           <>
             <div className="p-div" />
-            <p className="member-removed-title">削除済み</p>
+            <p className="member-removed-title">{UI.removed}</p>
             <div className="m-cards removed-cards">
               {state.removedMembers.map((m) => (
                 <div key={m.id} className="m-card removed-member">
@@ -203,9 +206,9 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                     type="button"
                     className="vis-btn on restore-btn"
                     onClick={() => restoreMember(m.id)}
-                    title="リストに戻す"
+                    title={UI.restoreToList}
                   >
-                    表示
+                    {UI.show}
                   </button>
                 </div>
               ))}

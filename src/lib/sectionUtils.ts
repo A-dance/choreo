@@ -1,13 +1,15 @@
 import {
   COUNTS_PER_SECTION,
-  OUTRO_SECTION_NAME,
   createCountSlots,
   createDefaultSections,
+  isOutroSectionName,
 } from "./constants";
 import type { CountSlot, FlatSlot, Section } from "./types";
+import type { ProjectLanguage } from "./uiStrings";
+import { getStrings } from "./uiStrings";
 
 export function sectionHidesCountButtons(section: Pick<Section, "name">): boolean {
-  return section.name === OUTRO_SECTION_NAME;
+  return isOutroSectionName(section.name);
 }
 
 export function slotLabel(slot: CountSlot): string {
@@ -92,13 +94,40 @@ export function removeHalfSlot(
     if (sec.slots[slotIndex]?.type !== "half") return sec;
     const slots = [...sec.slots];
     slots.splice(slotIndex, 1);
-    return { ...sec, slots };
+    return { ...sec, slots: renumberCountSlots(slots) };
   });
+}
+
+function renumberCountSlots(slots: CountSlot[]): CountSlot[] {
+  let num = 1;
+  return slots.map((s) =>
+    s.type === "half" ? s : { type: "count" as const, num: num++ },
+  );
+}
+
+/** 半カウント・フルカウントを問わず1スロット削除（セクション最低1スロット） */
+export function removeSlotAt(
+  sections: Section[],
+  sectionId: string,
+  slotIndex: number,
+): Section[] | null {
+  let changed = false;
+  const next = sections.map((sec) => {
+    if (sec.id !== sectionId) return sec;
+    if (sec.slots.length <= 1) return sec;
+    if (slotIndex < 0 || slotIndex >= sec.slots.length) return sec;
+    const slots = [...sec.slots];
+    slots.splice(slotIndex, 1);
+    changed = true;
+    return { ...sec, slots: renumberCountSlots(slots) };
+  });
+  return changed ? next : null;
 }
 
 export function appendSection(
   sections: Section[],
   name?: string,
+  language: ProjectLanguage = "en",
 ): Section[] {
   let maxId = 0;
   for (const s of sections) {
@@ -106,7 +135,8 @@ export function appendSection(
     if (m) maxId = Math.max(maxId, +m[1]);
   }
   const id = `sec-${maxId + 1}`;
-  const label = name?.trim() || `セクション${sections.length + 1}`;
+  const label =
+    name?.trim() || getStrings(language).sectionNameDefault(sections.length + 1);
   return [
     ...sections,
     { id, name: label, slots: createCountSlots() },
@@ -123,6 +153,126 @@ export function renameSection(
   return sections.map((sec) =>
     sec.id === sectionId ? { ...sec, name: trimmed } : sec,
   );
+}
+
+export function removeSection(
+  sections: Section[],
+  sectionId: string,
+): Section[] | null {
+  if (sections.length <= 1) return null;
+  return sections.filter((sec) => sec.id !== sectionId);
+}
+
+export function appendCountToSection(
+  sections: Section[],
+  sectionId: string,
+  maxCounts = COUNTS_PER_SECTION,
+): Section[] {
+  return sections.map((sec) => {
+    if (sec.id !== sectionId) return sec;
+    const fullSlots = sec.slots.filter((s) => s.type === "count");
+    if (fullSlots.length >= maxCounts) return sec;
+    let nextNum = 1;
+    for (const slot of sec.slots) {
+      if (slot.type === "count") nextNum = Math.max(nextNum, slot.num + 1);
+    }
+    return {
+      ...sec,
+      slots: [...sec.slots, { type: "count" as const, num: nextNum }],
+    };
+  });
+}
+
+export function moveSection(
+  sections: Section[],
+  sectionId: string,
+  delta: -1 | 1,
+): Section[] {
+  const idx = sections.findIndex((s) => s.id === sectionId);
+  if (idx < 0) return sections;
+  const target = idx + delta;
+  if (target < 0 || target >= sections.length) return sections;
+  const next = [...sections];
+  [next[idx], next[target]] = [next[target], next[idx]];
+  return next;
+}
+
+export function swapSections(
+  sections: Section[],
+  sectionIdA: string,
+  sectionIdB: string,
+): Section[] {
+  const idxA = sections.findIndex((s) => s.id === sectionIdA);
+  const idxB = sections.findIndex((s) => s.id === sectionIdB);
+  if (idxA < 0 || idxB < 0 || idxA === idxB) return sections;
+  const next = [...sections];
+  [next[idxA], next[idxB]] = [next[idxB], next[idxA]];
+  return next;
+}
+
+export function reorderSections(
+  sections: Section[],
+  fromIndex: number,
+  toIndex: number,
+): Section[] {
+  if (fromIndex === toIndex) return sections;
+  if (fromIndex < 0 || toIndex < 0) return sections;
+  if (fromIndex >= sections.length || toIndex >= sections.length) return sections;
+  const next = [...sections];
+  const [removed] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, removed);
+  return next;
+}
+
+export function slotDataKey(sectionId: string, slotIndex: number): string {
+  return `${sectionId}:${slotIndex}`;
+}
+
+export function remapCountDataBySlots(
+  oldSections: Section[],
+  newSections: Section[],
+  countData: Record<number, import("./types").CountData>,
+): Record<number, import("./types").CountData> {
+  const oldFlat = flattenTimeline(oldSections);
+  const newFlat = flattenTimeline(newSections);
+  const byKey = new Map<string, import("./types").CountData>();
+  for (const f of oldFlat) {
+    const cd = countData[f.globalIndex];
+    if (cd) byKey.set(slotDataKey(f.sectionId, f.slotIndex), cd);
+  }
+  const out: Record<number, import("./types").CountData> = {};
+  for (const f of newFlat) {
+    const cd = byKey.get(slotDataKey(f.sectionId, f.slotIndex));
+    if (cd) out[f.globalIndex] = cd;
+  }
+  return out;
+}
+
+export function remapCurrentCount(
+  oldSections: Section[],
+  newSections: Section[],
+  currentCount: number,
+  deletedSectionId?: string,
+): number {
+  const oldFlat = flattenTimeline(oldSections);
+  const newFlat = flattenTimeline(newSections);
+  if (!newFlat.length) return 1;
+  const current = oldFlat.find((f) => f.globalIndex === currentCount);
+  if (!current) return 1;
+
+  if (deletedSectionId && current.sectionId === deletedSectionId) {
+    const oldIdx = oldSections.findIndex((s) => s.id === deletedSectionId);
+    const fallbackSection = newSections[Math.min(oldIdx, newSections.length - 1)];
+    return (
+      newFlat.find((f) => f.sectionId === fallbackSection?.id)?.globalIndex ?? 1
+    );
+  }
+
+  const mapped = newFlat.find(
+    (f) =>
+      f.sectionId === current.sectionId && f.slotIndex === current.slotIndex,
+  );
+  return mapped?.globalIndex ?? Math.min(currentCount, newFlat.length);
 }
 
 interface LegacySection {

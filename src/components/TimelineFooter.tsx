@@ -1,21 +1,30 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   countHasData,
   flattenTimeline,
-  getFlatSlot,
   getPositionDisplayInfo,
-  sectionHidesCountButtons,
 } from "@/lib/choreoUtils";
+import { MAX_COUNTS_PER_SECTION } from "@/lib/constants";
 import { useChoreo } from "@/context/ChoreoContext";
+import type { UiStrings } from "@/lib/uiStrings";
 
 function PositionBar({
   isPlaying,
   pos,
+  UI,
 }: {
   isPlaying: boolean;
   pos: ReturnType<typeof getPositionDisplayInfo>;
+  UI: UiStrings;
 }) {
   const progressPct = (pos.globalIndex / pos.totalSlots) * 100;
 
@@ -36,7 +45,7 @@ function PositionBar({
           {pos.globalIndex}/{pos.totalSlots}
         </span>
         <span className="position-bar-sections">
-          {pos.sectionCount} section
+          {pos.sectionCount} section{pos.sectionCount === 1 ? "" : "s"}
         </span>
       </div>
 
@@ -47,7 +56,11 @@ function PositionBar({
           aria-valuenow={pos.globalIndex}
           aria-valuemin={1}
           aria-valuemax={pos.totalSlots}
-          aria-label={`${pos.globalIndex}/${pos.totalSlots}、${pos.sectionCount} section`}
+          aria-label={UI.progressAria(
+            pos.globalIndex,
+            pos.totalSlots,
+            pos.sectionCount,
+          )}
         >
           <div
             className="position-bar-progress-fill"
@@ -62,49 +75,69 @@ function PositionBar({
 export function TimelineFooter() {
   const {
     state,
+    strings: UI,
     navigateTo,
     insertHalfAfter,
-    removeHalfAt,
+    removeCountAt,
     renameSectionName,
     addSection,
+    deleteSection,
+    addCountToSection,
+    reorderSections,
   } = useChoreo();
 
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const timelineDragRef = useRef<{
-    startX: number;
-    startScrollLeft: number;
-  } | null>(null);
+  const countsRef = useRef<HTMLDivElement>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [sectionNameDraft, setSectionNameDraft] = useState("");
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null,
+  );
+  const [dragSectionId, setDragSectionId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [countDeleteSlotIndex, setCountDeleteSlotIndex] = useState<
+    number | null
+  >(null);
 
   const flatSlots = useMemo(
     () => flattenTimeline(state.sections),
     [state.sections],
   );
-  const currentFlat = getFlatSlot(state.sections, state.currentCount);
-  const activeSectionId = currentFlat?.sectionId ?? null;
+  const playbackSectionId =
+    flatSlots.find((f) => f.globalIndex === state.currentCount)?.sectionId ??
+    state.sections[0]?.id ??
+    null;
+
+  useEffect(() => {
+    if (playbackSectionId) setSelectedSectionId(playbackSectionId);
+  }, [playbackSectionId]);
+
+  useEffect(() => {
+    setCountDeleteSlotIndex(null);
+  }, [selectedSectionId]);
+
+  useEffect(() => {
+    if (countDeleteSlotIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCountDeleteSlotIndex(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [countDeleteSlotIndex]);
+
+  const selectedSection = state.sections.find(
+    (s) => s.id === selectedSectionId,
+  );
   const positionInfo = useMemo(
     () => getPositionDisplayInfo(state.sections, state.currentCount),
     [state.sections, state.currentCount],
   );
 
-  useEffect(() => {
-    if (!activeSectionId || !timelineRef.current) return;
-    const group = timelineRef.current.querySelector(
-      `[data-section-id="${activeSectionId}"]`,
-    );
-    group?.scrollIntoView({
-      behavior: "smooth",
-      block: "nearest",
-      inline: "center",
-    });
-  }, [activeSectionId]);
-
-  useEffect(() => {
-    timelineRef.current
-      ?.querySelector(".cnt-btn.active")
-      ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-  }, [state.currentCount]);
+  const activeFullCount =
+    selectedSection?.slots.filter((s) => s.type === "count").length ?? 0;
+  const canAddCount = activeFullCount < MAX_COUNTS_PER_SECTION;
+  const canDeleteCountInSection = selectedSection
+    ? selectedSection.slots.length > 1
+    : false;
 
   const startEditSection = (sectionId: string, name: string) => {
     setEditingSectionId(sectionId);
@@ -119,185 +152,311 @@ export function TimelineFooter() {
   const firstGlobalInSection = (sectionId: string) =>
     flatSlots.find((s) => s.sectionId === sectionId)?.globalIndex ?? 1;
 
-  const onTimelinePointerDown = useCallback((e: React.PointerEvent) => {
+  const handleDeleteSection = (sectionId: string, name: string) => {
+    if (state.sections.length <= 1) return;
+    if (
+      !window.confirm(UI.deleteSectionConfirm(name))
+    ) {
+      return;
+    }
+    deleteSection(sectionId);
+  };
+
+  const handleDeleteCount = (sectionId: string, slotIndex: number, label: string) => {
+    const sec = state.sections.find((s) => s.id === sectionId);
+    if (!sec || sec.slots.length <= 1) return;
+    const global =
+      flatSlots.find(
+        (f) => f.sectionId === sectionId && f.slotIndex === slotIndex,
+      )?.globalIndex ?? 0;
+    const hasData = countHasData(state.countData[global]);
+    if (hasData && !window.confirm(UI.deleteCountWithDataConfirm(label))) {
+      return;
+    }
+    removeCountAt(sectionId, slotIndex);
+    setCountDeleteSlotIndex(null);
+  };
+
+  const handleTabClick = (sectionId: string) => {
+    setSelectedSectionId(sectionId);
+    navigateTo(firstGlobalInSection(sectionId));
+  };
+
+  const handleDragStart = (
+    e: React.DragEvent<HTMLButtonElement>,
+    sectionId: string,
+  ) => {
+    if (editingSectionId) {
+      e.preventDefault();
+      return;
+    }
+    setDragSectionId(sectionId);
+    setSelectedSectionId(sectionId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", sectionId);
+  };
+
+  const handleDragEnd = () => {
+    setDragSectionId(null);
+    setDropTargetId(null);
+  };
+
+  const handleDrop = (
+    e: React.DragEvent<HTMLButtonElement>,
+    targetSectionId: string,
+  ) => {
+    e.preventDefault();
+    const fromId = dragSectionId ?? e.dataTransfer.getData("text/plain");
+    if (!fromId || fromId === targetSectionId) return;
+    const fromIndex = state.sections.findIndex((s) => s.id === fromId);
+    const toIndex = state.sections.findIndex((s) => s.id === targetSectionId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    reorderSections(fromIndex, toIndex);
+    setSelectedSectionId(fromId);
+    setDragSectionId(null);
+    setDropTargetId(null);
+  };
+
+  const onCountsPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
-    if (target.closest("button, input, .sec-name-inp")) return;
-    const el = timelineRef.current;
+    if (target.closest("button, input")) return;
+    const el = countsRef.current;
     if (!el) return;
-    timelineDragRef.current = {
-      startX: e.clientX,
-      startScrollLeft: el.scrollLeft,
+    const startX = e.clientX;
+    const startScrollLeft = el.scrollLeft;
+    const onMove = (ev: PointerEvent) => {
+      el.scrollLeft = startScrollLeft - (ev.clientX - startX);
     };
-    el.setPointerCapture(e.pointerId);
+    const onUp = () => {
+      el.classList.remove("is-dragging");
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
     el.classList.add("is-dragging");
-  }, []);
-
-  const onTimelinePointerMove = useCallback((e: React.PointerEvent) => {
-    const drag = timelineDragRef.current;
-    const el = timelineRef.current;
-    if (!drag || !el) return;
-    el.scrollLeft = drag.startScrollLeft - (e.clientX - drag.startX);
-  }, []);
-
-  const endTimelineDrag = useCallback((e: React.PointerEvent) => {
-    const el = timelineRef.current;
-    if (el?.hasPointerCapture(e.pointerId)) {
-      el.releasePointerCapture(e.pointerId);
-    }
-    el?.classList.remove("is-dragging");
-    timelineDragRef.current = null;
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   }, []);
 
   return (
     <div className="timeline-footer">
-      <PositionBar isPlaying={state.isPlaying} pos={positionInfo} />
+      <PositionBar isPlaying={state.isPlaying} pos={positionInfo} UI={UI} />
 
       <div
-        className={"timeline-bar" + (state.isPlaying ? " playing" : "")}
+        className={"section-tabs-bar" + (state.isPlaying ? " playing" : "")}
+        role="tablist"
+        aria-label={UI.sections}
       >
-        <div
-          className="timeline timeline-focus"
-          ref={timelineRef}
-          onPointerDown={onTimelinePointerDown}
-          onPointerMove={onTimelinePointerMove}
-          onPointerUp={endTimelineDrag}
-          onPointerCancel={endTimelineDrag}
-        >
-          {state.sections.map((sec) => {
-            const expanded = activeSectionId === sec.id;
-            const hideCounts = sectionHidesCountButtons(sec);
-            const sectionSlots = flatSlots.filter(
-              (f) => f.sectionId === sec.id,
-            );
-            const hasSectionData = sectionSlots.some((f) =>
-              countHasData(state.countData[f.globalIndex]),
-            );
-            const isPlayingHere =
-              state.isPlaying && expanded && activeSectionId === sec.id;
-            return (
-              <div
-                key={sec.id}
-                data-section-id={sec.id}
-                className={
-                  "tl-group" +
-                  (expanded ? " expanded" : " collapsed") +
-                  (isPlayingHere ? " playing-section" : "")
-                }
-              >
-                {editingSectionId === sec.id ? (
-                  <input
-                    className="sec-name-inp"
-                    value={sectionNameDraft}
-                    autoFocus
-                    onChange={(e) => setSectionNameDraft(e.target.value)}
-                    onBlur={() => commitSectionName(sec.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") commitSectionName(sec.id);
-                      if (e.key === "Escape") setEditingSectionId(null);
-                    }}
-                    aria-label="セクション名"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    className={
-                      "sec-pill" +
-                      (expanded ? " cur" : "") +
-                      (hasSectionData ? " has-d" : "") +
-                      (isPlayingHere ? " playing" : "")
-                    }
-                    onClick={() => navigateTo(firstGlobalInSection(sec.id))}
-                    onDoubleClick={() => startEditSection(sec.id, sec.name)}
-                    title="ダブルクリックで名前変更"
-                  >
-                    {sec.name}
-                  </button>
-                )}
+        {state.sections.map((sec) => {
+          const sectionSlots = flatSlots.filter((f) => f.sectionId === sec.id);
+          const hasSectionData = sectionSlots.some((f) =>
+            countHasData(state.countData[f.globalIndex]),
+          );
+          const isSelected = sec.id === selectedSectionId;
+          const isNow = sec.id === playbackSectionId;
+          const isPlayingTab = state.isPlaying && isNow;
+          const isDragging = dragSectionId === sec.id;
+          const isDropTarget = dropTargetId === sec.id && !isDragging;
 
-                {!hideCounts && (
-                  <div className="tl-body" aria-hidden={!expanded}>
-                    <div className="tl-div" />
-                    <div className="tl-counts">
-                      {sec.slots.map((slot, slotIdx) => {
-                        const global = flatSlots.find(
-                          (f) =>
-                            f.sectionId === sec.id && f.slotIndex === slotIdx,
-                        )?.globalIndex;
-                        if (!global) return null;
-                        const hasD = countHasData(state.countData[global]);
-                        const isHalf = slot.type === "half";
-                        const label = isHalf ? "&" : String(slot.num);
-                        return (
-                          <Fragment key={`${sec.id}-${slotIdx}`}>
-                            {slotIdx > 0 && (
-                              <button
-                                type="button"
-                                className="ins-half-btn"
-                                onClick={() =>
-                                  insertHalfAfter(sec.id, slotIdx - 1)
-                                }
-                                title="＆を挿入（半カウント）"
-                              >
-                                +
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              className={
-                                "cnt-btn" +
-                                (global === state.currentCount ? " active" : "") +
-                                (global === state.currentCount && state.isPlaying
-                                  ? " playing"
-                                  : "") +
-                                (hasD ? " has-d" : "") +
-                                (isHalf ? " half" : "")
-                              }
-                              onClick={() => navigateTo(global)}
-                              onDoubleClick={
-                                isHalf
-                                  ? () => removeHalfAt(sec.id, slotIdx)
-                                  : undefined
-                              }
-                              title={
-                                isHalf
-                                  ? "半カウント — ダブルクリックで削除"
-                                  : state.isPlaying
-                                    ? "ここから再生"
-                                    : undefined
-                              }
-                            >
-                              {label}
-                            </button>
-                          </Fragment>
-                        );
-                      })}
+          if (editingSectionId === sec.id) {
+            return (
+              <input
+                key={sec.id}
+                className="sec-tab-inp"
+                value={sectionNameDraft}
+                autoFocus
+                onChange={(e) => setSectionNameDraft(e.target.value)}
+                onBlur={() => commitSectionName(sec.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitSectionName(sec.id);
+                  if (e.key === "Escape") setEditingSectionId(null);
+                }}
+                aria-label={UI.sectionName}
+              />
+            );
+          }
+
+          return (
+            <div
+              key={sec.id}
+              className={"sec-tab-wrap" + (isSelected ? " selected" : "")}
+            >
+              <button
+                type="button"
+                role="tab"
+                draggable
+                aria-selected={isSelected}
+                className={
+                  "sec-tab" +
+                  (isSelected ? " selected" : "") +
+                  (isNow ? " now" : "") +
+                  (hasSectionData ? " has-d" : "") +
+                  (isPlayingTab ? " playing" : "") +
+                  (isDragging ? " dragging" : "") +
+                  (isDropTarget ? " drop-target" : "")
+                }
+                onClick={() => handleTabClick(sec.id)}
+                onDoubleClick={() => startEditSection(sec.id, sec.name)}
+                onDragStart={(e) => handleDragStart(e, sec.id)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragSectionId && dragSectionId !== sec.id) {
+                    setDropTargetId(sec.id);
+                  }
+                }}
+                onDragLeave={() => {
+                  if (dropTargetId === sec.id) setDropTargetId(null);
+                }}
+                onDrop={(e) => handleDrop(e, sec.id)}
+                title={UI.sectionTabHint}
+              >
+                {isNow && <span className="sec-tab-now-dot" aria-hidden />}
+                {sec.name}
+              </button>
+              {isSelected && state.sections.length > 1 && (
+                <button
+                  type="button"
+                  className="sec-tab-section-del"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteSection(sec.id, sec.name);
+                  }}
+                  title={UI.deleteSection}
+                  aria-label={UI.deleteSectionAria(sec.name)}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          );
+        })}
+        <button
+          type="button"
+          className="sec-tab add"
+          onClick={() => addSection()}
+        >
+          + Add section
+        </button>
+      </div>
+
+      {selectedSection && (
+        <div
+          className={
+            "timeline-bar section-counts" + (state.isPlaying ? " playing" : "")
+          }
+        >
+          <div
+            className="timeline-counts-row"
+            ref={countsRef}
+            onPointerDown={onCountsPointerDown}
+          >
+            <div className="tl-counts">
+              {selectedSection.slots.map((slot, slotIdx) => {
+                const global = flatSlots.find(
+                  (f) =>
+                    f.sectionId === selectedSection.id &&
+                    f.slotIndex === slotIdx,
+                )?.globalIndex;
+                if (!global) return null;
+                const hasD = countHasData(state.countData[global]);
+                const isHalf = slot.type === "half";
+                const label = isHalf ? "&" : String(slot.num);
+                const isActive = global === state.currentCount;
+                const showDelete =
+                  countDeleteSlotIndex === slotIdx && canDeleteCountInSection;
+                return (
+                  <Fragment key={`${selectedSection.id}-${slotIdx}`}>
+                    {slotIdx > 0 && (
                       <button
                         type="button"
                         className="ins-half-btn"
                         onClick={() =>
-                          insertHalfAfter(sec.id, sec.slots.length - 1)
+                          insertHalfAfter(selectedSection.id, slotIdx - 1)
                         }
-                        title="＆を挿入（半カウント）"
+                        title={UI.insertHalfCount}
                       >
                         +
                       </button>
+                    )}
+                    <div
+                      className={
+                        "cnt-wrap" +
+                        (isActive ? " selected" : "") +
+                        (showDelete ? " delete-open" : "")
+                      }
+                    >
+                      <button
+                        type="button"
+                        className={
+                          "cnt-btn" +
+                          (isActive ? " active" : "") +
+                          (isActive && state.isPlaying ? " playing" : "") +
+                          (hasD ? " has-d" : "") +
+                          (isHalf ? " half" : "")
+                        }
+                        onClick={() => {
+                          navigateTo(global);
+                          setCountDeleteSlotIndex(null);
+                        }}
+                        onDoubleClick={(e) => {
+                          e.preventDefault();
+                          if (!canDeleteCountInSection) return;
+                          setCountDeleteSlotIndex((prev) =>
+                            prev === slotIdx ? null : slotIdx,
+                          );
+                        }}
+                        title={UI.countDeleteHint}
+                      >
+                        {label}
+                      </button>
+                      {showDelete && (
+                        <button
+                          type="button"
+                          className="cnt-slot-del"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCount(
+                              selectedSection.id,
+                              slotIdx,
+                              label,
+                            );
+                          }}
+                          title={UI.deleteCount}
+                          aria-label={UI.deleteCountAria(label)}
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          <button
-            type="button"
-            className="add-sec-btn"
-            onClick={() => addSection()}
-            title="Add section（8 counts）"
-          >
-            + Add section
-          </button>
+                  </Fragment>
+                );
+              })}
+              <button
+                type="button"
+                className="ins-half-btn"
+                onClick={() =>
+                  insertHalfAfter(
+                    selectedSection.id,
+                    selectedSection.slots.length - 1,
+                  )
+                }
+                title={UI.insertHalfCount}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="add-count-btn"
+                disabled={!canAddCount}
+                onClick={() => addCountToSection(selectedSection.id)}
+              >
+                + Add count
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

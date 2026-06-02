@@ -7,13 +7,16 @@ export function KeyboardShortcuts() {
   const {
     state,
     selectedMemberId,
-    deleteMember,
+    hideMemberFromCurrentCount,
     selectMember,
+    removeCurrentCount,
     prevCount,
     nextCount,
     togglePlayback,
     stopPlayback,
     saveProject,
+    undo,
+    canUndo,
     copyFormation,
     pasteFormation,
     hasClipboard,
@@ -24,6 +27,11 @@ export function KeyboardShortcuts() {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
         saveProject();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo) undo();
         return;
       }
       if (
@@ -45,12 +53,14 @@ export function KeyboardShortcuts() {
         }
         if (state.isPlaying) stopPlayback();
       }
-      if (
-        (e.key === "Delete" || e.key === "Backspace") &&
-        selectedMemberId !== null
-      ) {
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedMemberId !== null) {
+          e.preventDefault();
+          hideMemberFromCurrentCount(selectedMemberId);
+          return;
+        }
         e.preventDefault();
-        deleteMember(selectedMemberId);
+        removeCurrentCount();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "c") {
@@ -67,13 +77,16 @@ export function KeyboardShortcuts() {
   }, [
     state.isPlaying,
     selectedMemberId,
-    deleteMember,
+    hideMemberFromCurrentCount,
     selectMember,
+    removeCurrentCount,
     nextCount,
     prevCount,
     togglePlayback,
     stopPlayback,
     saveProject,
+    undo,
+    canUndo,
     copyFormation,
     pasteFormation,
     hasClipboard,

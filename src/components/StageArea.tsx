@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { STAGE_SCALE_MAX, STAGE_SCALE_MIN } from "@/lib/constants";
 import { calcStagePixelSize } from "@/lib/gridUtils";
-import { dotSizePx } from "@/lib/choreoUtils";
+import { dotFontPx } from "@/lib/choreoUtils";
 import { useChoreo } from "@/context/ChoreoContext";
 import { StageFloor } from "@/components/StageFloor";
 
@@ -14,6 +14,7 @@ const DRAG_THRESHOLD_PX = 8;
 export function StageArea() {
   const {
     state,
+    strings: UI,
     currentBeatSec,
     draggingMemberId,
     selectedMemberId,
@@ -22,8 +23,10 @@ export function StageArea() {
     stopPlayback,
     updateMemberPosition,
     setDraggingMemberId,
+    pushUndoHistory,
     setStageScaleW,
     setStageScaleH,
+    memberDotPx,
     getMemberPos,
   } = useChoreo();
 
@@ -49,8 +52,7 @@ export function StageArea() {
 
   const [stageSize, setStageSize] = useState({ w: 400, h: 500 });
   const { bamiriHalfWidth, bamiriDepth, scaleW, scaleH } = state.stage;
-  const dotPx = dotSizePx(state.members.length);
-  const dotFont = dotPx <= 22 ? 7 : dotPx <= 30 ? 8 : 10;
+  const dotFont = dotFontPx(memberDotPx);
 
   const resizeStage = useCallback(() => {
     const wrap = wrapRef.current;
@@ -83,6 +85,7 @@ export function StageArea() {
             ox: pending.ox,
             oy: pending.oy,
           };
+          pushUndoHistory();
           setDraggingMemberId(pending.id);
           pendingPointerRef.current = null;
         }
@@ -96,7 +99,7 @@ export function StageArea() {
       const y = ((cy - d.oy - rect.top) / rect.height) * 100;
       updateMemberPosition(d.id, x, y);
     },
-    [updateMemberPosition, setDraggingMemberId],
+    [updateMemberPosition, setDraggingMemberId, pushUndoHistory],
   );
 
   const endDrag = useCallback(() => {
@@ -212,6 +215,7 @@ export function StageArea() {
     const wr = wrap.getBoundingClientRect();
     const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
     const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
+    pushUndoHistory();
     resizeRef.current = {
       axis,
       startX: cx,
@@ -229,8 +233,8 @@ export function StageArea() {
       : state.isPlaying
         ? currentBeatSec <= 0
           ? "none"
-          : `left ${currentBeatSec}s linear, top ${currentBeatSec}s linear, opacity ${Math.min(currentBeatSec, 0.25)}s ease`
-        : "left 0.28s ease-in-out, top 0.28s ease-in-out";
+          : `left ${currentBeatSec}s linear, top ${currentBeatSec}s linear, width 0.12s ease, height 0.12s ease, font-size 0.12s ease, opacity ${Math.min(currentBeatSec, 0.25)}s ease`
+        : "left 0.28s ease-in-out, top 0.28s ease-in-out, width 0.12s ease, height 0.12s ease, font-size 0.12s ease";
 
   return (
     <div className="stage-main">
@@ -271,8 +275,8 @@ export function StageArea() {
                       background: m.color,
                       left: `${pos.x}%`,
                       top: `${pos.y}%`,
-                      width: dotPx,
-                      height: dotPx,
+                      width: memberDotPx,
+                      height: memberDotPx,
                       fontSize: dotFont,
                       opacity: visible ? 1 : 0,
                       pointerEvents: visible ? "auto" : "none",
@@ -282,7 +286,7 @@ export function StageArea() {
                     onTouchStart={(e) => startMemberPointer(e, m.id)}
                     title={m.name}
                   >
-                    {dotPx >= 24 ? m.name : m.name.slice(0, 3)}
+                    {memberDotPx >= 24 ? m.name : m.name.slice(0, 3)}
                   </div>
                 );
               })}
@@ -292,19 +296,19 @@ export function StageArea() {
               className="resize-e"
               onMouseDown={(e) => startResize(e, "e")}
               onTouchStart={(e) => startResize(e, "e")}
-              title="横幅を調整"
+              title={UI.resizeWidth}
             />
             <div
               className="resize-s"
               onMouseDown={(e) => startResize(e, "s")}
               onTouchStart={(e) => startResize(e, "s")}
-              title="高さを調整"
+              title={UI.resizeHeight}
             />
             <div
               className="resize-se"
               onMouseDown={(e) => startResize(e, "se")}
               onTouchStart={(e) => startResize(e, "se")}
-              title="サイズを調整"
+              title={UI.resizeStage}
             />
           </div>
         </div>
