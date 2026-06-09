@@ -80,7 +80,7 @@ export const BAMIRI_DEPTH_MIN = 1;
 export const BAMIRI_DEPTH_MAX = 20;
 
 export const STAGE_SCALE_MIN = 30;
-export const STAGE_SCALE_MAX = 98;
+export const STAGE_SCALE_MAX = 95;
 
 export const MEMBER_DOT_MIN = 14;
 export const MEMBER_DOT_MAX = 64;

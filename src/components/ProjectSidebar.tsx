@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useChoreo } from "@/context/ChoreoContext";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
+import { MediaPanel, type MediaPanelSection } from "@/components/MediaPanel";
 
 interface ProjectSidebarProps {
   open: boolean;
@@ -13,15 +14,24 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
   const {
     projects,
     activeProjectId,
+    state,
     switchProject,
     deleteProject,
+    isViewOnly,
     strings: UI,
   } = useChoreo();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [mediaPanelOpen, setMediaPanelOpen] = useState(false);
+  const [mediaSection, setMediaSection] = useState<MediaPanelSection>("audio");
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     songTitle: string;
   } | null>(null);
+
+  const activeProject = projects.find((p) => p.id === activeProjectId);
+  const visibleProjects = isViewOnly
+    ? projects.filter((p) => p.id === activeProjectId)
+    : projects;
 
   useEffect(() => {
     if (!open && !deleteTarget) return;
@@ -39,7 +49,6 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
 
   const handleSwitch = (projectId: string) => {
     switchProject(projectId);
-    onClose();
   };
 
   const handleDeleteClick = (projectId: string, songTitle: string) => {
@@ -51,6 +60,11 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
     if (!deleteTarget) return;
     deleteProject(deleteTarget.id);
     setDeleteTarget(null);
+  };
+
+  const openMedia = (section: MediaPanelSection) => {
+    setMediaSection(section);
+    setMediaPanelOpen(true);
   };
 
   return (
@@ -80,26 +94,40 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
         </div>
 
         <div className="project-sidebar-list">
-          {projects.map((project) => {
+          {isViewOnly && (
+            <p className="project-view-only-hint">{UI.viewOnlyProjectHint}</p>
+          )}
+          {visibleProjects.map((project) => {
             const active = project.id === activeProjectId;
             return (
               <div
                 key={project.id}
                 className={"project-item" + (active ? " active" : "")}
               >
-                <button
-                  type="button"
-                  className="project-item-main"
-                  onClick={() => handleSwitch(project.id)}
-                  title={project.songTitle}
-                >
-                  <span className="project-item-title">{project.songTitle}</span>
-                  <span className="project-item-meta">{project.bpm} BPM</span>
-                </button>
+                {isViewOnly ? (
+                  <div className="project-item-main project-item-main-static">
+                    <span className="project-item-title">{project.songTitle}</span>
+                    <span className="project-item-meta">
+                      {project.bpm} BPM · {UI.mediaCounts(project.audioCount, project.videoCount)}
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="project-item-main"
+                    onClick={() => handleSwitch(project.id)}
+                    title={project.songTitle}
+                  >
+                    <span className="project-item-title">{project.songTitle}</span>
+                    <span className="project-item-meta">
+                      {project.bpm} BPM · {UI.mediaCounts(project.audioCount, project.videoCount)}
+                    </span>
+                  </button>
+                )}
                 <button
                   type="button"
                   className="project-item-delete"
-                  disabled={projects.length <= 1}
+                  disabled={projects.length <= 1 || isViewOnly}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -112,28 +140,55 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
                   }
                   aria-label={UI.deleteProjectAria(project.songTitle)}
                 >
-                  <svg
-                    className="project-item-delete-icon"
-                    viewBox="0 0 16 16"
-                    width="14"
-                    height="14"
-                    aria-hidden
-                  >
-                    <path
-                      fill="currentColor"
-                      d="M5.5 1.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V2h2.5a.5.5 0 0 1 0 1h-.55l-.73 9.8A1.5 1.5 0 0 1 10.7 14H5.3a1.5 1.5 0 0 1-1.49-1.7L3.05 3H2.5a.5.5 0 0 1 0-1H5v-.5zm1.5-.5v.5h2V1H7zM4.06 3l.7 9.4a.5.5 0 0 0 .5.6h5.48a.5.5 0 0 0 .5-.6L11.94 3H4.06zM6 5.5a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5z"
-                    />
-                  </svg>
+                  ×
                 </button>
               </div>
             );
           })}
         </div>
 
+        {activeProject && (
+          <div className="project-sidebar-media">
+            <button
+              type="button"
+              className="project-sidebar-menu-item"
+              onClick={() => openMedia("audio")}
+            >
+              <span className="project-sidebar-menu-icon" aria-hidden>
+                ♪
+              </span>
+              <span className="project-sidebar-menu-body">
+                <span className="project-sidebar-menu-title">{UI.openAudio}</span>
+                <span className="project-sidebar-menu-meta">
+                  {UI.mediaAudioCount(activeProject.audioCount)}
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="project-sidebar-menu-item"
+              onClick={() => openMedia("video")}
+            >
+              <span className="project-sidebar-menu-icon" aria-hidden>
+                ▶
+              </span>
+              <span className="project-sidebar-menu-body">
+                <span className="project-sidebar-menu-title">
+                  {UI.openReferenceVideos}
+                </span>
+                <span className="project-sidebar-menu-meta">
+                  {UI.mediaVideoCount(activeProject.videoCount)}
+                </span>
+              </span>
+            </button>
+          </div>
+        )}
+
         <button
           type="button"
           className="project-new-btn"
           onClick={() => setDialogOpen(true)}
+          disabled={isViewOnly}
         >
           {UI.newProject}
         </button>
@@ -141,6 +196,14 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
 
       {dialogOpen && (
         <NewProjectDialog onClose={() => setDialogOpen(false)} />
+      )}
+
+      {mediaPanelOpen && (
+        <MediaPanel
+          open={mediaPanelOpen}
+          initialSection={mediaSection}
+          onClose={() => setMediaPanelOpen(false)}
+        />
       )}
 
       {deleteTarget && (

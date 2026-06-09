@@ -28,24 +28,64 @@ function PositionBar({
 }) {
   const progressPct = (pos.globalIndex / pos.totalSlots) * 100;
 
+  if (isPlaying) {
+    return (
+      <div className="playback-now" aria-live="polite">
+        <div className="playback-now-status">
+          <span className="playback-now-dot" aria-hidden />
+          <span className="playback-now-label">Now</span>
+        </div>
+
+        <div className="playback-now-main">
+          <span
+            className={"playback-now-count" + (pos.isHalf ? " half" : "")}
+          >
+            {pos.countLabel}
+          </span>
+          <span className="playback-now-section">{pos.sectionName}</span>
+        </div>
+
+        <div className="playback-now-progress">
+          <span className="playback-now-sub">
+            {pos.globalIndex}/{pos.totalSlots}
+          </span>
+          <div
+            className="playback-now-progress-bar"
+            role="progressbar"
+            aria-valuenow={pos.globalIndex}
+            aria-valuemin={1}
+            aria-valuemax={pos.totalSlots}
+            aria-label={UI.progressAria(
+              pos.globalIndex,
+              pos.totalSlots,
+              pos.sectionCount,
+            )}
+          >
+            <div
+              className="playback-now-progress-fill"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={"position-bar" + (isPlaying ? " playing" : "")}
-      aria-live="polite"
-    >
+    <div className="position-bar" aria-live="polite">
       <div className="position-bar-head">
-        {isPlaying && <span className="position-bar-dot" aria-hidden />}
-        <span className={"position-bar-label" + (isPlaying ? " playing" : "")}>
-          Now
-        </span>
+        <span className="position-bar-label">Now</span>
       </div>
 
       <div className="position-bar-main">
-        <span className="position-bar-count">
-          {pos.globalIndex}/{pos.totalSlots}
+        <span
+          className={"position-bar-count" + (pos.isHalf ? " half" : "")}
+        >
+          {pos.countLabel}
         </span>
-        <span className="position-bar-sections">
-          {pos.sectionCount} section{pos.sectionCount === 1 ? "" : "s"}
+        <span className="position-bar-section">{pos.sectionName}</span>
+        <span className="position-bar-meta">
+          {pos.globalIndex}/{pos.totalSlots}
         </span>
       </div>
 

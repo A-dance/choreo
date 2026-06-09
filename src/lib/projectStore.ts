@@ -12,10 +12,12 @@ import {
 import type {
   ChoreoState,
   NewProjectParams,
+  ProjectMedia,
   ProjectRecord,
   ProjectSummary,
   Workspace,
 } from "./types";
+import { emptyProjectMedia, normalizeProjectMedia } from "./shareUtils";
 
 function newProjectId(): string {
   return `proj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -28,6 +30,7 @@ function stripPlayback(state: ChoreoState): ChoreoState {
 export function createProjectRecord(
   state: ChoreoState,
   id = newProjectId(),
+  media: ProjectMedia = emptyProjectMedia(),
 ): ProjectRecord {
   const now = Date.now();
   return {
@@ -35,15 +38,19 @@ export function createProjectRecord(
     createdAt: now,
     updatedAt: now,
     state: stripPlayback(state),
+    media,
   };
 }
 
 export function projectToSummary(record: ProjectRecord): ProjectSummary {
+  const media = normalizeProjectMedia(record.media);
   return {
     id: record.id,
     songTitle: record.state.songTitle,
     bpm: record.state.bpm,
     updatedAt: record.updatedAt,
+    audioCount: media.audioTracks.length,
+    videoCount: media.referenceVideos.length,
   };
 }
 
@@ -51,13 +58,19 @@ export function patchActiveProject(
   workspace: Workspace,
   activeProjectId: string,
   state: ChoreoState,
+  media?: ProjectMedia,
 ): Workspace {
   const now = Date.now();
   return {
     ...workspace,
     projects: workspace.projects.map((p) =>
       p.id === activeProjectId
-        ? { ...p, updatedAt: now, state: stripPlayback(state) }
+        ? {
+            ...p,
+            updatedAt: now,
+            state: stripPlayback(state),
+            ...(media ? { media } : {}),
+          }
         : p,
     ),
   };
@@ -78,6 +91,7 @@ function parseWorkspace(json: string): Workspace | null {
         createdAt: item.createdAt ?? Date.now(),
         updatedAt: item.updatedAt ?? Date.now(),
         state,
+        media: normalizeProjectMedia(item.media),
       });
     }
     if (!projects.length) return null;
@@ -105,8 +119,11 @@ export function saveWorkspace(workspace: Workspace): boolean {
       version: 1,
       activeProjectId: workspace.activeProjectId,
       projects: workspace.projects.map((p) => ({
-        ...p,
+        id: p.id,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
         state: stripPlayback(p.state),
+        media: normalizeProjectMedia(p.media),
       })),
     };
     localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(payload));
@@ -119,13 +136,22 @@ export function saveWorkspace(workspace: Workspace): boolean {
 export interface LoadedWorkspace {
   workspace: Workspace;
   activeState: ChoreoState;
+  activeMedia: ProjectMedia;
+}
+
+export function getActiveMedia(
+  workspace: Workspace,
+  projectId: string,
+): ProjectMedia {
+  const record = workspace.projects.find((p) => p.id === projectId);
+  return normalizeProjectMedia(record?.media);
 }
 
 export function loadWorkspace(): LoadedWorkspace {
   if (typeof window === "undefined") {
     const state = createInitialState();
     const workspace = migrateLegacyWorkspace(state);
-    return { workspace, activeState: state };
+    return { workspace, activeState: state, activeMedia: emptyProjectMedia() };
   }
 
   const saved = localStorage.getItem(WORKSPACE_STORAGE_KEY);
@@ -139,6 +165,7 @@ export function loadWorkspace(): LoadedWorkspace {
         return {
           workspace,
           activeState: { ...active.state, isPlaying: false },
+          activeMedia: normalizeProjectMedia(active.media),
         };
       }
     }
@@ -151,14 +178,14 @@ export function loadWorkspace(): LoadedWorkspace {
       const state = stripPlayback(parsed);
       const workspace = migrateLegacyWorkspace(state);
       saveWorkspace(workspace);
-      return { workspace, activeState: state };
+      return { workspace, activeState: state, activeMedia: emptyProjectMedia() };
     }
   }
 
   const state = createInitialState();
   const workspace = migrateLegacyWorkspace(state);
   saveWorkspace(workspace);
-  return { workspace, activeState: state };
+  return { workspace, activeState: state, activeMedia: emptyProjectMedia() };
 }
 
 export function addProject(

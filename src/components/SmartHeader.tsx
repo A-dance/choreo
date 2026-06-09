@@ -10,6 +10,7 @@ import {
   MEMBER_DOT_MIN,
 } from "@/lib/constants";
 import { MemberPanel } from "@/components/MemberPanel";
+import { ShareDialog } from "@/components/ShareDialog";
 import { useChoreo } from "@/context/ChoreoContext";
 
 interface SmartHeaderProps {
@@ -34,6 +35,9 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
     copyFormation,
     pasteFormation,
     hasClipboard,
+    isViewOnly,
+    canExitViewMode,
+    exitViewMode,
   } = useChoreo();
 
   const [halfWInp, setHalfWInp] = useState(String(state.stage.bamiriHalfWidth));
@@ -41,6 +45,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
   const [bpmInp, setBpmInp] = useState(String(state.bpm));
   const [dotInp, setDotInp] = useState(String(memberDotPx));
   const [memberPanelOpen, setMemberPanelOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     setDotInp(String(memberDotPx));
@@ -112,6 +117,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
             className="title-inp"
             value={state.songTitle}
             onChange={(e) => setSongTitle(e.target.value)}
+            readOnly={isViewOnly}
             aria-label={UI.songTitle}
           />
 
@@ -219,10 +225,44 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
           </div>
 
           <div className="hdr-actions">
+            {canExitViewMode && (
+              <button
+                type="button"
+                className="view-exit-btn"
+                onClick={exitViewMode}
+                title={UI.exitViewMode}
+              >
+                {UI.exitViewMode}
+              </button>
+            )}
+            {!isViewOnly && (
+              <button
+                type="button"
+                className="share-btn"
+                onClick={() => setShareOpen(true)}
+                title={UI.shareTitle}
+                aria-label={UI.shareTitle}
+              >
+                <svg
+                  className="share-btn-icon"
+                  viewBox="0 0 24 24"
+                  width="16"
+                  height="16"
+                  aria-hidden
+                >
+                  <path
+                    fill="currentColor"
+                    d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"
+                  />
+                </svg>
+                <span>{UI.share}</span>
+              </button>
+            )}
             <button
               type="button"
               className="copy-btn"
               onClick={copyFormation}
+              disabled={isViewOnly}
               title="Copy current formation"
             >
               Copy
@@ -231,7 +271,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
               type="button"
               className="paste-btn"
               onClick={pasteFormation}
-              disabled={!hasClipboard}
+              disabled={!hasClipboard || isViewOnly}
               title="Paste copied formation"
             >
               Paste
@@ -240,6 +280,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
               type="button"
               className="save-btn"
               onClick={saveProject}
+              disabled={isViewOnly}
               title="Save (⌘S / Ctrl+S)"
             >
               Save
@@ -248,7 +289,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
               type="button"
               className="undo-btn"
               onClick={undo}
-              disabled={!canUndo}
+              disabled={!canUndo || isViewOnly}
               title={UI.undoShortcut}
               aria-label={UI.undo}
             >
@@ -287,6 +328,9 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
         open={memberPanelOpen}
         onClose={() => setMemberPanelOpen(false)}
       />
+      {shareOpen && (
+        <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
+      )}
     </>
   );
 }

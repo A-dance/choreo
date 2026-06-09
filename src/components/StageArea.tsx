@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { STAGE_SCALE_MAX, STAGE_SCALE_MIN } from "@/lib/constants";
 import { calcStagePixelSize } from "@/lib/gridUtils";
-import { dotFontPx } from "@/lib/choreoUtils";
+import { getPositionDisplayInfo, dotFontPx } from "@/lib/choreoUtils";
 import { useChoreo } from "@/context/ChoreoContext";
 import { StageFloor } from "@/components/StageFloor";
 
@@ -28,6 +28,7 @@ export function StageArea() {
     setStageScaleH,
     memberDotPx,
     getMemberPos,
+    isViewOnly,
   } = useChoreo();
 
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -53,6 +54,13 @@ export function StageArea() {
   const [stageSize, setStageSize] = useState({ w: 400, h: 500 });
   const { bamiriHalfWidth, bamiriDepth, scaleW, scaleH } = state.stage;
   const dotFont = dotFontPx(memberDotPx);
+  const playhead = useMemo(
+    () =>
+      state.isPlaying
+        ? getPositionDisplayInfo(state.sections, state.currentCount)
+        : null,
+    [state.isPlaying, state.sections, state.currentCount],
+  );
 
   const resizeStage = useCallback(() => {
     const wrap = wrapRef.current;
@@ -150,7 +158,7 @@ export function StageArea() {
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       onMove(e.clientX, e.clientY);
-      onResizeMove(e.clientX, e.clientY);
+      if (resizeRef.current) onResizeMove(e.clientX, e.clientY);
     };
     const onTouchMove = (e: TouchEvent) => {
       if (pendingPointerRef.current || dragRef.current) {
@@ -181,6 +189,7 @@ export function StageArea() {
     e: React.MouseEvent | React.TouchEvent,
     mid: number,
   ) => {
+    if (isViewOnly) return;
     if (state.isPlaying) stopPlayback();
     e.preventDefault();
     e.stopPropagation();
@@ -205,26 +214,40 @@ export function StageArea() {
   };
 
   const startResize = (
-    e: React.MouseEvent | React.TouchEvent,
+    e: React.PointerEvent<HTMLDivElement>,
     axis: ResizeAxis,
   ) => {
+    if (isViewOnly) return;
+    if (e.button !== 0) return;
     e.preventDefault();
     e.stopPropagation();
     const wrap = wrapRef.current;
     if (!wrap) return;
     const wr = wrap.getBoundingClientRect();
-    const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
     pushUndoHistory();
     resizeRef.current = {
       axis,
-      startX: cx,
-      startY: cy,
+      startX: e.clientX,
+      startY: e.clientY,
       startW: stageSize.w,
       startH: stageSize.h,
       wrapW: wr.width,
       wrapH: wr.height,
     };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onResizePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeRef.current) return;
+    onResizeMove(e.clientX, e.clientY);
+  };
+
+  const endResizePointer = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeRef.current) return;
+    resizeRef.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
   };
 
   const dotTransition =
@@ -245,7 +268,7 @@ export function StageArea() {
             style={{ width: stageSize.w, height: stageSize.h }}
           >
             <div
-              className="stage-con"
+              className={"stage-con" + (isViewOnly ? " view-only" : "")}
               ref={conRef}
               onMouseDown={onStageBackgroundDown}
               onTouchStart={onStageBackgroundDown}
@@ -257,6 +280,22 @@ export function StageArea() {
               />
               <div className="s-lbl back">B A C K</div>
               <div className="s-lbl front">A U D I E N C E</div>
+
+              {playhead && (
+                <div className="stage-playhead" aria-live="polite">
+                  <span className="stage-playhead-dot" aria-hidden />
+                  <span
+                    className={
+                      "stage-playhead-count" + (playhead.isHalf ? " half" : "")
+                    }
+                  >
+                    {playhead.countLabel}
+                  </span>
+                  <span className="stage-playhead-section">
+                    {playhead.sectionName}
+                  </span>
+                </div>
+              )}
 
               {state.members.map((m) => {
                 const visible = isMemberVisibleOnCurrent(m.id);
@@ -292,24 +331,34 @@ export function StageArea() {
               })}
             </div>
 
+            {!isViewOnly && (
+              <>
             <div
               className="resize-e"
-              onMouseDown={(e) => startResize(e, "e")}
-              onTouchStart={(e) => startResize(e, "e")}
+              onPointerDown={(e) => startResize(e, "e")}
+              onPointerMove={onResizePointerMove}
+              onPointerUp={endResizePointer}
+              onPointerCancel={endResizePointer}
               title={UI.resizeWidth}
             />
             <div
               className="resize-s"
-              onMouseDown={(e) => startResize(e, "s")}
-              onTouchStart={(e) => startResize(e, "s")}
+              onPointerDown={(e) => startResize(e, "s")}
+              onPointerMove={onResizePointerMove}
+              onPointerUp={endResizePointer}
+              onPointerCancel={endResizePointer}
               title={UI.resizeHeight}
             />
             <div
               className="resize-se"
-              onMouseDown={(e) => startResize(e, "se")}
-              onTouchStart={(e) => startResize(e, "se")}
+              onPointerDown={(e) => startResize(e, "se")}
+              onPointerMove={onResizePointerMove}
+              onPointerUp={endResizePointer}
+              onPointerCancel={endResizePointer}
               title={UI.resizeStage}
             />
+              </>
+            )}
           </div>
         </div>
       </div>

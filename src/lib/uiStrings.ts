@@ -82,6 +82,77 @@ export type UiStrings = {
   sectionNameDefault: (n: number) => string;
   progressAria: (current: number, total: number, sections: number) => string;
   defaultSongTitle: string;
+  share: string;
+  shareTitle: string;
+  shareViewSectionDesc: string;
+  copyShareLink: string;
+  previewViewMode: string;
+  viewPreviewStarted: string;
+  viewPreviewEnded: string;
+  shareLinkCopied: string;
+  shareLinkCopiedFilesSkipped: string;
+  shareLinkCopiedLegacy: string;
+  shareLinkCopying: string;
+  shareLinkCreateFailed: string;
+  shareLinkCopyFailed: string;
+  shareLoadFailed: string;
+  shareLinkTooLong: string;
+  viewModeBanner: string;
+  exitViewMode: string;
+  viewOnlyProjectHint: string;
+  sidebarMedia: string;
+  mediaPanelTitle: string;
+  mediaPerProjectHint: string;
+  mediaCounts: (audioCount: number, videoCount: number) => string;
+  mediaAudioCount: (n: number) => string;
+  mediaVideoCount: (n: number) => string;
+  openAudio: string;
+  openReferenceVideos: string;
+  audioSection: string;
+  audioSectionDesc: string;
+  addMusicLink: string;
+  musicLinkLabel: string;
+  musicLinkAddButton: string;
+  musicPasteClipboard: string;
+  musicPasteAndAdd: string;
+  musicEmptyHint: string;
+  musicFetching: string;
+  musicLinkPlaceholder: string;
+  musicLinkHint: string;
+  musicLinkInvalid: string;
+  musicLinkAdded: string;
+  musicTrackTitle: string;
+  musicTrackTitlePlaceholder: string;
+  musicTrackUntitled: string;
+  openInMusicApp: string;
+  openMusicLink: string;
+  musicSourceSmartLink: string;
+  musicSourceLinkfire: string;
+  musicSourceTunecore: string;
+  musicSourceSpotify: string;
+  musicSourceApple: string;
+  musicSourceYoutubeMusic: string;
+  musicSourceFile: string;
+  noAudio: string;
+  referenceVideosSection: string;
+  referenceVideosDesc: string;
+  addReferenceVideoLink: string;
+  referenceVideoLinkPlaceholder: string;
+  referenceVideoTitle: string;
+  referenceVideoTitlePlaceholder: string;
+  referenceVideoUntitled: string;
+  referenceVideoMessage: string;
+  referenceVideoMessagePlaceholder: string;
+  referenceVideoAddedAt: string;
+  referenceVideoSourceFile: string;
+  referenceVideoSourceYoutube: string;
+  referenceVideoSourceVimeo: string;
+  videoLinkInvalid: string;
+  videoLinkAdded: string;
+  noReferenceVideos: string;
+  removeMedia: string;
+  videoUploaded: string;
+  viewOnlyHint: string;
 };
 
 const en: UiStrings = {
@@ -115,7 +186,7 @@ const en: UiStrings = {
   cancel: "Cancel",
   delete: "Delete",
   newProjectTitle: "New project",
-  newProjectDesc: "Set language, song title, BPM, and counts per section.",
+  newProjectDesc: "Set language, song title, BPM, member count, and counts per section.",
   songTitleLabel: "Song title",
   countsPerSection: "Counts per section",
   languageLabel: "Language",
@@ -171,6 +242,82 @@ const en: UiStrings = {
   progressAria: (current, total, sections) =>
     `${current}/${total}, ${sections} section${sections === 1 ? "" : "s"}`,
   defaultSongTitle: "Untitled",
+  share: "Share",
+  shareTitle: "Share project",
+  shareViewSectionDesc:
+    "Copy a view-only link to share formation, music, and reference videos.",
+  copyShareLink: "Copy view link",
+  previewViewMode: "Preview in view mode",
+  viewPreviewStarted: "View mode — editing disabled",
+  viewPreviewEnded: "Back to edit mode",
+  shareLinkCopied: "Link copied",
+  shareLinkCopiedFilesSkipped: "Link copied",
+  shareLinkCopiedLegacy: "Link copied",
+  shareLinkCopying: "Creating link…",
+  shareLinkCreateFailed: "Could not create share link",
+  shareLinkCopyFailed: "Could not copy to clipboard",
+  shareLoadFailed: "Share link not found or expired",
+  shareLinkTooLong: "Project too large for URL-only link",
+  viewModeBanner: "View-only mode — editing is disabled",
+  exitViewMode: "Exit view mode",
+  viewOnlyProjectHint: "View-only — only this project is shown",
+  sidebarMedia: "Media",
+  mediaPanelTitle: "Project media",
+  mediaPerProjectHint: "Audio and reference videos are saved per project.",
+  mediaCounts: (a, v) => `${a} audio · ${v} videos`,
+  mediaAudioCount: (n) => (n === 0 ? "None" : `${n} file${n === 1 ? "" : "s"}`),
+  mediaVideoCount: (n) => (n === 0 ? "None" : `${n} video${n === 1 ? "" : "s"}`),
+  openAudio: "Music",
+  openReferenceVideos: "Reference videos",
+  audioSection: "Music sources",
+  audioSectionDesc:
+    "Linkfire (lnk.to) or TuneCore LinkShare URL, or Spotify / Apple Music link. Song title loads automatically; artwork when available.",
+  addMusicLink: "Add music link",
+  musicLinkLabel: "Audio link",
+  musicLinkAddButton: "Add",
+  musicPasteClipboard: "Paste from clipboard",
+  musicPasteAndAdd: "Paste link to add",
+  musicEmptyHint: "Paste a Linkfire, TuneCore, or streaming link in the field above.",
+  musicFetching: "Looking up…",
+  musicLinkPlaceholder: "Linkfire, TuneCore, Spotify, Apple Music…",
+  musicLinkHint:
+    "Tip: use “Paste from clipboard” if the link is embedded in text.",
+  musicLinkInvalid:
+    "Could not read that link — paste the full URL as copied",
+  musicLinkAdded: "Audio link added",
+  musicTrackTitle: "Title",
+  musicTrackTitlePlaceholder: "Song or playlist name",
+  musicTrackUntitled: "Untitled track",
+  openInMusicApp: "Open in app",
+  openMusicLink: "Open link",
+  musicSourceSmartLink: "Smart link",
+  musicSourceLinkfire: "Linkfire",
+  musicSourceTunecore: "TuneCore",
+  musicSourceSpotify: "Spotify",
+  musicSourceApple: "Apple Music",
+  musicSourceYoutubeMusic: "YouTube Music",
+  musicSourceFile: "File",
+  noAudio: "No music yet",
+  referenceVideosSection: "Reference videos",
+  referenceVideosDesc:
+    "Add YouTube or Vimeo links. You can add notes for each video.",
+  addReferenceVideoLink: "Add",
+  referenceVideoLinkPlaceholder: "https://www.youtube.com/watch?v=…",
+  referenceVideoTitle: "Title",
+  referenceVideoTitlePlaceholder: "Reference video name",
+  referenceVideoUntitled: "Untitled video",
+  referenceVideoMessage: "Note",
+  referenceVideoMessagePlaceholder: "Choreo notes, timestamps, reminders…",
+  referenceVideoAddedAt: "Added",
+  referenceVideoSourceFile: "File",
+  referenceVideoSourceYoutube: "YouTube",
+  referenceVideoSourceVimeo: "Vimeo",
+  videoLinkInvalid: "Could not read that link — use YouTube or Vimeo",
+  videoLinkAdded: "Link added",
+  noReferenceVideos: "No reference videos",
+  removeMedia: "Remove",
+  videoUploaded: "Video added",
+  viewOnlyHint: "View only",
 };
 
 const ja: UiStrings = {
@@ -204,7 +351,7 @@ const ja: UiStrings = {
   cancel: "キャンセル",
   delete: "削除",
   newProjectTitle: "新規プロジェクト",
-  newProjectDesc: "言語・曲名・BPM・各セクションのカウント数を設定します。",
+  newProjectDesc: "言語・曲名・BPM・人数・各セクションのカウント数を設定します。",
   songTitleLabel: "曲名",
   countsPerSection: "カウント数（各セクション）",
   languageLabel: "言語",
@@ -260,6 +407,82 @@ const ja: UiStrings = {
   progressAria: (current, total, sections) =>
     `${current}/${total}、${sections}セクション`,
   defaultSongTitle: "新曲タイトル",
+  share: "共有",
+  shareTitle: "共有",
+  shareViewSectionDesc:
+    "配置・音源・参考動画を、編集できない閲覧用リンクとして共有します。",
+  copyShareLink: "閲覧用リンクをコピー",
+  previewViewMode: "閲覧モードでプレビュー",
+  viewPreviewStarted: "閲覧モード — 編集できません",
+  viewPreviewEnded: "編集モードに戻りました",
+  shareLinkCopied: "リンクをコピーしました",
+  shareLinkCopiedFilesSkipped: "リンクをコピーしました",
+  shareLinkCopiedLegacy: "リンクをコピーしました",
+  shareLinkCopying: "リンク作成中…",
+  shareLinkCreateFailed: "共有リンクを作成できませんでした",
+  shareLinkCopyFailed: "クリップボードにコピーできませんでした",
+  shareLoadFailed: "共有リンクが見つかりません",
+  shareLinkTooLong: "URLに載せきれません",
+  viewModeBanner: "閲覧専用モード — 編集できません",
+  exitViewMode: "閲覧モードを終了",
+  viewOnlyProjectHint: "閲覧専用 — このプロジェクトのみ表示",
+  sidebarMedia: "メディア",
+  mediaPanelTitle: "プロジェクトのメディア",
+  mediaPerProjectHint: "音源・参考動画はプロジェクトごとに保存されます。",
+  mediaCounts: (a, v) => `${a}音源・${v}動画`,
+  mediaAudioCount: (n) => (n === 0 ? "なし" : `${n}曲`),
+  mediaVideoCount: (n) => (n === 0 ? "なし" : `${n}本`),
+  openAudio: "音源",
+  openReferenceVideos: "参考動画",
+  audioSection: "音源",
+  audioSectionDesc:
+    "Linkfire（lnk.to）や TuneCore の LinkShare、Spotify / Apple Music などのリンクを貼り付け。曲名は自動取得（ジャケットも表示されます）。",
+  addMusicLink: "音源リンクを追加",
+  musicLinkLabel: "音源リンク",
+  musicLinkAddButton: "追加",
+  musicPasteClipboard: "クリップボードから貼り付け",
+  musicPasteAndAdd: "リンクを貼り付けて追加",
+  musicEmptyHint: "上の入力欄に Linkfire・TuneCore などのリンクを貼り付けてください。",
+  musicFetching: "取得中…",
+  musicLinkPlaceholder: "Linkfire、TuneCore、Spotify、Apple Music…",
+  musicLinkHint:
+    "うまくいかないときは「クリップボードから貼り付け」を試してください。",
+  musicLinkInvalid:
+    "リンクを読み取れません — URL 全体をそのまま貼り付けてください",
+  musicLinkAdded: "音源リンクを追加しました",
+  musicTrackTitle: "タイトル",
+  musicTrackTitlePlaceholder: "曲名・プレイリスト名",
+  musicTrackUntitled: "無題",
+  openInMusicApp: "アプリで開く",
+  openMusicLink: "リンクを開く",
+  musicSourceSmartLink: "スマートリンク",
+  musicSourceLinkfire: "Linkfire",
+  musicSourceTunecore: "TuneCore",
+  musicSourceSpotify: "Spotify",
+  musicSourceApple: "Apple Music",
+  musicSourceYoutubeMusic: "YouTube Music",
+  musicSourceFile: "ファイル",
+  noAudio: "音源なし",
+  referenceVideosSection: "参考動画",
+  referenceVideosDesc:
+    "YouTube や Vimeo のリンクを追加できます。メモも残せます。",
+  addReferenceVideoLink: "追加",
+  referenceVideoLinkPlaceholder: "https://www.youtube.com/watch?v=…",
+  referenceVideoTitle: "タイトル",
+  referenceVideoTitlePlaceholder: "参考動画の名前",
+  referenceVideoUntitled: "無題の動画",
+  referenceVideoMessage: "メモ",
+  referenceVideoMessagePlaceholder: "振付メモ、タイムスタンプ、共有事項など",
+  referenceVideoAddedAt: "追加日",
+  referenceVideoSourceFile: "ファイル",
+  referenceVideoSourceYoutube: "YouTube",
+  referenceVideoSourceVimeo: "Vimeo",
+  videoLinkInvalid: "リンクを読み取れません — YouTube または Vimeo の URL を入力してください",
+  videoLinkAdded: "リンクを追加しました",
+  noReferenceVideos: "参考動画なし",
+  removeMedia: "削除",
+  videoUploaded: "参考動画を追加しました",
+  viewOnlyHint: "閲覧専用",
 };
 
 export const STRINGS: Record<ProjectLanguage, UiStrings> = { en, ja };

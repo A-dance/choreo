@@ -46,11 +46,13 @@ import {
   resolveMemberDotPx,
   snapshotFormation,
   setMemberHiddenAtCount,
+  normalizeChoreoState,
 } from "@/lib/choreoUtils";
 import { MAX_COUNTS_PER_SECTION } from "@/lib/constants";
 import { clampMemberDotPx, normalizeStage } from "@/lib/gridUtils";
 import {
   addProject,
+  getActiveMedia,
   getActiveState,
   loadWorkspace,
   patchActiveProject,
@@ -58,13 +60,42 @@ import {
   removeProject,
   saveWorkspace,
 } from "@/lib/projectStore";
+import {
+  applySharedViewBundle,
+  buildLegacyShareUrl,
+  decodeLegacyShareToken,
+  emptyProjectMedia,
+  normalizeProjectMedia,
+  parseShareFromLocation,
+  SHARED_VIEW_PROJECT_ID,
+} from "@/lib/shareUtils";
+import {
+  buildShareUrlFromId,
+  createRemoteShare,
+  hydrateRemoteShare,
+  isShareId,
+  shareCopiedToastMessage,
+} from "@/lib/shareRemote";
+import {
+  deleteMediaBlob,
+  deleteProjectMedia,
+  getMediaBlob,
+  newMediaId,
+  saveMediaFile,
+} from "@/lib/mediaStore";
+import { resolveMusicLink } from "@/lib/musicResolve";
+import { coerceMusicLink } from "@/lib/musicLinkUtils";
+import { displayMusicTitle } from "@/lib/openGraphMetadata";
+import { parseVideoLink } from "@/lib/videoLinkUtils";
 import { getStrings, type ProjectLanguage, type UiStrings } from "@/lib/uiStrings";
 import type {
+  AppMode,
   ChoreoState,
   CountData,
   FormationClipboard,
   NewProjectParams,
   Position,
+  ProjectMedia,
   ProjectSummary,
   Workspace,
 } from "@/lib/types";
@@ -127,6 +158,25 @@ interface ChoreoContextValue {
   switchProject: (projectId: string) => void;
   createProject: (params: NewProjectParams) => void;
   deleteProject: (projectId: string) => void;
+  appMode: AppMode;
+  isViewOnly: boolean;
+  /** 共有 URL から開いた閲覧（編集に戻れない） */
+  externalShareView: boolean;
+  canExitViewMode: boolean;
+  media: ProjectMedia;
+  addMusicLink: (input: string, html?: string) => Promise<boolean>;
+  setMusicTrackName: (trackId: string, name: string) => void;
+  removeMusicTrack: (trackId: string) => Promise<void>;
+  getMusicFileUrl: (trackId: string) => Promise<string | null>;
+  addReferenceVideo: (file: File) => Promise<void>;
+  addReferenceVideoLink: (url: string) => void;
+  setReferenceVideoName: (videoId: string, name: string) => void;
+  setReferenceVideoMessage: (videoId: string, message: string) => void;
+  removeReferenceVideo: (videoId: string) => Promise<void>;
+  getVideoUrl: (videoId: string) => Promise<string | null>;
+  copyShareLink: () => Promise<void>;
+  enterViewPreview: () => void;
+  exitViewMode: () => void;
 }
 
 const ChoreoContext = createContext<ChoreoContextValue | null>(null);
@@ -137,8 +187,9 @@ function persistWorkspace(
   workspace: Workspace,
   activeProjectId: string,
   state: ChoreoState,
+  media?: ProjectMedia,
 ): boolean {
-  return saveWorkspace(patchActiveProject(workspace, activeProjectId, state));
+  return saveWorkspace(patchActiveProject(workspace, activeProjectId, state, media));
 }
 
 function cloneChoreoState(state: ChoreoState): ChoreoState {
@@ -155,6 +206,9 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const [clipboard, setClipboard] = useState<FormationClipboard | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
+  const [appMode, setAppMode] = useState<AppMode>("edit");
+  const [externalShareView, setExternalShareView] = useState(false);
+  const [media, setMedia] = useState<ProjectMedia>(emptyProjectMedia());
 
   const stateRef = useRef(state);
   const undoStackRef = useRef<ChoreoState[]>([]);
@@ -163,22 +217,46 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const playbackPhaseRef = useRef<number>(0);
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workspaceRef = useRef<Workspace | null>(null);
+  const mediaRef = useRef(media);
+  const activeProjectIdRef = useRef(activeProjectId);
+  const appModeRef = useRef(appMode);
+  const externalShareViewRef = useRef(externalShareView);
   stateRef.current = state;
   workspaceRef.current = workspace;
+  mediaRef.current = media;
+  activeProjectIdRef.current = activeProjectId;
+  appModeRef.current = appMode;
+  externalShareViewRef.current = externalShareView;
+
+  const commitActiveProject = useCallback(
+    (nextState: ChoreoState, nextMedia: ProjectMedia) => {
+      const ws = workspaceRef.current;
+      const projectId = activeProjectIdRef.current;
+      if (!ws || !projectId || appModeRef.current === "view") return false;
+      const nextWs = patchActiveProject(ws, projectId, nextState, nextMedia);
+      workspaceRef.current = nextWs;
+      const ok = saveWorkspace(nextWs);
+      setWorkspace(nextWs);
+      return ok;
+    },
+    [],
+  );
 
   const projects = useMemo((): ProjectSummary[] => {
     if (!workspace) return [];
-    return workspace.projects.map((p) =>
-      p.id === activeProjectId
-        ? {
-            id: p.id,
-            songTitle: state.songTitle,
-            bpm: state.bpm,
-            updatedAt: p.updatedAt,
-          }
-        : projectToSummary(p),
-    );
-  }, [workspace, activeProjectId, state.songTitle, state.bpm]);
+    return workspace.projects.map((p) => {
+      const base = projectToSummary(p);
+      if (p.id !== activeProjectId) return base;
+      const m = normalizeProjectMedia(media);
+      return {
+        ...base,
+        songTitle: state.songTitle,
+        bpm: state.bpm,
+        audioCount: m.audioTracks.length,
+        videoCount: m.referenceVideos.length,
+      };
+    });
+  }, [workspace, activeProjectId, state.songTitle, state.bpm, media]);
 
   const language = state.language;
   const strings = useMemo(() => getStrings(state.language), [state.language]);
@@ -229,14 +307,10 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     : state.currentCount;
 
   useEffect(() => {
-    if (!hydrated || !activeProjectId) return;
-    const ws = workspaceRef.current;
-    if (!ws) return;
-    const next = patchActiveProject(ws, activeProjectId, state);
-    workspaceRef.current = next;
-    saveWorkspace(next);
-    setWorkspace(next);
-  }, [state, hydrated, activeProjectId]);
+    if (!hydrated || !activeProjectId || appMode === "view") return;
+    if (!workspaceRef.current) return;
+    commitActiveProject(state, mediaRef.current);
+  }, [state, hydrated, activeProjectId, appMode, commitActiveProject]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -259,10 +333,27 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
   const mutateState = useCallback(
     (updater: (s: ChoreoState) => ChoreoState, recordHistory = true) => {
+      if (appModeRef.current === "view") return;
       if (recordHistory) pushUndoHistory();
       setState(updater);
     },
     [pushUndoHistory],
+  );
+
+  const mutateMedia = useCallback(
+    (updater: (m: ProjectMedia) => ProjectMedia) => {
+      if (appModeRef.current === "view") return;
+      let nextMedia: ProjectMedia | null = null;
+      setMedia((prev) => {
+        nextMedia = updater(prev);
+        mediaRef.current = nextMedia;
+        return nextMedia;
+      });
+      if (nextMedia) {
+        commitActiveProject(stateRef.current, nextMedia);
+      }
+    },
+    [commitActiveProject],
   );
 
   const clearPlaybackTimer = useCallback(() => {
@@ -290,13 +381,104 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   }, [stopPlayback, showToast]);
 
   useEffect(() => {
-    const loaded = loadWorkspace();
-    setWorkspace(loaded.workspace);
-    setActiveProjectId(loaded.workspace.activeProjectId);
-    setState(loaded.activeState);
-    clearUndoHistory();
-    setHydrated(true);
-  }, [clearUndoHistory]);
+    let cancelled = false;
+
+    async function initFromRemoteShare(shareId: string, viewOnly: boolean) {
+      const bundle = await hydrateRemoteShare(shareId);
+      if (cancelled) return;
+      if (!bundle) {
+        showToast(getStrings(stateRef.current.language).shareLoadFailed);
+        const loaded = loadWorkspace();
+        workspaceRef.current = loaded.workspace;
+        setWorkspace(loaded.workspace);
+        setActiveProjectId(loaded.workspace.activeProjectId);
+        setAppMode("edit");
+        setExternalShareView(false);
+        setState(normalizeChoreoState(loaded.activeState));
+        setMedia(normalizeProjectMedia(loaded.activeMedia));
+        clearUndoHistory();
+        setHydrated(true);
+        return;
+      }
+      const applied = applySharedViewBundle(
+        { state: bundle.state, media: bundle.media },
+        viewOnly,
+      );
+      workspaceRef.current = applied.workspace;
+      setWorkspace(applied.workspace);
+      setActiveProjectId(SHARED_VIEW_PROJECT_ID);
+      setAppMode(applied.appMode);
+      setExternalShareView(viewOnly);
+      setState(applied.state);
+      setMedia(applied.media);
+      clearUndoHistory();
+      setHydrated(true);
+    }
+
+    function initFromLocalStorage() {
+      try {
+        const loaded = loadWorkspace();
+        workspaceRef.current = loaded.workspace;
+        setWorkspace(loaded.workspace);
+        setActiveProjectId(loaded.workspace.activeProjectId);
+        setAppMode("edit");
+        setExternalShareView(false);
+        setState(normalizeChoreoState(loaded.activeState));
+        setMedia(normalizeProjectMedia(loaded.activeMedia));
+        clearUndoHistory();
+      } catch {
+        const loaded = loadWorkspace();
+        workspaceRef.current = loaded.workspace;
+        setWorkspace(loaded.workspace);
+        setActiveProjectId(loaded.workspace.activeProjectId);
+        setAppMode("edit");
+        setExternalShareView(false);
+        setState(normalizeChoreoState(loaded.activeState));
+        setMedia(normalizeProjectMedia(loaded.activeMedia));
+        clearUndoHistory();
+      } finally {
+        setHydrated(true);
+      }
+    }
+
+    try {
+      const { viewOnly, shareId, legacyToken } = parseShareFromLocation(
+        window.location.search,
+      );
+
+      if (shareId && isShareId(shareId)) {
+        void initFromRemoteShare(shareId, viewOnly);
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      if (legacyToken) {
+        const legacy = decodeLegacyShareToken(legacyToken);
+        if (legacy) {
+          const applied = applySharedViewBundle(legacy, viewOnly);
+          workspaceRef.current = applied.workspace;
+          setWorkspace(applied.workspace);
+          setActiveProjectId(SHARED_VIEW_PROJECT_ID);
+          setAppMode(applied.appMode);
+          setExternalShareView(viewOnly);
+          setState(applied.state);
+          setMedia(applied.media);
+          clearUndoHistory();
+          setHydrated(true);
+          return;
+        }
+      }
+
+      initFromLocalStorage();
+    } catch {
+      initFromLocalStorage();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clearUndoHistory, showToast]);
 
   const scheduleNextPhase = useCallback(() => {
     clearPlaybackTimer();
@@ -442,17 +624,28 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       showToast(getStrings(stateRef.current.language).saveFailed);
       return;
     }
-    const ok = persistWorkspace(ws, activeProjectId, stateRef.current);
+    const ok = persistWorkspace(
+      ws,
+      activeProjectId,
+      stateRef.current,
+      mediaRef.current,
+    );
     showToast(ok ? getStrings(stateRef.current.language).saved : getStrings(stateRef.current.language).saveFailed);
   }, [activeProjectId, showToast]);
 
   const switchProject = useCallback(
     (projectId: string) => {
+      if (appModeRef.current === "view") return;
       if (projectId === activeProjectId) return;
       const ws = workspaceRef.current;
       if (!ws) return;
       stopPlayback();
-      const saved = patchActiveProject(ws, activeProjectId, stateRef.current);
+      const saved = patchActiveProject(
+        ws,
+        activeProjectId,
+        stateRef.current,
+        mediaRef.current,
+      );
       const nextState = getActiveState(
         { ...saved, activeProjectId: projectId },
         projectId,
@@ -464,6 +657,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       setWorkspace(nextWs);
       setActiveProjectId(projectId);
       setState(nextState);
+      setMedia(normalizeProjectMedia(getActiveMedia(nextWs, projectId)));
       setSelectedMemberId(null);
       clearUndoHistory();
       showToast(getStrings(stateRef.current.language).switchedProject(nextState.songTitle));
@@ -473,16 +667,23 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
   const createProject = useCallback(
     (params: NewProjectParams) => {
+      if (appModeRef.current === "view") return;
       const ws = workspaceRef.current;
       if (!ws) return;
       stopPlayback();
-      const saved = patchActiveProject(ws, activeProjectId, stateRef.current);
+      const saved = patchActiveProject(
+        ws,
+        activeProjectId,
+        stateRef.current,
+        mediaRef.current,
+      );
       const { workspace: nextWs, record } = addProject(saved, params);
       workspaceRef.current = nextWs;
       saveWorkspace(nextWs);
       setWorkspace(nextWs);
       setActiveProjectId(record.id);
       setState(record.state);
+      setMedia(normalizeProjectMedia(record.media));
       setSelectedMemberId(null);
       clearUndoHistory();
       showToast(getStrings(stateRef.current.language).createdProject(record.state.songTitle));
@@ -492,6 +693,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
   const deleteProject = useCallback(
     (projectId: string) => {
+      if (appModeRef.current === "view") return;
       const ws = workspaceRef.current;
       if (!ws) return;
       if (ws.projects.length <= 1) {
@@ -499,9 +701,15 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         return;
       }
       stopPlayback();
-      const saved = patchActiveProject(ws, activeProjectId, stateRef.current);
+      const saved = patchActiveProject(
+        ws,
+        activeProjectId,
+        stateRef.current,
+        mediaRef.current,
+      );
       const nextWs = removeProject(saved, projectId);
       if (!nextWs) return;
+      void deleteProjectMedia(projectId);
       workspaceRef.current = nextWs;
       saveWorkspace(nextWs);
       setWorkspace(nextWs);
@@ -510,6 +718,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         if (nextState) {
           setActiveProjectId(nextWs.activeProjectId);
           setState(nextState);
+          setMedia(normalizeProjectMedia(getActiveMedia(nextWs, nextWs.activeProjectId)));
           setSelectedMemberId(null);
         }
       }
@@ -872,6 +1081,229 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     [stopPlayback, mutateState, showToast],
   );
 
+  const addMusicLink = useCallback(
+    async (input: string, html?: string) => {
+      const parsed = coerceMusicLink(input, html);
+      if (!parsed) {
+        showToast(getStrings(stateRef.current.language).musicLinkInvalid);
+        return false;
+      }
+
+      const resolved = await resolveMusicLink(input, html, parsed);
+      const id = newMediaId();
+      mutateMedia((m) => ({
+        ...m,
+        audioTracks: [
+          ...(m.audioTracks ?? []),
+          {
+            id,
+            name: displayMusicTitle(resolved?.name?.trim() || parsed.name),
+            createdAt: Date.now(),
+            source: parsed.source,
+            externalUrl: parsed.externalUrl,
+            thumbnailUrl: resolved?.thumbnailUrl,
+          },
+        ],
+      }));
+      showToast(getStrings(stateRef.current.language).musicLinkAdded);
+      return true;
+    },
+    [mutateMedia, showToast],
+  );
+
+  const setMusicTrackName = useCallback(
+    (trackId: string, name: string) => {
+      mutateMedia((m) => ({
+        ...m,
+        audioTracks: (m.audioTracks ?? []).map((t) =>
+          t.id === trackId ? { ...t, name } : t,
+        ),
+      }));
+    },
+    [mutateMedia],
+  );
+
+  const removeMusicTrack = useCallback(
+    async (trackId: string) => {
+      if (!activeProjectId) return;
+      const track = mediaRef.current.audioTracks.find((t) => t.id === trackId);
+      if (track?.source === "file") {
+        await deleteMediaBlob(activeProjectId, trackId);
+      }
+      mutateMedia((m) => ({
+        ...m,
+        audioTracks: (m.audioTracks ?? []).filter((t) => t.id !== trackId),
+      }));
+    },
+    [activeProjectId, mutateMedia],
+  );
+
+  const getMusicFileUrl = useCallback(
+    async (trackId: string): Promise<string | null> => {
+      if (!activeProjectId) return null;
+      const track = mediaRef.current.audioTracks.find((t) => t.id === trackId);
+      if (!track || track.source !== "file") return null;
+      const blob = await getMediaBlob(activeProjectId, trackId);
+      return blob ? URL.createObjectURL(blob) : null;
+    },
+    [activeProjectId],
+  );
+
+  const addReferenceVideo = useCallback(
+    async (file: File) => {
+      if (!activeProjectId) return;
+      const id = newMediaId();
+      await saveMediaFile(activeProjectId, id, "video", file);
+      mutateMedia((m) => ({
+        ...m,
+        referenceVideos: [
+          ...(m.referenceVideos ?? []),
+          {
+            id,
+            name: file.name,
+            createdAt: Date.now(),
+            message: "",
+            source: "file" as const,
+          },
+        ],
+      }));
+      showToast(getStrings(stateRef.current.language).videoUploaded);
+    },
+    [activeProjectId, mutateMedia, showToast],
+  );
+
+  const addReferenceVideoLink = useCallback(
+    (url: string) => {
+      const parsed = parseVideoLink(url);
+      if (!parsed) {
+        showToast(getStrings(stateRef.current.language).videoLinkInvalid);
+        return;
+      }
+      const id = newMediaId();
+      mutateMedia((m) => ({
+        ...m,
+        referenceVideos: [
+          ...(m.referenceVideos ?? []),
+          {
+            id,
+            name: parsed.name,
+            createdAt: Date.now(),
+            message: "",
+            source: parsed.source,
+            externalUrl: parsed.externalUrl,
+          },
+        ],
+      }));
+      showToast(getStrings(stateRef.current.language).videoLinkAdded);
+    },
+    [mutateMedia, showToast],
+  );
+
+  const setReferenceVideoMessage = useCallback(
+    (videoId: string, message: string) => {
+      mutateMedia((m) => ({
+        ...m,
+        referenceVideos: (m.referenceVideos ?? []).map((v) =>
+          v.id === videoId ? { ...v, message } : v,
+        ),
+      }));
+    },
+    [mutateMedia],
+  );
+
+  const setReferenceVideoName = useCallback(
+    (videoId: string, name: string) => {
+      mutateMedia((m) => ({
+        ...m,
+        referenceVideos: (m.referenceVideos ?? []).map((v) =>
+          v.id === videoId ? { ...v, name } : v,
+        ),
+      }));
+    },
+    [mutateMedia],
+  );
+
+  const removeReferenceVideo = useCallback(
+    async (videoId: string) => {
+      if (!activeProjectId) return;
+      const video = mediaRef.current.referenceVideos.find((v) => v.id === videoId);
+      if (video?.source === "file") {
+        await deleteMediaBlob(activeProjectId, videoId);
+      }
+      mutateMedia((m) => ({
+        ...m,
+        referenceVideos: (m.referenceVideos ?? []).filter((v) => v.id !== videoId),
+      }));
+    },
+    [activeProjectId, mutateMedia],
+  );
+
+  const getVideoUrl = useCallback(
+    async (videoId: string): Promise<string | null> => {
+      if (!activeProjectId) return null;
+      const video = mediaRef.current.referenceVideos.find((v) => v.id === videoId);
+      if (!video || video.source !== "file") return null;
+      const blob = await getMediaBlob(activeProjectId, videoId);
+      return blob ? URL.createObjectURL(blob) : null;
+    },
+    [activeProjectId],
+  );
+
+  const copyShareLink = useCallback(async () => {
+    if (appModeRef.current === "view") return;
+    const lang = getStrings(stateRef.current.language);
+    const state = stateRef.current;
+    const projectId = activeProjectId;
+    const ws = workspaceRef.current;
+    const media =
+      ws && projectId
+        ? normalizeProjectMedia(getActiveMedia(ws, projectId))
+        : normalizeProjectMedia(mediaRef.current);
+
+    if (projectId) {
+      const remote = await createRemoteShare(state, media);
+      if (remote.ok) {
+        const url = buildShareUrlFromId(remote.shareId);
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast(shareCopiedToastMessage(lang, media));
+        } catch {
+          showToast(lang.shareLinkCopyFailed);
+        }
+        return;
+      }
+      if (remote.reason === "failed") {
+        console.error("[share] create failed:", remote.error);
+      }
+    }
+
+    const legacyUrl = buildLegacyShareUrl(state, media);
+    if (!legacyUrl) {
+      showToast(lang.shareLinkTooLong);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(legacyUrl);
+      showToast(lang.shareLinkCopiedLegacy);
+    } catch {
+      showToast(lang.shareLinkCopyFailed);
+    }
+  }, [activeProjectId, showToast]);
+
+  const enterViewPreview = useCallback(() => {
+    stopPlayback();
+    setExternalShareView(false);
+    setAppMode("view");
+    showToast(getStrings(stateRef.current.language).viewPreviewStarted);
+  }, [stopPlayback, showToast]);
+
+  const exitViewMode = useCallback(() => {
+    if (externalShareViewRef.current) return;
+    stopPlayback();
+    setAppMode("edit");
+    showToast(getStrings(stateRef.current.language).viewPreviewEnded);
+  }, [stopPlayback, showToast]);
+
   const setMemberDotPx = useCallback((px: number) => {
     mutateState((s) => ({
       ...s,
@@ -979,18 +1411,36 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     switchProject,
     createProject,
     deleteProject,
+    appMode,
+    isViewOnly: appMode === "view",
+    externalShareView,
+    canExitViewMode: appMode === "view" && !externalShareView,
+    media,
+    addMusicLink,
+    setMusicTrackName,
+    removeMusicTrack,
+    getMusicFileUrl,
+    addReferenceVideo,
+    addReferenceVideoLink,
+    setReferenceVideoName,
+    setReferenceVideoMessage,
+    removeReferenceVideo,
+    getVideoUrl,
+    copyShareLink,
+    enterViewPreview,
+    exitViewMode,
   };
 
-  if (!hydrated) {
-    return (
-      <div className="choreo-loading">
-        <span className="logo">◈ CHOREO</span>
-      </div>
-    );
-  }
-
   return (
-    <ChoreoContext.Provider value={value}>{children}</ChoreoContext.Provider>
+    <ChoreoContext.Provider value={value}>
+      {!hydrated ? (
+        <div className="choreo-loading">
+          <span className="logo">◈ CHOREO</span>
+        </div>
+      ) : (
+        <>{children}</>
+      )}
+    </ChoreoContext.Provider>
   );
 }
 

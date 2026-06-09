@@ -4,8 +4,11 @@ import { useState } from "react";
 import {
   DEFAULT_BPM,
   COUNTS_PER_SECTION,
+  DEFAULT_MEMBER_COUNT,
   MIN_COUNTS_PER_SECTION,
   MAX_COUNTS_PER_SECTION,
+  MIN_MEMBERS,
+  MAX_MEMBERS,
 } from "@/lib/constants";
 import { useChoreo } from "@/context/ChoreoContext";
 import {
@@ -24,6 +27,7 @@ export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
   const [songTitle, setSongTitle] = useState("");
   const [bpm, setBpm] = useState(String(DEFAULT_BPM));
   const [counts, setCounts] = useState(String(COUNTS_PER_SECTION));
+  const [memberCount, setMemberCount] = useState(String(DEFAULT_MEMBER_COUNT));
 
   const UI = getStrings(language);
 
@@ -31,11 +35,19 @@ export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
     e.preventDefault();
     const bpmNum = parseInt(bpm, 10);
     const countsNum = parseInt(counts, 10);
-    if (!Number.isFinite(bpmNum) || !Number.isFinite(countsNum)) return;
+    const membersNum = parseInt(memberCount, 10);
+    if (
+      !Number.isFinite(bpmNum) ||
+      !Number.isFinite(countsNum) ||
+      !Number.isFinite(membersNum)
+    ) {
+      return;
+    }
     createProject({
       songTitle: songTitle.trim() || UI.defaultSongTitle,
       bpm: bpmNum,
       countsPerSection: countsNum,
+      memberCount: membersNum,
       language,
     });
     onClose();
@@ -93,6 +105,18 @@ export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
               min={40}
               max={240}
               onChange={(e) => setBpm(e.target.value)}
+            />
+          </label>
+
+          <label className="dialog-field">
+            <span className="dialog-label">{UI.memberCount}</span>
+            <input
+              type="number"
+              className="dialog-input"
+              value={memberCount}
+              min={MIN_MEMBERS}
+              max={MAX_MEMBERS}
+              onChange={(e) => setMemberCount(e.target.value)}
             />
           </label>
 

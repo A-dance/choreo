@@ -21,7 +21,7 @@ import {
   migrateSections,
   flattenTimeline,
 } from "./sectionUtils";
-import type { ChoreoState, CountData, FormationClipboard, Member, Position } from "./types";
+import type { ChoreoState, CountData, FormationClipboard, Member, NewProjectParams, Position } from "./types";
 import type { ProjectLanguage } from "./uiStrings";
 
 export {
@@ -554,18 +554,17 @@ export function createInitialState(): ChoreoState {
   return createDemoState();
 }
 
-export function createProjectState(params: {
-  songTitle: string;
-  bpm: number;
-  countsPerSection: number;
-  language: ProjectLanguage;
-}): ChoreoState {
+export function createProjectState(params: NewProjectParams): ChoreoState {
   const counts = Math.max(1, Math.min(64, Math.round(params.countsPerSection)));
   const bpm = Math.max(40, Math.min(240, Math.round(params.bpm)));
   const language = normalizeLanguage(params.language);
   const strings = getStrings(language);
   const title = params.songTitle.trim() || strings.defaultSongTitle;
-  const members = createMembers(DEFAULT_MEMBER_COUNT);
+  const members = createMembers(params.memberCount);
+  const d1 = getCountData({}, 1);
+  members.forEach((m, i) => {
+    d1.positions[m.id] = defaultPosForIndex(i, members.length);
+  });
   return {
     songTitle: title,
     language,
@@ -574,9 +573,9 @@ export function createProjectState(params: {
     removedMembers: [],
     bpm,
     currentCount: 1,
-    countData: {},
+    countData: { 1: d1 },
     stage: { ...DEFAULT_STAGE },
-    nextId: DEFAULT_MEMBER_COUNT + 1,
+    nextId: members.length + 1,
     isPlaying: false,
   };
 }

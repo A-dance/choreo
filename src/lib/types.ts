@@ -56,6 +56,42 @@ export interface StageConfig {
   memberDotPx: number | null;
 }
 
+export interface ProjectMedia {
+  audioTracks: AudioTrackMeta[];
+  referenceVideos: ReferenceVideoMeta[];
+}
+
+export type MusicSource =
+  | "file"
+  | "smart_link"
+  | "spotify"
+  | "apple_music"
+  | "youtube_music";
+
+export interface AudioTrackMeta {
+  id: string;
+  name: string;
+  createdAt: number;
+  source: MusicSource;
+  /** ストリーミングサービスの URL（ファイルの場合は未設定） */
+  externalUrl?: string;
+  thumbnailUrl?: string;
+}
+
+export type ReferenceVideoSource = "file" | "youtube" | "vimeo";
+
+export interface ReferenceVideoMeta {
+  id: string;
+  name: string;
+  createdAt: number;
+  message: string;
+  source: ReferenceVideoSource;
+  /** YouTube / Vimeo などの URL（ファイルの場合は未設定） */
+  externalUrl?: string;
+}
+
+export type AppMode = "edit" | "view";
+
 export interface ChoreoState {
   songTitle: string;
   language: ProjectLanguage;
@@ -76,6 +112,7 @@ export interface ProjectRecord {
   createdAt: number;
   updatedAt: number;
   state: ChoreoState;
+  media: ProjectMedia;
 }
 
 export interface ProjectSummary {
@@ -83,6 +120,8 @@ export interface ProjectSummary {
   songTitle: string;
   bpm: number;
   updatedAt: number;
+  audioCount: number;
+  videoCount: number;
 }
 
 export interface Workspace {
@@ -95,5 +134,6 @@ export interface NewProjectParams {
   songTitle: string;
   bpm: number;
   countsPerSection: number;
+  memberCount: number;
   language: ProjectLanguage;
 }

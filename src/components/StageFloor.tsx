@@ -2,9 +2,12 @@
 
 import {
   getGridXLabels,
-  getGridXLines,
+  getGridXLineMeta,
   getGridYLabels,
-  getGridYLines,
+  getGridYLineMeta,
+  gridCols,
+  gridLabelFontPx,
+  gridRows,
 } from "@/lib/gridUtils";
 
 interface Props {
@@ -12,22 +15,25 @@ interface Props {
   depth: number;
 }
 
+function lineClass(kind: string): string {
+  if (kind === "center") return "grid-line center-line";
+  if (kind === "edge") return "grid-line edge-line";
+  return "grid-line";
+}
+
 export function StageFloor({ halfW, depth }: Props) {
-  const xLines = getGridXLines(halfW);
-  const yLines = getGridYLines(depth);
+  const xLineMeta = getGridXLineMeta(halfW);
+  const yLineMeta = getGridYLineMeta(depth);
   const xLabels = getGridXLabels(halfW);
   const yLabels = getGridYLabels(depth);
-  const centerIdx = Math.floor(xLines.length / 2);
-  const lblSize =
-    xLabels.length > 18 || yLabels.length > 14
-      ? 7
-      : xLabels.length > 12
-        ? 8
-        : 9;
+  const cols = gridCols(halfW);
+  const rows = gridRows(depth);
+  const dense = cols > 13 || rows > 13;
+  const lblSize = gridLabelFontPx(cols, rows);
 
   return (
     <div
-      className="stage-floor s-grid"
+      className={"stage-floor s-grid" + (dense ? " dense" : "")}
       style={{ "--grid-lbl-size": `${lblSize}px` } as React.CSSProperties}
       aria-hidden
     >
@@ -36,24 +42,24 @@ export function StageFloor({ halfW, depth }: Props) {
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
-        {yLines.map((y, i) => (
+        {yLineMeta.map((line) => (
           <line
-            key={`h${i}`}
+            key={`h${line.row}`}
             x1={0}
-            y1={y}
+            y1={line.y}
             x2={100}
-            y2={y}
-            className={i === 0 ? "grid-line front-line" : "grid-line"}
+            y2={line.y}
+            className={lineClass(line.kind)}
           />
         ))}
-        {xLines.map((x, i) => (
+        {xLineMeta.map((line) => (
           <line
-            key={`v${i}`}
-            x1={x}
+            key={`v${line.col}`}
+            x1={line.x}
             y1={0}
-            x2={x}
+            x2={line.x}
             y2={100}
-            className={i === centerIdx ? "grid-line center-line" : "grid-line"}
+            className={lineClass(line.kind)}
           />
         ))}
       </svg>
@@ -62,7 +68,11 @@ export function StageFloor({ halfW, depth }: Props) {
         {xLabels.map(({ col, x, label }) => (
           <span
             key={`xl${col}`}
-            className="grid-lbl grid-lbl-x"
+            className={
+              "grid-lbl grid-lbl-x" +
+              (col === 0 ? " key-lbl" : "") +
+              (Math.abs(col) === halfW ? " edge-lbl" : "")
+            }
             style={{ left: `${x}%` }}
           >
             {label}
@@ -74,7 +84,11 @@ export function StageFloor({ halfW, depth }: Props) {
         {yLabels.map(({ row, y, label }) => (
           <span
             key={`yl${row}`}
-            className="grid-lbl grid-lbl-y"
+            className={
+              "grid-lbl grid-lbl-y" +
+              (row === 0 ? " key-lbl" : "") +
+              (row === depth ? " edge-lbl" : "")
+            }
             style={{ top: `${y}%` }}
           >
             {label}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChoreoProvider } from "@/context/ChoreoContext";
+import { ChoreoErrorBoundary } from "@/components/ChoreoErrorBoundary";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import { ProjectSidebar } from "@/components/ProjectSidebar";
 import { SmartHeader } from "@/components/SmartHeader";
@@ -13,8 +14,9 @@ export function ChoreoApp() {
   const [projectsOpen, setProjectsOpen] = useState(false);
 
   return (
-    <ChoreoProvider>
-      <div className="app-shell">
+    <ChoreoErrorBoundary>
+      <ChoreoProvider>
+        <div className="app-shell">
         <ProjectSidebar
           open={projectsOpen}
           onClose={() => setProjectsOpen(false)}
@@ -29,7 +31,8 @@ export function ChoreoApp() {
           <TimelineFooter />
           <Toast />
         </div>
-      </div>
-    </ChoreoProvider>
+        </div>
+      </ChoreoProvider>
+    </ChoreoErrorBoundary>
   );
 }

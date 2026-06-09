@@ -116,6 +116,53 @@ export function getGridYLabels(depth: number) {
   return labels;
 }
 
+export type GridLineKind = "center" | "edge" | "major" | "minor";
+
+function xLineKind(col: number, halfW: number): GridLineKind {
+  const hw = clampBamiriHalf(halfW);
+  if (col === 0) return "center";
+  if (col === -hw || col === hw) return "edge";
+  return (col + hw) % 5 === 0 ? "major" : "minor";
+}
+
+function yLineKind(row: number, depth: number): GridLineKind {
+  const d = clampBamiriDepth(depth);
+  if (row === 0 || row === d) return "edge";
+  return row % 5 === 0 ? "major" : "minor";
+}
+
+export function getGridXLineMeta(halfW: number) {
+  const hw = clampBamiriHalf(halfW);
+  const cols = hw * 2 + 1;
+  return Array.from({ length: cols }, (_, ci) => {
+    const col = ci - hw;
+    return {
+      col,
+      x: colToX(col, hw),
+      kind: xLineKind(col, hw),
+    };
+  });
+}
+
+export function getGridYLineMeta(depth: number) {
+  const d = clampBamiriDepth(depth);
+  const rows = d + 1;
+  return Array.from({ length: rows }, (_, row) => ({
+    row,
+    y: rowToY(row, d),
+    kind: yLineKind(row, d),
+  }));
+}
+
+/** 列・行数からラベル fontsize(px) を決める（番号は常に全表示） */
+export function gridLabelFontPx(cols: number, rows: number): number {
+  const n = Math.max(cols, rows);
+  if (n <= 9) return 9;
+  if (n <= 13) return 8;
+  if (n <= 21) return 7;
+  return 6;
+}
+
 /** ばみり数とは独立 — scaleW/H で wrap 内の表示サイズを決定 */
 export function calcStagePixelSize(
   wrapW: number,
