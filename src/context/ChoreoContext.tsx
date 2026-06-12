@@ -58,6 +58,7 @@ import {
   patchActiveProject,
   projectToSummary,
   removeProject,
+  reorderProjects as reorderWorkspaceProjects,
   saveWorkspace,
 } from "@/lib/projectStore";
 import {
@@ -87,13 +88,14 @@ import { resolveMusicLink } from "@/lib/musicResolve";
 import { coerceMusicLink } from "@/lib/musicLinkUtils";
 import { displayMusicTitle } from "@/lib/openGraphMetadata";
 import { parseVideoLink } from "@/lib/videoLinkUtils";
+import { useProfile } from "@/context/ProfileContext";
 import { getStrings, type ProjectLanguage, type UiStrings } from "@/lib/uiStrings";
 import type {
   AppMode,
   ChoreoState,
   CountData,
+  CreateProjectInput,
   FormationClipboard,
-  NewProjectParams,
   Position,
   ProjectMedia,
   ProjectSummary,
@@ -156,8 +158,9 @@ interface ChoreoContextValue {
   projects: ProjectSummary[];
   activeProjectId: string;
   switchProject: (projectId: string) => void;
-  createProject: (params: NewProjectParams) => void;
+  createProject: (params: CreateProjectInput) => void;
   deleteProject: (projectId: string) => void;
+  reorderProjects: (fromIndex: number, toIndex: number) => void;
   appMode: AppMode;
   isViewOnly: boolean;
   /** 共有 URL から開いた閲覧（編集に戻れない） */
@@ -175,6 +178,7 @@ interface ChoreoContextValue {
   removeReferenceVideo: (videoId: string) => Promise<void>;
   getVideoUrl: (videoId: string) => Promise<string | null>;
   copyShareLink: () => Promise<void>;
+  createShareUrl: () => Promise<string | null>;
   enterViewPreview: () => void;
   exitViewMode: () => void;
 }
@@ -197,6 +201,7 @@ function cloneChoreoState(state: ChoreoState): ChoreoState {
 }
 
 export function ChoreoProvider({ children }: { children: ReactNode }) {
+  const { language: profileLanguage } = useProfile();
   const [state, setState] = useState<ChoreoState>(createInitialState);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [activeProjectId, setActiveProjectId] = useState("");
@@ -220,6 +225,8 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const mediaRef = useRef(media);
   const activeProjectIdRef = useRef(activeProjectId);
   const appModeRef = useRef(appMode);
+  const profileLanguageRef = useRef(profileLanguage);
+  profileLanguageRef.current = profileLanguage;
   const externalShareViewRef = useRef(externalShareView);
   stateRef.current = state;
   workspaceRef.current = workspace;
@@ -258,12 +265,12 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     });
   }, [workspace, activeProjectId, state.songTitle, state.bpm, media]);
 
-  const language = state.language;
-  const strings = useMemo(() => getStrings(state.language), [state.language]);
+  const language = profileLanguage;
+  const strings = useMemo(() => getStrings(profileLanguage), [profileLanguage]);
 
   useEffect(() => {
-    document.documentElement.lang = state.language;
-  }, [state.language]);
+    document.documentElement.lang = profileLanguage;
+  }, [profileLanguage]);
 
   const totalSlots = getTotalSlots(state.sections);
   const memberDotPx = useMemo(
@@ -377,7 +384,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     const prev = stack.pop()!;
     setCanUndo(stack.length > 0);
     setState(prev);
-    showToast(getStrings(stateRef.current.language).undoDone);
+    showToast(getStrings(profileLanguageRef.current).undoDone);
   }, [stopPlayback, showToast]);
 
   useEffect(() => {
@@ -387,7 +394,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       const bundle = await hydrateRemoteShare(shareId);
       if (cancelled) return;
       if (!bundle) {
-        showToast(getStrings(stateRef.current.language).shareLoadFailed);
+        showToast(getStrings(profileLanguageRef.current).shareLoadFailed);
         const loaded = loadWorkspace();
         workspaceRef.current = loaded.workspace;
         setWorkspace(loaded.workspace);
@@ -542,10 +549,8 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const togglePlayback = useCallback(() => {
     if (stateRef.current.isPlaying) {
       stopPlayback();
-      showToast(getStrings(stateRef.current.language).paused);
     } else {
       setState((s) => ({ ...s, isPlaying: true }));
-      showToast(getStrings(stateRef.current.language).playingToast);
     }
   }, [stopPlayback, showToast]);
 
@@ -621,7 +626,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const saveProject = useCallback(() => {
     const ws = workspaceRef.current;
     if (!ws || !activeProjectId) {
-      showToast(getStrings(stateRef.current.language).saveFailed);
+      showToast(getStrings(profileLanguageRef.current).saveFailed);
       return;
     }
     const ok = persistWorkspace(
@@ -630,7 +635,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       stateRef.current,
       mediaRef.current,
     );
-    showToast(ok ? getStrings(stateRef.current.language).saved : getStrings(stateRef.current.language).saveFailed);
+    showToast(ok ? getStrings(profileLanguageRef.current).saved : getStrings(profileLanguageRef.current).saveFailed);
   }, [activeProjectId, showToast]);
 
   const switchProject = useCallback(
@@ -660,13 +665,13 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       setMedia(normalizeProjectMedia(getActiveMedia(nextWs, projectId)));
       setSelectedMemberId(null);
       clearUndoHistory();
-      showToast(getStrings(stateRef.current.language).switchedProject(nextState.songTitle));
+      showToast(getStrings(profileLanguageRef.current).switchedProject(nextState.songTitle));
     },
     [activeProjectId, stopPlayback, showToast, clearUndoHistory],
   );
 
   const createProject = useCallback(
-    (params: NewProjectParams) => {
+    (params: CreateProjectInput) => {
       if (appModeRef.current === "view") return;
       const ws = workspaceRef.current;
       if (!ws) return;
@@ -677,7 +682,10 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         stateRef.current,
         mediaRef.current,
       );
-      const { workspace: nextWs, record } = addProject(saved, params);
+      const { workspace: nextWs, record } = addProject(saved, {
+        ...params,
+        language: profileLanguageRef.current,
+      });
       workspaceRef.current = nextWs;
       saveWorkspace(nextWs);
       setWorkspace(nextWs);
@@ -686,10 +694,21 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       setMedia(normalizeProjectMedia(record.media));
       setSelectedMemberId(null);
       clearUndoHistory();
-      showToast(getStrings(stateRef.current.language).createdProject(record.state.songTitle));
+      showToast(getStrings(profileLanguageRef.current).createdProject(record.state.songTitle));
     },
     [activeProjectId, stopPlayback, showToast, clearUndoHistory],
   );
+
+  const reorderProjects = useCallback((fromIndex: number, toIndex: number) => {
+    if (appModeRef.current === "view") return;
+    const ws = workspaceRef.current;
+    if (!ws) return;
+    const nextWs = reorderWorkspaceProjects(ws, fromIndex, toIndex);
+    if (nextWs === ws) return;
+    workspaceRef.current = nextWs;
+    saveWorkspace(nextWs);
+    setWorkspace(nextWs);
+  }, []);
 
   const deleteProject = useCallback(
     (projectId: string) => {
@@ -697,7 +716,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       const ws = workspaceRef.current;
       if (!ws) return;
       if (ws.projects.length <= 1) {
-        showToast(getStrings(stateRef.current.language).cannotDeleteLastProject);
+        showToast(getStrings(profileLanguageRef.current).cannotDeleteLastProject);
         return;
       }
       stopPlayback();
@@ -723,7 +742,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         }
       }
       clearUndoHistory();
-      showToast(getStrings(stateRef.current.language).projectDeleted);
+      showToast(getStrings(profileLanguageRef.current).projectDeleted);
     },
     [activeProjectId, stopPlayback, showToast, clearUndoHistory],
   );
@@ -732,7 +751,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     stopPlayback();
     const s = stateRef.current;
     setClipboard(snapshotFormation(s.currentCount, s.countData, s.members));
-    showToast(getStrings(stateRef.current.language).copied);
+    showToast(getStrings(profileLanguageRef.current).copied);
   }, [stopPlayback, showToast]);
 
   const pasteFormation = useCallback(() => {
@@ -749,7 +768,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       };
       return { ...s, countData };
     });
-    showToast(getStrings(stateRef.current.language).pasted);
+    showToast(getStrings(profileLanguageRef.current).pasted);
   }, [stopPlayback, clipboard, showToast, mutateState]);
 
   const updateMemberPosition = useCallback(
@@ -792,7 +811,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     (memberId: number) => {
       const name =
         stateRef.current.members.find((m) => m.id === memberId)?.name ??
-        getStrings(stateRef.current.language).memberFallback;
+        getStrings(profileLanguageRef.current).memberFallback;
       mutateState((s) => {
         const member = s.members.find((m) => m.id === memberId);
         if (!member) return s;
@@ -803,7 +822,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         };
       });
       setSelectedMemberId((id) => (id === memberId ? null : id));
-      showToast(getStrings(stateRef.current.language).memberRemoved(name));
+      showToast(getStrings(profileLanguageRef.current).memberRemoved(name));
     },
     [mutateState, showToast],
   );
@@ -820,7 +839,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           removedMembers: s.removedMembers.filter((m) => m.id !== memberId),
         };
       });
-      showToast(getStrings(stateRef.current.language).memberRestored);
+      showToast(getStrings(profileLanguageRef.current).memberRestored);
     },
     [mutateState, showToast],
   );
@@ -895,9 +914,8 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           currentCount,
         };
       });
-      showToast(getStrings(stateRef.current.language).halfCountAdded);
     },
-    [mutateState, showToast],
+    [mutateState],
   );
 
   const removeCountAt = useCallback(
@@ -921,9 +939,8 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           currentCount,
         };
       });
-      showToast(getStrings(stateRef.current.language).countDeleted);
     },
-    [mutateState, showToast],
+    [mutateState],
   );
 
   const removeHalfAt = useCallback(
@@ -941,7 +958,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     if (!sec || sec.slots.length <= 1) return false;
     if (
       countHasData(s.countData[s.currentCount]) &&
-      !window.confirm(getStrings(stateRef.current.language).deleteCountConfirm(flat.label))
+      !window.confirm(getStrings(profileLanguageRef.current).deleteCountConfirm(flat.label))
     ) {
       return false;
     }
@@ -979,7 +996,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           ),
         };
       });
-      showToast(getStrings(stateRef.current.language).sectionDeletedToast);
+      showToast(getStrings(profileLanguageRef.current).sectionDeletedToast);
     },
     [stopPlayback, mutateState, showToast],
   );
@@ -1030,7 +1047,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           ),
         };
       });
-      showToast(delta === -1 ? getStrings(stateRef.current.language).sectionMovedLeft : getStrings(stateRef.current.language).sectionMovedRight);
+      showToast(delta === -1 ? getStrings(profileLanguageRef.current).sectionMovedLeft : getStrings(profileLanguageRef.current).sectionMovedRight);
     },
     [stopPlayback, mutateState, showToast],
   );
@@ -1053,7 +1070,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           ),
         };
       });
-      showToast(getStrings(stateRef.current.language).sectionsSwapped);
+      showToast(getStrings(profileLanguageRef.current).sectionsSwapped);
     },
     [stopPlayback, mutateState, showToast],
   );
@@ -1076,7 +1093,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           ),
         };
       });
-      showToast(getStrings(stateRef.current.language).sectionReordered);
+      showToast(getStrings(profileLanguageRef.current).sectionReordered);
     },
     [stopPlayback, mutateState, showToast],
   );
@@ -1085,7 +1102,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     async (input: string, html?: string) => {
       const parsed = coerceMusicLink(input, html);
       if (!parsed) {
-        showToast(getStrings(stateRef.current.language).musicLinkInvalid);
+        showToast(getStrings(profileLanguageRef.current).musicLinkInvalid);
         return false;
       }
 
@@ -1105,7 +1122,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           },
         ],
       }));
-      showToast(getStrings(stateRef.current.language).musicLinkAdded);
+      showToast(getStrings(profileLanguageRef.current).musicLinkAdded);
       return true;
     },
     [mutateMedia, showToast],
@@ -1167,7 +1184,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           },
         ],
       }));
-      showToast(getStrings(stateRef.current.language).videoUploaded);
+      showToast(getStrings(profileLanguageRef.current).videoUploaded);
     },
     [activeProjectId, mutateMedia, showToast],
   );
@@ -1176,7 +1193,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     (url: string) => {
       const parsed = parseVideoLink(url);
       if (!parsed) {
-        showToast(getStrings(stateRef.current.language).videoLinkInvalid);
+        showToast(getStrings(profileLanguageRef.current).videoLinkInvalid);
         return;
       }
       const id = newMediaId();
@@ -1194,7 +1211,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           },
         ],
       }));
-      showToast(getStrings(stateRef.current.language).videoLinkAdded);
+      showToast(getStrings(profileLanguageRef.current).videoLinkAdded);
     },
     [mutateMedia, showToast],
   );
@@ -1249,9 +1266,10 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     [activeProjectId],
   );
 
-  const copyShareLink = useCallback(async () => {
-    if (appModeRef.current === "view") return;
-    const lang = getStrings(stateRef.current.language);
+  const buildCurrentShareUrl = useCallback(async (): Promise<
+    { url: string; kind: "remote" | "legacy" } | null
+  > => {
+    if (appModeRef.current === "view") return null;
     const state = stateRef.current;
     const projectId = activeProjectId;
     const ws = workspaceRef.current;
@@ -1263,14 +1281,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     if (projectId) {
       const remote = await createRemoteShare(state, media);
       if (remote.ok) {
-        const url = buildShareUrlFromId(remote.shareId);
-        try {
-          await navigator.clipboard.writeText(url);
-          showToast(shareCopiedToastMessage(lang, media));
-        } catch {
-          showToast(lang.shareLinkCopyFailed);
-        }
-        return;
+        return { url: buildShareUrlFromId(remote.shareId), kind: "remote" };
       }
       if (remote.reason === "failed") {
         console.error("[share] create failed:", remote.error);
@@ -1278,30 +1289,53 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     }
 
     const legacyUrl = buildLegacyShareUrl(state, media);
-    if (!legacyUrl) {
+    return legacyUrl ? { url: legacyUrl, kind: "legacy" } : null;
+  }, [activeProjectId]);
+
+  const createShareUrl = useCallback(async (): Promise<string | null> => {
+    const result = await buildCurrentShareUrl();
+    return result?.url ?? null;
+  }, [buildCurrentShareUrl]);
+
+  const copyShareLink = useCallback(async () => {
+    if (appModeRef.current === "view") return;
+    const lang = getStrings(profileLanguageRef.current);
+    const projectId = activeProjectId;
+    const ws = workspaceRef.current;
+    const media =
+      ws && projectId
+        ? normalizeProjectMedia(getActiveMedia(ws, projectId))
+        : normalizeProjectMedia(mediaRef.current);
+
+    const result = await buildCurrentShareUrl();
+    if (!result) {
       showToast(lang.shareLinkTooLong);
       return;
     }
     try {
-      await navigator.clipboard.writeText(legacyUrl);
-      showToast(lang.shareLinkCopiedLegacy);
+      await navigator.clipboard.writeText(result.url);
+      showToast(
+        result.kind === "remote"
+          ? shareCopiedToastMessage(lang, media)
+          : lang.shareLinkCopiedLegacy,
+      );
     } catch {
       showToast(lang.shareLinkCopyFailed);
     }
-  }, [activeProjectId, showToast]);
+  }, [activeProjectId, buildCurrentShareUrl, showToast]);
 
   const enterViewPreview = useCallback(() => {
     stopPlayback();
     setExternalShareView(false);
     setAppMode("view");
-    showToast(getStrings(stateRef.current.language).viewPreviewStarted);
+    showToast(getStrings(profileLanguageRef.current).viewPreviewStarted);
   }, [stopPlayback, showToast]);
 
   const exitViewMode = useCallback(() => {
     if (externalShareViewRef.current) return;
     stopPlayback();
     setAppMode("edit");
-    showToast(getStrings(stateRef.current.language).viewPreviewEnded);
+    showToast(getStrings(profileLanguageRef.current).viewPreviewEnded);
   }, [stopPlayback, showToast]);
 
   const setMemberDotPx = useCallback((px: number) => {
@@ -1411,6 +1445,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     switchProject,
     createProject,
     deleteProject,
+    reorderProjects,
     appMode,
     isViewOnly: appMode === "view",
     externalShareView,
@@ -1427,6 +1462,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     removeReferenceVideo,
     getVideoUrl,
     copyShareLink,
+    createShareUrl,
     enterViewPreview,
     exitViewMode,
   };

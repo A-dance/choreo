@@ -130,10 +130,13 @@ export interface Workspace {
   projects: ProjectRecord[];
 }
 
-export interface NewProjectParams {
+export interface CreateProjectInput {
   songTitle: string;
   bpm: number;
   countsPerSection: number;
   memberCount: number;
+}
+
+export interface NewProjectParams extends CreateProjectInput {
   language: ProjectLanguage;
 }

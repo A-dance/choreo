@@ -8,114 +8,16 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  countHasData,
-  flattenTimeline,
-  getPositionDisplayInfo,
-} from "@/lib/choreoUtils";
+import { countHasData, flattenTimeline } from "@/lib/choreoUtils";
 import { MAX_COUNTS_PER_SECTION } from "@/lib/constants";
 import { useChoreo } from "@/context/ChoreoContext";
 import type { UiStrings } from "@/lib/uiStrings";
-
-function PositionBar({
-  isPlaying,
-  pos,
-  UI,
-}: {
-  isPlaying: boolean;
-  pos: ReturnType<typeof getPositionDisplayInfo>;
-  UI: UiStrings;
-}) {
-  const progressPct = (pos.globalIndex / pos.totalSlots) * 100;
-
-  if (isPlaying) {
-    return (
-      <div className="playback-now" aria-live="polite">
-        <div className="playback-now-status">
-          <span className="playback-now-dot" aria-hidden />
-          <span className="playback-now-label">Now</span>
-        </div>
-
-        <div className="playback-now-main">
-          <span
-            className={"playback-now-count" + (pos.isHalf ? " half" : "")}
-          >
-            {pos.countLabel}
-          </span>
-          <span className="playback-now-section">{pos.sectionName}</span>
-        </div>
-
-        <div className="playback-now-progress">
-          <span className="playback-now-sub">
-            {pos.globalIndex}/{pos.totalSlots}
-          </span>
-          <div
-            className="playback-now-progress-bar"
-            role="progressbar"
-            aria-valuenow={pos.globalIndex}
-            aria-valuemin={1}
-            aria-valuemax={pos.totalSlots}
-            aria-label={UI.progressAria(
-              pos.globalIndex,
-              pos.totalSlots,
-              pos.sectionCount,
-            )}
-          >
-            <div
-              className="playback-now-progress-fill"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="position-bar" aria-live="polite">
-      <div className="position-bar-head">
-        <span className="position-bar-label">Now</span>
-      </div>
-
-      <div className="position-bar-main">
-        <span
-          className={"position-bar-count" + (pos.isHalf ? " half" : "")}
-        >
-          {pos.countLabel}
-        </span>
-        <span className="position-bar-section">{pos.sectionName}</span>
-        <span className="position-bar-meta">
-          {pos.globalIndex}/{pos.totalSlots}
-        </span>
-      </div>
-
-      <div className="position-bar-progress">
-        <div
-          className="position-bar-progress-track"
-          role="progressbar"
-          aria-valuenow={pos.globalIndex}
-          aria-valuemin={1}
-          aria-valuemax={pos.totalSlots}
-          aria-label={UI.progressAria(
-            pos.globalIndex,
-            pos.totalSlots,
-            pos.sectionCount,
-          )}
-        >
-          <div
-            className="position-bar-progress-fill"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function TimelineFooter() {
   const {
     state,
     strings: UI,
+    isViewOnly,
     navigateTo,
     insertHalfAfter,
     removeCountAt,
@@ -137,6 +39,7 @@ export function TimelineFooter() {
   const [countDeleteSlotIndex, setCountDeleteSlotIndex] = useState<
     number | null
   >(null);
+  const [sectionDeleteId, setSectionDeleteId] = useState<string | null>(null);
 
   const flatSlots = useMemo(
     () => flattenTimeline(state.sections),
@@ -153,6 +56,7 @@ export function TimelineFooter() {
 
   useEffect(() => {
     setCountDeleteSlotIndex(null);
+    setSectionDeleteId(null);
   }, [selectedSectionId]);
 
   useEffect(() => {
@@ -164,14 +68,21 @@ export function TimelineFooter() {
     return () => window.removeEventListener("keydown", onKey);
   }, [countDeleteSlotIndex]);
 
+  useEffect(() => {
+    if (sectionDeleteId === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSectionDeleteId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sectionDeleteId]);
+
   const selectedSection = state.sections.find(
     (s) => s.id === selectedSectionId,
   );
-  const positionInfo = useMemo(
-    () => getPositionDisplayInfo(state.sections, state.currentCount),
-    [state.sections, state.currentCount],
-  );
-
+  const selectedSectionIndex = selectedSection
+    ? state.sections.findIndex((s) => s.id === selectedSection.id) + 1
+    : 1;
   const activeFullCount =
     selectedSection?.slots.filter((s) => s.type === "count").length ?? 0;
   const canAddCount = activeFullCount < MAX_COUNTS_PER_SECTION;
@@ -180,6 +91,7 @@ export function TimelineFooter() {
     : false;
 
   const startEditSection = (sectionId: string, name: string) => {
+    if (isViewOnly) return;
     setEditingSectionId(sectionId);
     setSectionNameDraft(name);
   };
@@ -193,16 +105,37 @@ export function TimelineFooter() {
     flatSlots.find((s) => s.sectionId === sectionId)?.globalIndex ?? 1;
 
   const handleDeleteSection = (sectionId: string, name: string) => {
-    if (state.sections.length <= 1) return;
+    if (isViewOnly || state.sections.length <= 1) return;
     if (
       !window.confirm(UI.deleteSectionConfirm(name))
     ) {
       return;
     }
     deleteSection(sectionId);
+    setSectionDeleteId(null);
+  };
+
+  const handleSectionDoubleClick = (
+    sectionId: string,
+    name: string,
+    e: React.MouseEvent,
+  ) => {
+    e.preventDefault();
+    if (isViewOnly) return;
+    if (e.shiftKey) {
+      startEditSection(sectionId, name);
+      setSectionDeleteId(null);
+      return;
+    }
+    if (state.sections.length <= 1) {
+      startEditSection(sectionId, name);
+      return;
+    }
+    setSectionDeleteId((prev) => (prev === sectionId ? null : sectionId));
   };
 
   const handleDeleteCount = (sectionId: string, slotIndex: number, label: string) => {
+    if (isViewOnly) return;
     const sec = state.sections.find((s) => s.id === sectionId);
     if (!sec || sec.slots.length <= 1) return;
     const global =
@@ -218,6 +151,7 @@ export function TimelineFooter() {
   };
 
   const handleTabClick = (sectionId: string) => {
+    setSectionDeleteId(null);
     setSelectedSectionId(sectionId);
     navigateTo(firstGlobalInSection(sectionId));
   };
@@ -226,7 +160,7 @@ export function TimelineFooter() {
     e: React.DragEvent<HTMLButtonElement>,
     sectionId: string,
   ) => {
-    if (editingSectionId) {
+    if (isViewOnly || editingSectionId) {
       e.preventDefault();
       return;
     }
@@ -245,6 +179,7 @@ export function TimelineFooter() {
     e: React.DragEvent<HTMLButtonElement>,
     targetSectionId: string,
   ) => {
+    if (isViewOnly) return;
     e.preventDefault();
     const fromId = dragSectionId ?? e.dataTransfer.getData("text/plain");
     if (!fromId || fromId === targetSectionId) return;
@@ -279,19 +214,19 @@ export function TimelineFooter() {
   }, []);
 
   return (
-    <div className="timeline-footer">
-      <PositionBar isPlaying={state.isPlaying} pos={positionInfo} UI={UI} />
-
+    <div
+      className={
+        "timeline-footer" +
+        (state.isPlaying ? " is-playing" : "") +
+        (isViewOnly ? " view-only" : "")
+      }
+    >
       <div
         className={"section-tabs-bar" + (state.isPlaying ? " playing" : "")}
         role="tablist"
         aria-label={UI.sections}
       >
         {state.sections.map((sec) => {
-          const sectionSlots = flatSlots.filter((f) => f.sectionId === sec.id);
-          const hasSectionData = sectionSlots.some((f) =>
-            countHasData(state.countData[f.globalIndex]),
-          );
           const isSelected = sec.id === selectedSectionId;
           const isNow = sec.id === playbackSectionId;
           const isPlayingTab = state.isPlaying && isNow;
@@ -324,19 +259,20 @@ export function TimelineFooter() {
               <button
                 type="button"
                 role="tab"
-                draggable
+                draggable={!isViewOnly}
                 aria-selected={isSelected}
                 className={
                   "sec-tab" +
                   (isSelected ? " selected" : "") +
                   (isNow ? " now" : "") +
-                  (hasSectionData ? " has-d" : "") +
                   (isPlayingTab ? " playing" : "") +
                   (isDragging ? " dragging" : "") +
                   (isDropTarget ? " drop-target" : "")
                 }
                 onClick={() => handleTabClick(sec.id)}
-                onDoubleClick={() => startEditSection(sec.id, sec.name)}
+                onDoubleClick={(e) =>
+                  handleSectionDoubleClick(sec.id, sec.name, e)
+                }
                 onDragStart={(e) => handleDragStart(e, sec.id)}
                 onDragEnd={handleDragEnd}
                 onDragOver={(e) => {
@@ -351,10 +287,14 @@ export function TimelineFooter() {
                 onDrop={(e) => handleDrop(e, sec.id)}
                 title={UI.sectionTabHint}
               >
-                {isNow && <span className="sec-tab-now-dot" aria-hidden />}
+                {isNow && !state.isPlaying && (
+                  <span className="sec-tab-now-dot" aria-hidden />
+                )}
                 {sec.name}
               </button>
-              {isSelected && state.sections.length > 1 && (
+              {sectionDeleteId === sec.id &&
+                state.sections.length > 1 &&
+                !isViewOnly && (
                 <button
                   type="button"
                   className="sec-tab-section-del"
@@ -371,13 +311,15 @@ export function TimelineFooter() {
             </div>
           );
         })}
-        <button
-          type="button"
-          className="sec-tab add"
-          onClick={() => addSection()}
-        >
-          + Add section
-        </button>
+        {!isViewOnly && (
+          <button
+            type="button"
+            className="sec-tab add"
+            onClick={() => addSection()}
+          >
+            + Add section
+          </button>
+        )}
       </div>
 
       {selectedSection && (
@@ -392,6 +334,9 @@ export function TimelineFooter() {
             onPointerDown={onCountsPointerDown}
           >
             <div className="tl-counts">
+              <span className="timeline-phrase-label" aria-hidden>
+                S{selectedSectionIndex}
+              </span>
               {selectedSection.slots.map((slot, slotIdx) => {
                 const global = flatSlots.find(
                   (f) =>
@@ -407,7 +352,7 @@ export function TimelineFooter() {
                   countDeleteSlotIndex === slotIdx && canDeleteCountInSection;
                 return (
                   <Fragment key={`${selectedSection.id}-${slotIdx}`}>
-                    {slotIdx > 0 && (
+                    {slotIdx > 0 && !isViewOnly && (
                       <button
                         type="button"
                         className="ins-half-btn"
@@ -415,6 +360,7 @@ export function TimelineFooter() {
                           insertHalfAfter(selectedSection.id, slotIdx - 1)
                         }
                         title={UI.insertHalfCount}
+                        aria-label={UI.insertHalfCount}
                       >
                         +
                       </button>
@@ -441,7 +387,7 @@ export function TimelineFooter() {
                         }}
                         onDoubleClick={(e) => {
                           e.preventDefault();
-                          if (!canDeleteCountInSection) return;
+                          if (isViewOnly || !canDeleteCountInSection) return;
                           setCountDeleteSlotIndex((prev) =>
                             prev === slotIdx ? null : slotIdx,
                           );
@@ -472,31 +418,36 @@ export function TimelineFooter() {
                   </Fragment>
                 );
               })}
-              <button
-                type="button"
-                className="ins-half-btn"
-                onClick={() =>
-                  insertHalfAfter(
-                    selectedSection.id,
-                    selectedSection.slots.length - 1,
-                  )
-                }
-                title={UI.insertHalfCount}
-              >
-                +
-              </button>
-              <button
-                type="button"
-                className="add-count-btn"
-                disabled={!canAddCount}
-                onClick={() => addCountToSection(selectedSection.id)}
-              >
-                + Add count
-              </button>
+              {!isViewOnly && (
+                <>
+                  <button
+                    type="button"
+                    className="ins-half-btn"
+                    onClick={() =>
+                      insertHalfAfter(
+                        selectedSection.id,
+                        selectedSection.slots.length - 1,
+                      )
+                    }
+                    title={UI.insertHalfCount}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    className="add-count-btn"
+                    disabled={!canAddCount}
+                    onClick={() => addCountToSection(selectedSection.id)}
+                  >
+                    + Add count
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }

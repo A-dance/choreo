@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { STAGE_SCALE_MAX, STAGE_SCALE_MIN } from "@/lib/constants";
 import { calcStagePixelSize } from "@/lib/gridUtils";
-import { getPositionDisplayInfo, dotFontPx } from "@/lib/choreoUtils";
+import { dotFontPx } from "@/lib/choreoUtils";
 import { useChoreo } from "@/context/ChoreoContext";
 import { StageFloor } from "@/components/StageFloor";
 
@@ -52,16 +52,11 @@ export function StageArea() {
   } | null>(null);
 
   const [stageSize, setStageSize] = useState({ w: 400, h: 500 });
+  const [isResizing, setIsResizing] = useState(false);
+  const [stageHovered, setStageHovered] = useState(false);
+  const showResizeHandles = stageHovered || isResizing;
   const { bamiriHalfWidth, bamiriDepth, scaleW, scaleH } = state.stage;
   const dotFont = dotFontPx(memberDotPx);
-  const playhead = useMemo(
-    () =>
-      state.isPlaying
-        ? getPositionDisplayInfo(state.sections, state.currentCount)
-        : null,
-    [state.isPlaying, state.sections, state.currentCount],
-  );
-
   const resizeStage = useCallback(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
@@ -234,6 +229,7 @@ export function StageArea() {
       wrapW: wr.width,
       wrapH: wr.height,
     };
+    setIsResizing(true);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
@@ -245,6 +241,7 @@ export function StageArea() {
   const endResizePointer = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!resizeRef.current) return;
     resizeRef.current = null;
+    setIsResizing(false);
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
@@ -262,9 +259,18 @@ export function StageArea() {
   return (
     <div className="stage-main">
       <div className="stage-area">
-        <div className="stage-wrap" ref={wrapRef}>
+        <div
+          className="stage-wrap"
+          ref={wrapRef}
+          onMouseEnter={() => setStageHovered(true)}
+          onMouseLeave={() => setStageHovered(false)}
+        >
           <div
-            className="stage-frame"
+            className={
+              "stage-frame" +
+              (showResizeHandles ? " show-resize-handles" : "") +
+              (isResizing ? " resizing" : "")
+            }
             style={{ width: stageSize.w, height: stageSize.h }}
           >
             <div
@@ -280,22 +286,12 @@ export function StageArea() {
               />
               <div className="s-lbl back">B A C K</div>
               <div className="s-lbl front">A U D I E N C E</div>
-
-              {playhead && (
-                <div className="stage-playhead" aria-live="polite">
-                  <span className="stage-playhead-dot" aria-hidden />
-                  <span
-                    className={
-                      "stage-playhead-count" + (playhead.isHalf ? " half" : "")
-                    }
-                  >
-                    {playhead.countLabel}
-                  </span>
-                  <span className="stage-playhead-section">
-                    {playhead.sectionName}
-                  </span>
-                </div>
-              )}
+              <div className="s-lbl side left" aria-hidden>
+                STAGE RIGHT
+              </div>
+              <div className="s-lbl side right" aria-hidden>
+                STAGE LEFT
+              </div>
 
               {state.members.map((m) => {
                 const visible = isMemberVisibleOnCurrent(m.id);

@@ -86,6 +86,17 @@ export type UiStrings = {
   shareTitle: string;
   shareViewSectionDesc: string;
   copyShareLink: string;
+  shareViaDevice: string;
+  shareAction: string;
+  shareSubtitle: string;
+  shareCopy: string;
+  shareCopied: string;
+  shareViewerHint: string;
+  mediaLinkCount: (n: number) => string;
+  shareViaMail: string;
+  shareViaMore: string;
+  shareViaCopy: string;
+  shareSheetText: (songTitle: string) => string;
   previewViewMode: string;
   viewPreviewStarted: string;
   viewPreviewEnded: string;
@@ -100,6 +111,16 @@ export type UiStrings = {
   viewModeBanner: string;
   exitViewMode: string;
   viewOnlyProjectHint: string;
+  projectLastSaved: (when: string) => string;
+  projectReorderHint: string;
+  projectReorderAria: (name: string) => string;
+  myPage: string;
+  myPageTitle: string;
+  myPageDesc: string;
+  displayNameLabel: string;
+  displayNamePlaceholder: string;
+  myPageProjectCount: string;
+  backToEditor: string;
   sidebarMedia: string;
   mediaPanelTitle: string;
   mediaPerProjectHint: string;
@@ -113,12 +134,9 @@ export type UiStrings = {
   addMusicLink: string;
   musicLinkLabel: string;
   musicLinkAddButton: string;
-  musicPasteClipboard: string;
-  musicPasteAndAdd: string;
   musicEmptyHint: string;
   musicFetching: string;
   musicLinkPlaceholder: string;
-  musicLinkHint: string;
   musicLinkInvalid: string;
   musicLinkAdded: string;
   musicTrackTitle: string;
@@ -186,7 +204,7 @@ const en: UiStrings = {
   cancel: "Cancel",
   delete: "Delete",
   newProjectTitle: "New project",
-  newProjectDesc: "Set language, song title, BPM, member count, and counts per section.",
+  newProjectDesc: "Set song title, BPM, member count, and counts per section.",
   songTitleLabel: "Song title",
   countsPerSection: "Counts per section",
   languageLabel: "Language",
@@ -194,7 +212,7 @@ const en: UiStrings = {
   sections: "Sections",
   sectionName: "Section name",
   sectionTabHint:
-    "Click to select · drag to reorder · double-click to rename",
+    "Click to select · drag to reorder · double-click to delete · shift+double-click to rename",
   deleteSection: "Delete section",
   deleteSectionAria: (name) => `Delete section ${name}`,
   deleteSectionConfirm: (name) =>
@@ -247,6 +265,18 @@ const en: UiStrings = {
   shareViewSectionDesc:
     "Copy a view-only link to share formation, music, and reference videos.",
   copyShareLink: "Copy view link",
+  shareViaDevice: "Share via apps…",
+  shareAction: "Share",
+  shareSubtitle: "Anyone with the link can view",
+  shareCopy: "Copy",
+  shareCopied: "Copied",
+  shareViewerHint: "Viewers can see formations but cannot edit.",
+  mediaLinkCount: (n: number) => `${n} ${n === 1 ? "link" : "links"}`,
+  shareViaMail: "Email",
+  shareViaMore: "More",
+  shareViaCopy: "Copy Link",
+  shareSheetText: (songTitle: string) =>
+    `Formation for "${songTitle}" — view it here:`,
   previewViewMode: "Preview in view mode",
   viewPreviewStarted: "View mode — editing disabled",
   viewPreviewEnded: "Back to edit mode",
@@ -261,6 +291,17 @@ const en: UiStrings = {
   viewModeBanner: "View-only mode — editing is disabled",
   exitViewMode: "Exit view mode",
   viewOnlyProjectHint: "View-only — only this project is shown",
+  projectLastSaved: (when) => `Last saved ${when}`,
+  projectReorderHint: "Click to open · drag to reorder",
+  projectReorderAria: (name) => `Reorder ${name}`,
+  myPage: "My page",
+  myPageTitle: "My page",
+  myPageDesc:
+    "Set your display name and app language. New projects use the language chosen here.",
+  displayNameLabel: "Display name",
+  displayNamePlaceholder: "Your name",
+  myPageProjectCount: "Projects",
+  backToEditor: "Back to editor",
   sidebarMedia: "Media",
   mediaPanelTitle: "Project media",
   mediaPerProjectHint: "Audio and reference videos are saved per project.",
@@ -275,13 +316,9 @@ const en: UiStrings = {
   addMusicLink: "Add music link",
   musicLinkLabel: "Audio link",
   musicLinkAddButton: "Add",
-  musicPasteClipboard: "Paste from clipboard",
-  musicPasteAndAdd: "Paste link to add",
-  musicEmptyHint: "Paste a Linkfire, TuneCore, or streaming link in the field above.",
+  musicEmptyHint: "Paste a music link above to get started.",
   musicFetching: "Looking up…",
-  musicLinkPlaceholder: "Linkfire, TuneCore, Spotify, Apple Music…",
-  musicLinkHint:
-    "Tip: use “Paste from clipboard” if the link is embedded in text.",
+  musicLinkPlaceholder: "Paste a link (Linkfire, TuneCore, Spotify…)",
   musicLinkInvalid:
     "Could not read that link — paste the full URL as copied",
   musicLinkAdded: "Audio link added",
@@ -351,7 +388,7 @@ const ja: UiStrings = {
   cancel: "キャンセル",
   delete: "削除",
   newProjectTitle: "新規プロジェクト",
-  newProjectDesc: "言語・曲名・BPM・人数・各セクションのカウント数を設定します。",
+  newProjectDesc: "曲名・BPM・人数・各セクションのカウント数を設定します。",
   songTitleLabel: "曲名",
   countsPerSection: "カウント数（各セクション）",
   languageLabel: "言語",
@@ -359,7 +396,7 @@ const ja: UiStrings = {
   sections: "セクション",
   sectionName: "セクション名",
   sectionTabHint:
-    "クリックで選択 · ドラッグで並べ替え · ダブルクリックで名前変更",
+    "クリックで選択 · ドラッグで並べ替え · ダブルクリックで削除 · Shift+ダブルクリックで名前変更",
   deleteSection: "セクションを削除",
   deleteSectionAria: (name) => `セクション「${name}」を削除`,
   deleteSectionConfirm: (name) =>
@@ -407,11 +444,23 @@ const ja: UiStrings = {
   progressAria: (current, total, sections) =>
     `${current}/${total}、${sections}セクション`,
   defaultSongTitle: "新曲タイトル",
-  share: "共有",
-  shareTitle: "共有",
+  share: "Share",
+  shareTitle: "Share",
   shareViewSectionDesc:
     "配置・音源・参考動画を、編集できない閲覧用リンクとして共有します。",
   copyShareLink: "閲覧用リンクをコピー",
+  shareViaDevice: "LINEなどのアプリで共有…",
+  shareAction: "シェア",
+  shareSubtitle: "リンクを知っている人は閲覧できます",
+  shareCopy: "コピー",
+  shareCopied: "コピー済み",
+  shareViewerHint: "閲覧者は配置を見られますが、編集はできません。",
+  mediaLinkCount: (n: number) => `リンク${n}件`,
+  shareViaMail: "メール",
+  shareViaMore: "その他",
+  shareViaCopy: "リンクコピー",
+  shareSheetText: (songTitle: string) =>
+    `「${songTitle}」のダンス配置を共有します。こちらから見られます↓`,
   previewViewMode: "閲覧モードでプレビュー",
   viewPreviewStarted: "閲覧モード — 編集できません",
   viewPreviewEnded: "編集モードに戻りました",
@@ -426,6 +475,17 @@ const ja: UiStrings = {
   viewModeBanner: "閲覧専用モード — 編集できません",
   exitViewMode: "閲覧モードを終了",
   viewOnlyProjectHint: "閲覧専用 — このプロジェクトのみ表示",
+  projectLastSaved: (when) => `最終保存 ${when}`,
+  projectReorderHint: "クリックで開く · ドラッグで並べ替え",
+  projectReorderAria: (name) => `「${name}」の順番を変更`,
+  myPage: "マイページ",
+  myPageTitle: "マイページ",
+  myPageDesc:
+    "表示名とアプリの言語を設定します。新規プロジェクトはここで選んだ言語になります。",
+  displayNameLabel: "表示名",
+  displayNamePlaceholder: "名前",
+  myPageProjectCount: "プロジェクト数",
+  backToEditor: "エディターに戻る",
   sidebarMedia: "メディア",
   mediaPanelTitle: "プロジェクトのメディア",
   mediaPerProjectHint: "音源・参考動画はプロジェクトごとに保存されます。",
@@ -440,13 +500,9 @@ const ja: UiStrings = {
   addMusicLink: "音源リンクを追加",
   musicLinkLabel: "音源リンク",
   musicLinkAddButton: "追加",
-  musicPasteClipboard: "クリップボードから貼り付け",
-  musicPasteAndAdd: "リンクを貼り付けて追加",
-  musicEmptyHint: "上の入力欄に Linkfire・TuneCore などのリンクを貼り付けてください。",
+  musicEmptyHint: "上の欄にリンクを貼り付けて追加してください。",
   musicFetching: "取得中…",
-  musicLinkPlaceholder: "Linkfire、TuneCore、Spotify、Apple Music…",
-  musicLinkHint:
-    "うまくいかないときは「クリップボードから貼り付け」を試してください。",
+  musicLinkPlaceholder: "リンクを貼り付け（Linkfire、TuneCore、Spotify など）",
   musicLinkInvalid:
     "リンクを読み取れません — URL 全体をそのまま貼り付けてください",
   musicLinkAdded: "音源リンクを追加しました",

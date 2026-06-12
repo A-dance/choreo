@@ -18,7 +18,13 @@ interface MemberNameInputProps {
   onCommit: (memberId: number, name: string) => void;
 }
 
-function MemberNameInput({ memberId, name, nameAria, onCommit }: MemberNameInputProps) {
+function MemberNameInput({
+  memberId,
+  name,
+  nameAria,
+  onCommit,
+  readOnly,
+}: MemberNameInputProps & { readOnly?: boolean }) {
   const [draft, setDraft] = useState(name);
 
   useEffect(() => {
@@ -26,6 +32,7 @@ function MemberNameInput({ memberId, name, nameAria, onCommit }: MemberNameInput
   }, [memberId, name]);
 
   const commit = () => {
+    if (readOnly) return;
     const trimmed = draft.trim();
     if (trimmed) {
       onCommit(memberId, trimmed);
@@ -39,6 +46,7 @@ function MemberNameInput({ memberId, name, nameAria, onCommit }: MemberNameInput
     <input
       className="m-cname"
       value={draft}
+      readOnly={readOnly}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {
@@ -62,6 +70,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
     restoreMember,
     toggleMemberVisibility,
     isMemberVisibleOnCurrent,
+    isViewOnly,
   } = useChoreo();
 
   const [countInp, setCountInp] = useState(String(state.members.length));
@@ -86,6 +95,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
   if (!open || !mounted) return null;
 
   const applyCount = () => {
+    if (isViewOnly) return;
     const n = parseInt(countInp, 10);
     if (!Number.isFinite(n) || n < 1) {
       setCountInp(String(state.members.length));
@@ -127,6 +137,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
             min={1}
             max={MAX_MEMBERS}
             value={countInp}
+            readOnly={isViewOnly}
             onChange={(e) => setCountInp(e.target.value)}
             onBlur={applyCount}
             onKeyDown={(e) => e.key === "Enter" && applyCount()}
@@ -152,6 +163,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                   name={m.name}
                   nameAria={UI.memberNameAria}
                   onCommit={renameMember}
+                  readOnly={isViewOnly}
                 />
                 <div className="m-card-actions">
                   <button
@@ -160,7 +172,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                       "vis-btn hide-btn" + (visible ? "" : " inactive")
                     }
                     onClick={() => visible && toggleMemberVisibility(m.id)}
-                    disabled={!visible}
+                    disabled={!visible || isViewOnly}
                     title={UI.hideOnCount}
                   >
                     {UI.hide}
@@ -171,7 +183,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                       "vis-btn show-btn" + (visible ? " inactive" : " on")
                     }
                     onClick={() => !visible && toggleMemberVisibility(m.id)}
-                    disabled={visible}
+                    disabled={visible || isViewOnly}
                     title={UI.showOnCount}
                   >
                     {UI.show}
@@ -180,6 +192,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                     type="button"
                     className="del-member-btn"
                     onClick={() => deleteMember(m.id)}
+                    disabled={isViewOnly}
                     title={UI.removeFromList}
                   >
                     {UI.delete}
@@ -206,6 +219,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                     type="button"
                     className="vis-btn on restore-btn"
                     onClick={() => restoreMember(m.id)}
+                    disabled={isViewOnly}
                     title={UI.restoreToList}
                   >
                     {UI.show}

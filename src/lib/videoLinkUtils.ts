@@ -93,3 +93,16 @@ export function formatMediaDate(
     day: "numeric",
   }).format(new Date(timestamp));
 }
+
+export function formatProjectSavedAt(
+  timestamp: number,
+  language: "ja" | "en",
+): string {
+  return new Intl.DateTimeFormat(language === "ja" ? "ja-JP" : "en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(timestamp));
+}

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   coerceMusicLink,
-  formatMediaDate,
   getMusicEmbedUrl,
   getSmartLinkProvider,
   normalizeMusicLinkPaste,
@@ -11,42 +10,12 @@ import {
 } from "@/lib/musicLinkUtils";
 import { fetchMusicMetadataClient } from "@/lib/musicResolve";
 import { displayMusicTitle } from "@/lib/openGraphMetadata";
+import { ExternalLinkIcon, TrashIcon } from "@/components/mediaIcons";
 import type { AudioTrackMeta } from "@/lib/types";
 import type { UiStrings } from "@/lib/uiStrings";
-import type { ProjectLanguage } from "@/lib/uiStrings";
-
-async function readClipboardPayload(): Promise<MusicLinkPastePayload> {
-  const payload: MusicLinkPastePayload = {};
-  try {
-    const text = await navigator.clipboard.readText();
-    if (text.trim()) payload.plain = text;
-  } catch {
-    /* plain text denied */
-  }
-  try {
-    if (typeof ClipboardItem !== "undefined" && navigator.clipboard.read) {
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        if (item.types.includes("text/html") && !payload.html) {
-          payload.html = await (await item.getType("text/html")).text();
-        }
-        if (item.types.includes("text/uri-list") && !payload.uriList) {
-          payload.uriList = await (await item.getType("text/uri-list")).text();
-        }
-        if (item.types.includes("text/plain") && !payload.plain) {
-          payload.plain = await (await item.getType("text/plain")).text();
-        }
-      }
-    }
-  } catch {
-    /* rich clipboard denied */
-  }
-  return payload;
-}
 
 interface MusicSectionProps {
   UI: UiStrings;
-  language: ProjectLanguage;
   tracks: AudioTrackMeta[];
   viewOnly: boolean;
   onAddLink: (input: string, html?: string) => Promise<boolean>;
@@ -57,7 +26,6 @@ interface MusicSectionProps {
 
 export function MusicSection({
   UI,
-  language,
   tracks,
   viewOnly,
   onAddLink,
@@ -75,7 +43,6 @@ export function MusicSection({
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState(false);
   const prevCountRef = useRef(0);
-  const linkInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selected = tracks.find((t) => t.id === selectedId) ?? null;
@@ -149,6 +116,14 @@ export function MusicSection({
     }
   }, [selected?.id, onRename]);
 
+  const badgeKey = (track: AudioTrackMeta) => {
+    if (track.source === "spotify") return "spotify";
+    if (track.source === "apple_music") return "apple";
+    if (track.source === "youtube_music") return "youtube";
+    if (track.source === "file") return "file";
+    return "link";
+  };
+
   const sourceLabel = (track: AudioTrackMeta) => {
     if (track.source === "file") return UI.musicSourceFile;
     if (track.source === "spotify") return UI.musicSourceSpotify;
@@ -189,11 +164,6 @@ export function MusicSection({
     setAddError(false);
   };
 
-  const pasteFromClipboard = async () => {
-    applyPastePayload(await readClipboardPayload());
-    linkInputRef.current?.focus();
-  };
-
   const addFromInput = async () => {
     if (!linkInput.trim()) return;
     if (!coerceMusicLink(linkInput, pasteHtml)) {
@@ -206,78 +176,9 @@ export function MusicSection({
   const embed = selected ? getMusicEmbedUrl(selected) : null;
 
   return (
-    <section className="music-panel">
-      {!viewOnly && (
-        <div className="music-add-bar">
-          <label className="music-link-field">
-            <span className="dialog-label">{UI.musicLinkLabel}</span>
-            <input
-              ref={linkInputRef}
-              type="text"
-              className="dialog-input"
-              value={linkInput}
-              placeholder={UI.musicLinkPlaceholder}
-              disabled={adding}
-              onChange={(e) => {
-                setLinkInput(e.target.value);
-                setPasteHtml(undefined);
-                setAddError(false);
-              }}
-              onPaste={(e) => {
-                e.preventDefault();
-                applyPastePayload({
-                  plain: e.clipboardData.getData("text/plain"),
-                  html: e.clipboardData.getData("text/html"),
-                  uriList: e.clipboardData.getData("text/uri-list"),
-                });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void addFromInput();
-                }
-              }}
-            />
-          </label>
-          <div className="music-link-actions">
-            <button
-              type="button"
-              className="dialog-btn secondary music-link-paste-btn"
-              disabled={adding}
-              onClick={() => void pasteFromClipboard()}
-            >
-              {UI.musicPasteClipboard}
-            </button>
-            <button
-              type="button"
-              className="dialog-btn primary music-link-add-btn"
-              disabled={adding || !linkInput.trim()}
-              onClick={() => void addFromInput()}
-            >
-              {adding ? UI.musicFetching : UI.musicLinkAddButton}
-            </button>
-          </div>
-          {(previewLoading || previewTitle) && parsedLink && (
-            <div className="music-link-preview">
-              {previewThumb && (
-                <img className="music-link-preview-art" src={previewThumb} alt="" />
-              )}
-              <span className="music-link-preview-title">
-                {previewLoading ? UI.musicFetching : previewTitle}
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {addError && (
-        <p className="music-link-error" role="alert">
-          {UI.musicLinkInvalid}
-        </p>
-      )}
-
+    <section className="music-panel share-media-section">
       {tracks.length === 0 ? (
-        <p className="music-empty-state">{UI.musicEmptyHint}</p>
+        <p className="media-empty">{UI.musicEmptyHint}</p>
       ) : (
         <>
           <ul className="music-track-list" role="listbox" aria-label={UI.audioSection}>
@@ -300,90 +201,109 @@ export function MusicSection({
                       </span>
                     )}
                     <span className="music-track-row-text">
+                      <span className={"media-badge mb-" + badgeKey(t)}>
+                        {sourceLabel(t)}
+                      </span>
                       <span className="music-track-row-name">{displayMusicTitle(t.name)}</span>
-                      <span className="music-track-row-meta">{sourceLabel(t)}</span>
                     </span>
                   </button>
-                  {!viewOnly && (
-                    <button
-                      type="button"
-                      className="music-track-remove"
-                      onClick={() => void onRemove(t.id)}
-                      aria-label={UI.removeMedia}
-                    >
-                      ×
-                    </button>
-                  )}
+                  <span className="media-card-actions">
+                    {t.externalUrl && (
+                      <a
+                        className="media-action-btn"
+                        href={t.externalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={UI.openMusicLink}
+                      >
+                        <ExternalLinkIcon />
+                      </a>
+                    )}
+                    {!viewOnly && (
+                      <button
+                        type="button"
+                        className="media-action-btn danger"
+                        onClick={() => void onRemove(t.id)}
+                        aria-label={UI.removeMedia}
+                      >
+                        <TrashIcon />
+                      </button>
+                    )}
+                  </span>
                 </li>
               );
             })}
           </ul>
 
-          {selected && (
-            <div className="music-detail-card">
-              <div className="music-detail-hero">
-                {selected.thumbnailUrl ? (
-                  <img
-                    className="music-detail-art"
-                    src={selected.thumbnailUrl}
-                    alt=""
-                  />
-                ) : (
-                  <div className="music-detail-art music-detail-art-fallback" aria-hidden>
-                    ♪
-                  </div>
-                )}
-                <div className="music-detail-main">
-                  <label className="music-detail-title-field">
-                    <span className="sr-only">{UI.musicTrackTitle}</span>
-                    <input
-                      type="text"
-                      className="dialog-input music-detail-title-input"
-                      value={selected.name}
-                      readOnly={viewOnly}
-                      placeholder={UI.musicTrackTitlePlaceholder}
-                      onChange={(e) => onRename(selected.id, e.target.value)}
-                      onBlur={() => {
-                        if (!selected.name.trim()) {
-                          onRename(selected.id, UI.musicTrackUntitled);
-                        }
-                      }}
-                    />
-                  </label>
-                  <p className="music-detail-meta">
-                    {sourceLabel(selected)}
-                    <span className="music-detail-meta-sep">·</span>
-                    <time dateTime={new Date(selected.createdAt).toISOString()}>
-                      {formatMediaDate(selected.createdAt, language)}
-                    </time>
-                  </p>
-                  {selected.externalUrl && (
-                    <a
-                      className="dialog-btn primary music-detail-open"
-                      href={selected.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {selected.source === "smart_link"
-                        ? UI.openMusicLink
-                        : UI.openInMusicApp}
-                    </a>
-                  )}
-                </div>
-              </div>
-              {embed ? (
-                <iframe
-                  className="music-embed"
-                  src={embed}
-                  title={selected.name}
-                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                  loading="lazy"
-                />
-              ) : selected.source === "file" && filePreviewUrl ? (
-                <audio className="media-audio-preview" src={filePreviewUrl} controls />
-              ) : null}
+          {selected && embed ? (
+            <iframe
+              className="music-embed"
+              src={embed}
+              title={selected.name}
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+            />
+          ) : selected?.source === "file" && filePreviewUrl ? (
+            <audio className="media-audio-preview" src={filePreviewUrl} controls />
+          ) : null}
+        </>
+      )}
+
+      {addError && (
+        <p className="music-link-error" role="alert">
+          {UI.musicLinkInvalid}
+        </p>
+      )}
+
+      {!viewOnly && (
+        <>
+          {(previewLoading || previewTitle) && parsedLink && (
+            <div className="music-link-preview">
+              {previewThumb && (
+                <img className="music-link-preview-art" src={previewThumb} alt="" />
+              )}
+              <span className="music-link-preview-title">
+                {previewLoading ? UI.musicFetching : previewTitle}
+              </span>
             </div>
           )}
+          <div className="ref-video-link-form">
+            <input
+              type="url"
+              className="dialog-input"
+              value={linkInput}
+              placeholder={UI.musicLinkPlaceholder}
+              aria-label={UI.musicLinkLabel}
+              disabled={adding}
+              onChange={(e) => {
+                setLinkInput(e.target.value);
+                setPasteHtml(undefined);
+                setAddError(false);
+              }}
+              onPaste={(e) => {
+                e.preventDefault();
+                applyPastePayload({
+                  plain: e.clipboardData.getData("text/plain"),
+                  html: e.clipboardData.getData("text/html"),
+                  uriList: e.clipboardData.getData("text/uri-list"),
+                });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void addFromInput();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="dialog-btn secondary"
+              disabled={adding}
+              onClick={() => void addFromInput()}
+            >
+              {adding ? UI.musicFetching : UI.musicLinkAddButton}
+            </button>
+          </div>
         </>
       )}
     </section>

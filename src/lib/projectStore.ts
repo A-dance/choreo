@@ -204,6 +204,20 @@ export function addProject(
   };
 }
 
+export function reorderProjects(
+  workspace: Workspace,
+  fromIndex: number,
+  toIndex: number,
+): Workspace {
+  if (fromIndex === toIndex) return workspace;
+  const projects = [...workspace.projects];
+  if (fromIndex < 0 || toIndex < 0) return workspace;
+  if (fromIndex >= projects.length || toIndex >= projects.length) return workspace;
+  const [removed] = projects.splice(fromIndex, 1);
+  projects.splice(toIndex, 0, removed);
+  return { ...workspace, projects };
+}
+
 export function removeProject(
   workspace: Workspace,
   projectId: string,

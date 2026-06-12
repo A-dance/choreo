@@ -5,6 +5,12 @@ import { useChoreo } from "@/context/ChoreoContext";
 import { formatMediaDate } from "@/lib/musicLinkUtils";
 import { getReferenceVideoEmbedUrl } from "@/lib/videoLinkUtils";
 import { MusicSection } from "@/components/MusicSection";
+import {
+  ExternalLinkIcon,
+  MusicNoteIcon,
+  TrashIcon,
+  VideoPlayIcon,
+} from "@/components/mediaIcons";
 import type { ReferenceVideoMeta } from "@/lib/types";
 
 export type MediaPanelSection = "audio" | "video";
@@ -22,6 +28,7 @@ export function MediaPanel({
 }: MediaPanelProps) {
   const {
     state,
+    language,
     strings: UI,
     appMode,
     media,
@@ -122,14 +129,41 @@ export function MediaPanel({
         aria-modal="true"
         aria-labelledby="media-panel-title"
       >
-        <h2 id="media-panel-title" className="dialog-title">
-          {panelTitle}
-        </h2>
+        <div className="media-head">
+          <span
+            className={"media-head-icon" + (videoOnly ? " video" : " audio")}
+            aria-hidden
+          >
+            {videoOnly ? <VideoPlayIcon /> : <MusicNoteIcon />}
+          </span>
+          <div className="media-head-text">
+            <h2 id="media-panel-title" className="dialog-title">
+              {panelTitle}
+            </h2>
+            <p className="media-head-sub">
+              {state.songTitle || UI.defaultSongTitle} ·{" "}
+              {UI.mediaLinkCount(
+                audioOnly
+                  ? media.audioTracks.length
+                  : videoOnly
+                    ? media.referenceVideos.length
+                    : media.audioTracks.length + media.referenceVideos.length,
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="share-close"
+            onClick={onClose}
+            aria-label={UI.close}
+          >
+            ×
+          </button>
+        </div>
 
         {!videoOnly && (
           <MusicSection
             UI={UI}
-            language={state.language}
             tracks={media.audioTracks}
             viewOnly={viewOnly}
             onAddLink={addMusicLink}
@@ -160,24 +194,47 @@ export function MediaPanel({
                       }
                       onClick={() => setActiveVideoId(v.id)}
                     >
+                      <span
+                        className={"media-card-icon mb-" + v.source}
+                        aria-hidden
+                      >
+                        <VideoPlayIcon />
+                      </span>
                       <span className="ref-video-tab-main">
+                        <span className={"media-badge mb-" + v.source}>
+                          {sourceLabel(v)}
+                        </span>
                         <span className="ref-video-tab-name">{v.name}</span>
                         <span className="ref-video-tab-meta">
-                          {formatMediaDate(v.createdAt, state.language)} ·{" "}
-                          {sourceLabel(v)}
+                          {v.message.trim()
+                            ? v.message
+                            : formatMediaDate(v.createdAt, language)}
                         </span>
                       </span>
                     </button>
-                    {!viewOnly && (
-                      <button
-                        type="button"
-                        className="ref-video-del"
-                        onClick={() => void removeReferenceVideo(v.id)}
-                        aria-label={UI.removeMedia}
-                      >
-                        ×
-                      </button>
-                    )}
+                    <span className="media-card-actions">
+                      {v.externalUrl && (
+                        <a
+                          className="media-action-btn"
+                          href={v.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={UI.openMusicLink}
+                        >
+                          <ExternalLinkIcon />
+                        </a>
+                      )}
+                      {!viewOnly && (
+                        <button
+                          type="button"
+                          className="media-action-btn danger"
+                          onClick={() => void removeReferenceVideo(v.id)}
+                          aria-label={UI.removeMedia}
+                        >
+                          <TrashIcon />
+                        </button>
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -208,7 +265,7 @@ export function MediaPanel({
                 <p className="ref-video-detail-meta">
                   <span>{UI.referenceVideoAddedAt}: </span>
                   <time dateTime={new Date(activeVideo.createdAt).toISOString()}>
-                    {formatMediaDate(activeVideo.createdAt, state.language)}
+                    {formatMediaDate(activeVideo.createdAt, language)}
                   </time>
                   <span className="ref-video-source-badge">
                     {sourceLabel(activeVideo)}
@@ -276,11 +333,6 @@ export function MediaPanel({
           </section>
         )}
 
-        <div className="dialog-actions">
-          <button type="button" className="dialog-btn primary" onClick={onClose}>
-            {UI.close}
-          </button>
-        </div>
       </div>
     </div>
   );

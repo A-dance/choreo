@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   BAMIRI_DEPTH_MAX,
   BAMIRI_DEPTH_MIN,
@@ -9,9 +9,48 @@ import {
   MEMBER_DOT_MAX,
   MEMBER_DOT_MIN,
 } from "@/lib/constants";
+import {
+  CopyIcon,
+  PasteIcon,
+  PauseIcon,
+  PlayIcon,
+  SaveIcon,
+  ShareIcon,
+  UndoIcon,
+} from "@/components/headerIcons";
 import { MemberPanel } from "@/components/MemberPanel";
 import { ShareDialog } from "@/components/ShareDialog";
 import { useChoreo } from "@/context/ChoreoContext";
+
+function HeaderAction({
+  icon,
+  label,
+  onClick,
+  disabled,
+  active,
+  title,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  active?: boolean;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={"hdr-action-btn" + (active ? " active" : "")}
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={label}
+    >
+      <span className="hdr-action-icon">{icon}</span>
+      <span className="hdr-action-label">{label}</span>
+    </button>
+  );
+}
 
 interface SmartHeaderProps {
   projectsOpen: boolean;
@@ -61,6 +100,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
   }, [state.bpm]);
 
   const applyBpm = () => {
+    if (isViewOnly) return;
     const n = parseInt(bpmInp, 10);
     if (!Number.isFinite(n)) {
       setBpmInp(String(state.bpm));
@@ -70,6 +110,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
   };
 
   const applyHalfW = () => {
+    if (isViewOnly) return;
     const n = parseInt(halfWInp, 10);
     if (!Number.isFinite(n)) {
       setHalfWInp(String(state.stage.bamiriHalfWidth));
@@ -79,6 +120,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
   };
 
   const applyDepth = () => {
+    if (isViewOnly) return;
     const n = parseInt(depthInp, 10);
     if (!Number.isFinite(n)) {
       setDepthInp(String(state.stage.bamiriDepth));
@@ -88,6 +130,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
   };
 
   const applyDotSize = () => {
+    if (isViewOnly) return;
     const n = parseInt(dotInp, 10);
     if (!Number.isFinite(n)) {
       setDotInp(String(memberDotPx));
@@ -132,6 +175,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
                     min={40}
                     max={240}
                     value={bpmInp}
+                    readOnly={isViewOnly}
                     onChange={(e) => setBpmInp(e.target.value)}
                     onBlur={applyBpm}
                     onKeyDown={(e) => e.key === "Enter" && applyBpm()}
@@ -151,8 +195,10 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
                       min={BAMIRI_HALF_MIN}
                       max={BAMIRI_HALF_MAX}
                       value={halfWInp}
+                      readOnly={isViewOnly}
                       onChange={(e) => {
                         setHalfWInp(e.target.value);
+                        if (isViewOnly) return;
                         const n = parseInt(e.target.value, 10);
                         if (Number.isFinite(n)) setBamiriHalfWidth(n);
                       }}
@@ -169,8 +215,10 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
                       min={BAMIRI_DEPTH_MIN}
                       max={BAMIRI_DEPTH_MAX}
                       value={depthInp}
+                      readOnly={isViewOnly}
                       onChange={(e) => {
                         setDepthInp(e.target.value);
+                        if (isViewOnly) return;
                         const n = parseInt(e.target.value, 10);
                         if (Number.isFinite(n)) setBamiriDepth(n);
                       }}
@@ -191,8 +239,10 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
                     min={MEMBER_DOT_MIN}
                     max={MEMBER_DOT_MAX}
                     value={dotInp}
+                    readOnly={isViewOnly}
                     onChange={(e) => {
                       setDotInp(e.target.value);
+                      if (isViewOnly) return;
                       const n = parseInt(e.target.value, 10);
                       if (Number.isFinite(n)) setMemberDotPx(n);
                     }}
@@ -212,6 +262,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
                 "member-select-trigger" + (memberPanelOpen ? " open" : "")
               }
               onClick={() => setMemberPanelOpen((v) => !v)}
+              disabled={isViewOnly}
               aria-expanded={memberPanelOpen}
               aria-haspopup="dialog"
               title={UI.openMembers}
@@ -235,92 +286,52 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
                 {UI.exitViewMode}
               </button>
             )}
-            {!isViewOnly && (
-              <button
-                type="button"
-                className="share-btn"
-                onClick={() => setShareOpen(true)}
-                title={UI.shareTitle}
-                aria-label={UI.shareTitle}
-              >
-                <svg
-                  className="share-btn-icon"
-                  viewBox="0 0 24 24"
-                  width="16"
-                  height="16"
-                  aria-hidden
-                >
-                  <path
-                    fill="currentColor"
-                    d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"
-                  />
-                </svg>
-                <span>{UI.share}</span>
-              </button>
-            )}
-            <button
-              type="button"
-              className="copy-btn"
+            <HeaderAction
+              icon={state.isPlaying ? <PauseIcon /> : <PlayIcon />}
+              label="Play"
+              onClick={togglePlayback}
+              active={state.isPlaying}
+            />
+            <span className="hdr-action-divider" aria-hidden />
+            <HeaderAction
+              icon={<CopyIcon />}
+              label="Copy"
               onClick={copyFormation}
               disabled={isViewOnly}
               title="Copy current formation"
-            >
-              Copy
-            </button>
-            <button
-              type="button"
-              className="paste-btn"
+            />
+            <HeaderAction
+              icon={<PasteIcon />}
+              label="Paste"
               onClick={pasteFormation}
               disabled={!hasClipboard || isViewOnly}
               title="Paste copied formation"
-            >
-              Paste
-            </button>
-            <button
-              type="button"
-              className="save-btn"
-              onClick={saveProject}
-              disabled={isViewOnly}
-              title="Save (⌘S / Ctrl+S)"
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              className="undo-btn"
+            />
+            <HeaderAction
+              icon={<UndoIcon />}
+              label="Undo"
               onClick={undo}
               disabled={!canUndo || isViewOnly}
               title={UI.undoShortcut}
-              aria-label={UI.undo}
-            >
-              <svg
-                className="undo-btn-icon"
-                viewBox="0 0 24 24"
-                width="15"
-                height="15"
-                aria-hidden
-              >
-                <path
-                  fill="currentColor"
-                  d="M12.5 8c-2.65 0-5.05 1.25-6.75 3.25l1.42 1.42A5.97 5.97 0 0 1 12.5 10c3.31 0 6 2.69 6 6s-2.69 6-6 6H8v4l-5-5 5-5v4h4.5c4.14 0 7.5-3.36 7.5-7.5S16.64 8 12.5 8z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className={"play-btn" + (state.isPlaying ? " playing" : "")}
-              onClick={togglePlayback}
-            >
-              {state.isPlaying ? "⏸" : "▶"}
-            </button>
+            />
+            <span className="hdr-action-divider" aria-hidden />
+            <HeaderAction
+              icon={<SaveIcon />}
+              label="Save"
+              onClick={saveProject}
+              disabled={isViewOnly}
+              title="Save (⌘S / Ctrl+S)"
+            />
+            {!isViewOnly && (
+              <HeaderAction
+                icon={<ShareIcon />}
+                label={UI.share}
+                onClick={() => setShareOpen(true)}
+                title={UI.shareTitle}
+              />
+            )}
           </div>
 
-          {state.isPlaying && (
-            <span className="hdr-playing-badge">
-              <span className="cnt-now-dot" />
-              {UI.playing}
-            </span>
-          )}
         </div>
       </div>
 

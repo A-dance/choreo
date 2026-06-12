@@ -11,25 +11,17 @@ import {
   MAX_MEMBERS,
 } from "@/lib/constants";
 import { useChoreo } from "@/context/ChoreoContext";
-import {
-  detectBrowserLanguage,
-  getStrings,
-  type ProjectLanguage,
-} from "@/lib/uiStrings";
 
 interface NewProjectDialogProps {
   onClose: () => void;
 }
 
 export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
-  const { createProject } = useChoreo();
-  const [language, setLanguage] = useState<ProjectLanguage>(detectBrowserLanguage);
+  const { createProject, strings: UI } = useChoreo();
   const [songTitle, setSongTitle] = useState("");
   const [bpm, setBpm] = useState(String(DEFAULT_BPM));
   const [counts, setCounts] = useState(String(COUNTS_PER_SECTION));
   const [memberCount, setMemberCount] = useState(String(DEFAULT_MEMBER_COUNT));
-
-  const UI = getStrings(language);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +40,6 @@ export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
       bpm: bpmNum,
       countsPerSection: countsNum,
       memberCount: membersNum,
-      language,
     });
     onClose();
   };
@@ -72,18 +63,6 @@ export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
         <p className="dialog-desc">{UI.newProjectDesc}</p>
 
         <form className="dialog-form" onSubmit={handleSubmit}>
-          <label className="dialog-field">
-            <span className="dialog-label">{UI.languageLabel}</span>
-            <select
-              className="dialog-input"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as ProjectLanguage)}
-            >
-              <option value="en">English</option>
-              <option value="ja">日本語</option>
-            </select>
-          </label>
-
           <label className="dialog-field">
             <span className="dialog-label">{UI.songTitleLabel}</span>
             <input

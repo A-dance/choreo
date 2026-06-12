@@ -66,6 +66,7 @@ export const MIN_MEMBERS = 1;
 export const MAX_MEMBERS = 500;
 export const LEGACY_STORAGE_KEY = "choreo-v2-state";
 export const WORKSPACE_STORAGE_KEY = "choreo-v3-workspace";
+export const PROFILE_STORAGE_KEY = "choreo-profile";
 /** @deprecated use WORKSPACE_STORAGE_KEY */
 export const STORAGE_KEY = LEGACY_STORAGE_KEY;
 
