@@ -89,7 +89,8 @@ import { coerceMusicLink } from "@/lib/musicLinkUtils";
 import { displayMusicTitle } from "@/lib/openGraphMetadata";
 import { parseVideoLink } from "@/lib/videoLinkUtils";
 import { useProfile } from "@/context/ProfileContext";
-import { getStrings, type ProjectLanguage, type UiStrings } from "@/lib/uiStrings";
+import { BrandLogo } from "@/components/BrandLogo";
+import { getStrings, detectBrowserLanguage, type ProjectLanguage, type UiStrings } from "@/lib/uiStrings";
 import type {
   AppMode,
   ChoreoState,
@@ -210,6 +211,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const [clipboard, setClipboard] = useState<FormationClipboard | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [bootingLabel, setBootingLabel] = useState<string | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [appMode, setAppMode] = useState<AppMode>("edit");
   const [externalShareView, setExternalShareView] = useState(false);
@@ -314,6 +316,10 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     : state.currentCount;
 
   useEffect(() => {
+    setBootingLabel(getStrings(detectBrowserLanguage()).booting);
+  }, []);
+
+  useEffect(() => {
     if (!hydrated || !activeProjectId || appMode === "view") return;
     if (!workspaceRef.current) return;
     commitActiveProject(state, mediaRef.current);
@@ -390,80 +396,39 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function initFromRemoteShare(shareId: string, viewOnly: boolean) {
-      const bundle = await hydrateRemoteShare(shareId);
-      if (cancelled) return;
-      if (!bundle) {
-        showToast(getStrings(profileLanguageRef.current).shareLoadFailed);
-        const loaded = loadWorkspace();
-        workspaceRef.current = loaded.workspace;
-        setWorkspace(loaded.workspace);
-        setActiveProjectId(loaded.workspace.activeProjectId);
-        setAppMode("edit");
-        setExternalShareView(false);
-        setState(normalizeChoreoState(loaded.activeState));
-        setMedia(normalizeProjectMedia(loaded.activeMedia));
-        clearUndoHistory();
-        setHydrated(true);
-        return;
-      }
-      const applied = applySharedViewBundle(
-        { state: bundle.state, media: bundle.media },
-        viewOnly,
-      );
-      workspaceRef.current = applied.workspace;
-      setWorkspace(applied.workspace);
-      setActiveProjectId(SHARED_VIEW_PROJECT_ID);
-      setAppMode(applied.appMode);
-      setExternalShareView(viewOnly);
-      setState(applied.state);
-      setMedia(applied.media);
+    function applyLoadedWorkspace(loaded: ReturnType<typeof loadWorkspace>) {
+      workspaceRef.current = loaded.workspace;
+      setWorkspace(loaded.workspace);
+      setActiveProjectId(loaded.workspace.activeProjectId);
+      setAppMode("edit");
+      setExternalShareView(false);
+      setState(normalizeChoreoState(loaded.activeState));
+      setMedia(normalizeProjectMedia(loaded.activeMedia));
       clearUndoHistory();
-      setHydrated(true);
     }
 
     function initFromLocalStorage() {
-      try {
-        const loaded = loadWorkspace();
-        workspaceRef.current = loaded.workspace;
-        setWorkspace(loaded.workspace);
-        setActiveProjectId(loaded.workspace.activeProjectId);
-        setAppMode("edit");
-        setExternalShareView(false);
-        setState(normalizeChoreoState(loaded.activeState));
-        setMedia(normalizeProjectMedia(loaded.activeMedia));
-        clearUndoHistory();
-      } catch {
-        const loaded = loadWorkspace();
-        workspaceRef.current = loaded.workspace;
-        setWorkspace(loaded.workspace);
-        setActiveProjectId(loaded.workspace.activeProjectId);
-        setAppMode("edit");
-        setExternalShareView(false);
-        setState(normalizeChoreoState(loaded.activeState));
-        setMedia(normalizeProjectMedia(loaded.activeMedia));
-        clearUndoHistory();
-      } finally {
-        setHydrated(true);
-      }
+      applyLoadedWorkspace(loadWorkspace());
     }
 
-    try {
-      const { viewOnly, shareId, legacyToken } = parseShareFromLocation(
-        window.location.search,
-      );
+    void (async () => {
+      try {
+        const { viewOnly, shareId, legacyToken } = parseShareFromLocation(
+          window.location.search,
+        );
 
-      if (shareId && isShareId(shareId)) {
-        void initFromRemoteShare(shareId, viewOnly);
-        return () => {
-          cancelled = true;
-        };
-      }
-
-      if (legacyToken) {
-        const legacy = decodeLegacyShareToken(legacyToken);
-        if (legacy) {
-          const applied = applySharedViewBundle(legacy, viewOnly);
+        if (shareId && isShareId(shareId)) {
+          const bundle = await hydrateRemoteShare(shareId);
+          if (cancelled) return;
+          if (!bundle) {
+            showToast(getStrings(profileLanguageRef.current).shareLoadFailed);
+            initFromLocalStorage();
+            return;
+          }
+          const applied = applySharedViewBundle(
+            { state: bundle.state, media: bundle.media },
+            viewOnly,
+          );
           workspaceRef.current = applied.workspace;
           setWorkspace(applied.workspace);
           setActiveProjectId(SHARED_VIEW_PROJECT_ID);
@@ -472,15 +437,32 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           setState(applied.state);
           setMedia(applied.media);
           clearUndoHistory();
-          setHydrated(true);
           return;
         }
-      }
 
-      initFromLocalStorage();
-    } catch {
-      initFromLocalStorage();
-    }
+        if (legacyToken) {
+          const legacy = decodeLegacyShareToken(legacyToken);
+          if (legacy) {
+            const applied = applySharedViewBundle(legacy, viewOnly);
+            workspaceRef.current = applied.workspace;
+            setWorkspace(applied.workspace);
+            setActiveProjectId(SHARED_VIEW_PROJECT_ID);
+            setAppMode(applied.appMode);
+            setExternalShareView(viewOnly);
+            setState(applied.state);
+            setMedia(applied.media);
+            clearUndoHistory();
+            return;
+          }
+        }
+
+        initFromLocalStorage();
+      } catch {
+        if (!cancelled) initFromLocalStorage();
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -1471,7 +1453,12 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     <ChoreoContext.Provider value={value}>
       {!hydrated ? (
         <div className="choreo-loading">
-          <span className="logo">◈ CHOREO</span>
+          <div className="choreo-loading-inner">
+            <BrandLogo size="loading" />
+            {bootingLabel ? (
+              <p className="choreo-loading-label">{bootingLabel}</p>
+            ) : null}
+          </div>
         </div>
       ) : (
         <>{children}</>

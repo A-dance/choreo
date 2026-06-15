@@ -191,6 +191,33 @@ body {
   font-size: 28px;
 }
 
+.profile-avatar-image {
+  overflow: hidden;
+  background: var(--bg3);
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-avatar-user {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.profile-user-icon {
+  width: 46%;
+  height: 46%;
+  display: block;
+}
+
+.profile-avatar-lg .profile-user-icon {
+  width: 44%;
+  height: 44%;
+}
+
 .project-sidebar-title {
   font-size: 12px;
   font-weight: 800;
@@ -904,6 +931,13 @@ select {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  display: block;
+  width: auto;
+  height: 34px;
   flex-shrink: 0;
 }
 
@@ -3453,13 +3487,23 @@ input[type="range"]::-webkit-slider-thumb {
   background: var(--bg);
 }
 
-.choreo-loading .logo {
-  font-size: 28px;
-  font-weight: 900;
-  background: linear-gradient(135deg, #7c5cfc, #fc5c7d);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.choreo-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.choreo-loading-label {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.choreo-loading .brand-logo {
+  height: 48px;
+  width: auto;
 }
 
 @media (max-width: 768px) {
@@ -4459,62 +4503,170 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .mypage-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
 }
 
 .mypage-head {
-  padding: 14px 18px;
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--bg2);
 }
 
+.mypage-head-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.mypage-head-spacer {
+  display: block;
+}
+
 .mypage-back {
+  justify-self: start;
   font-size: 13px;
   font-weight: 600;
   color: var(--text2);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .mypage-back:hover {
   color: var(--accent);
 }
 
-.mypage-main {
+.mypage-body {
   flex: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 32px 20px 48px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
-.mypage-card {
-  width: min(400px, 100%);
+.mypage-content {
+  width: min(440px, 100%);
+  margin: 0 auto;
+  padding: 24px 20px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mypage-profile {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 28px 24px 24px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--bg2);
+  gap: 10px;
+}
+
+.mypage-avatar-picker-wrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+}
+
+.mypage-avatar-picker-circle {
+  width: 88px;
+  height: 88px;
+  font-size: 28px;
+}
+
+.mypage-avatar-picker-edit {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid var(--bg2);
+  border-radius: 999px;
+  background: var(--bg4);
+  color: var(--text2);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.mypage-avatar-picker-edit svg {
+  width: 11px;
+  height: 11px;
+}
+
+.mypage-avatar-picker-edit:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.mypage-avatar-picker-edit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.mypage-avatar-remove {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.mypage-avatar-remove:hover:not(:disabled) {
+  color: var(--ac2);
+}
+
+.mypage-avatar-remove:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.mypage-avatar-error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ac2);
+}
+
+.mypage-overview-line {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--text2);
   text-align: center;
 }
 
-.mypage-title {
-  margin: 4px 0 0;
-  font-size: 20px;
-  font-weight: 800;
+.mypage-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
 }
 
-.mypage-desc {
-  margin: 0 0 8px;
-  font-size: 12px;
-  line-height: 1.5;
+.mypage-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text2);
 }
 
@@ -4523,41 +4675,81 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  text-align: left;
 }
 
-.mypage-stats {
-  width: 100%;
-  margin: 4px 0 8px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg3);
-}
-
-.mypage-stat {
+.mypage-project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.mypage-stat dt {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text2);
-}
-
-.mypage-stat dd {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.mypage-editor-link {
+  flex-direction: column;
+  gap: 2px;
   width: 100%;
-  margin-top: 4px;
-  text-decoration: none;
-  justify-content: center;
+}
+
+.mypage-project-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 10px;
+}
+
+.mypage-project-row.active {
+  background: rgba(124, 92, 252, 0.1);
+}
+
+.mypage-project-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mypage-project-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mypage-project-meta,
+.mypage-project-saved {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.35;
+}
+
+.mypage-project-badge {
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(124, 92, 252, 0.18);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.mypage-about {
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.mypage-about-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.mypage-about-version {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text2);
 }

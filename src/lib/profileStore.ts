@@ -7,12 +7,14 @@ import {
 
 export interface UserProfile {
   displayName: string;
+  email: string;
   language: ProjectLanguage;
 }
 
 function defaultProfile(): UserProfile {
   return {
     displayName: "",
+    email: "",
     language: detectBrowserLanguage(),
   };
 }
@@ -26,6 +28,7 @@ export function loadProfile(): UserProfile {
     return {
       displayName:
         typeof parsed.displayName === "string" ? parsed.displayName : "",
+      email: typeof parsed.email === "string" ? parsed.email : "",
       language: normalizeLanguage(parsed.language),
     };
   } catch {

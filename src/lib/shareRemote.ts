@@ -167,13 +167,23 @@ export async function importSharedMediaFiles(
   );
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => window.setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 export async function hydrateRemoteShare(
   shareId: string,
 ): Promise<RemoteShareBundle | null> {
-  const bundle = await fetchRemoteShare(shareId);
+  const bundle = await withTimeout(fetchRemoteShare(shareId), 10_000);
   if (!bundle) return null;
   if (bundle.files.length > 0) {
-    await importSharedMediaFiles(SHARED_VIEW_PROJECT_ID, bundle.files);
+    await withTimeout(
+      importSharedMediaFiles(SHARED_VIEW_PROJECT_ID, bundle.files),
+      15_000,
+    );
   }
   return bundle;
 }

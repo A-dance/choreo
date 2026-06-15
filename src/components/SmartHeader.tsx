@@ -18,6 +18,7 @@ import {
   ShareIcon,
   UndoIcon,
 } from "@/components/headerIcons";
+import { BrandLogo } from "@/components/BrandLogo";
 import { MemberPanel } from "@/components/MemberPanel";
 import { ShareDialog } from "@/components/ShareDialog";
 import { useChoreo } from "@/context/ChoreoContext";
@@ -154,7 +155,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
             <span className="project-menu-icon" aria-hidden />
           </button>
 
-          <span className="logo">◈ CHOREO</span>
+          <BrandLogo />
 
           <input
             className="title-inp"

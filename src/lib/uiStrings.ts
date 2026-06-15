@@ -82,6 +82,7 @@ export type UiStrings = {
   sectionNameDefault: (n: number) => string;
   progressAria: (current: number, total: number, sections: number) => string;
   defaultSongTitle: string;
+  booting: string;
   share: string;
   shareTitle: string;
   shareViewSectionDesc: string;
@@ -116,10 +117,27 @@ export type UiStrings = {
   projectReorderAria: (name: string) => string;
   myPage: string;
   myPageTitle: string;
-  myPageDesc: string;
   displayNameLabel: string;
   displayNamePlaceholder: string;
-  myPageProjectCount: string;
+  emailLabel: string;
+  emailPlaceholder: string;
+  avatarLabel: string;
+  avatarChange: string;
+  avatarRemove: string;
+  avatarUploadFailed: string;
+  avatarInvalidType: string;
+  profileGuest: string;
+  profileDisplayLine: (name: string) => string;
+  myPageSettings: string;
+  myPageAccount: string;
+  myPageOverview: string;
+  myPageProjectsSection: string;
+  myPageOverviewLine: (projects: number, audio: number, videos: number) => string;
+  myPageCurrentBadge: string;
+  myPageOpenProject: (title: string) => string;
+  myPageAbout: string;
+  myPageAppName: string;
+  myPageVersion: (version: string) => string;
   backToEditor: string;
   sidebarMedia: string;
   mediaPanelTitle: string;
@@ -260,6 +278,7 @@ const en: UiStrings = {
   progressAria: (current, total, sections) =>
     `${current}/${total}, ${sections} section${sections === 1 ? "" : "s"}`,
   defaultSongTitle: "Untitled",
+  booting: "Loading…",
   share: "Share",
   shareTitle: "Share project",
   shareViewSectionDesc:
@@ -296,11 +315,28 @@ const en: UiStrings = {
   projectReorderAria: (name) => `Reorder ${name}`,
   myPage: "My page",
   myPageTitle: "My page",
-  myPageDesc:
-    "Set your display name and app language. New projects use the language chosen here.",
   displayNameLabel: "Display name",
   displayNamePlaceholder: "Your name",
-  myPageProjectCount: "Projects",
+  emailLabel: "Email",
+  emailPlaceholder: "you@example.com",
+  avatarLabel: "Profile photo",
+  avatarChange: "Choose image",
+  avatarRemove: "Remove image",
+  avatarUploadFailed: "Could not save image",
+  avatarInvalidType: "Please choose an image file",
+  profileGuest: "Guest",
+  profileDisplayLine: (name) => name.trim() || "Guest",
+  myPageSettings: "Settings",
+  myPageAccount: "Account",
+  myPageOverview: "Overview",
+  myPageProjectsSection: "Projects",
+  myPageOverviewLine: (projects, audio, videos) =>
+    `${projects} project${projects === 1 ? "" : "s"} · ${audio} audio · ${videos} video${videos === 1 ? "" : "s"}`,
+  myPageCurrentBadge: "Current",
+  myPageOpenProject: (title) => `Open ${title}`,
+  myPageAbout: "About",
+  myPageAppName: "bamiri — SHARE",
+  myPageVersion: (version) => `Version ${version}`,
   backToEditor: "Back to editor",
   sidebarMedia: "Media",
   mediaPanelTitle: "Project media",
@@ -444,6 +480,7 @@ const ja: UiStrings = {
   progressAria: (current, total, sections) =>
     `${current}/${total}、${sections}セクション`,
   defaultSongTitle: "新曲タイトル",
+  booting: "読み込み中…",
   share: "Share",
   shareTitle: "Share",
   shareViewSectionDesc:
@@ -480,11 +517,31 @@ const ja: UiStrings = {
   projectReorderAria: (name) => `「${name}」の順番を変更`,
   myPage: "マイページ",
   myPageTitle: "マイページ",
-  myPageDesc:
-    "表示名とアプリの言語を設定します。新規プロジェクトはここで選んだ言語になります。",
   displayNameLabel: "表示名",
   displayNamePlaceholder: "名前",
-  myPageProjectCount: "プロジェクト数",
+  emailLabel: "メールアドレス",
+  emailPlaceholder: "you@example.com",
+  avatarLabel: "プロフィール画像",
+  avatarChange: "画像を選ぶ",
+  avatarRemove: "画像を削除",
+  avatarUploadFailed: "画像を保存できませんでした",
+  avatarInvalidType: "画像ファイルを選んでください",
+  profileGuest: "ゲスト",
+  profileDisplayLine: (name) => {
+    const trimmed = name.trim();
+    return trimmed ? `${trimmed} 様` : "ゲスト";
+  },
+  myPageSettings: "設定",
+  myPageAccount: "アカウント",
+  myPageOverview: "概要",
+  myPageProjectsSection: "プロジェクト",
+  myPageOverviewLine: (projects, audio, videos) =>
+    `${projects}件 · 音源${audio} · 動画${videos}`,
+  myPageCurrentBadge: "使用中",
+  myPageOpenProject: (title) => `「${title}」を開く`,
+  myPageAbout: "アプリ",
+  myPageAppName: "bamiri — SHARE",
+  myPageVersion: (version) => `バージョン ${version}`,
   backToEditor: "エディターに戻る",
   sidebarMedia: "メディア",
   mediaPanelTitle: "プロジェクトのメディア",

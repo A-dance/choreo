@@ -16,7 +16,7 @@ const zenKaku = Zen_Kaku_Gothic_New({
 });
 
 export const metadata: Metadata = {
-  title: "CHOREO — Formation Editor",
+  title: "bamiri — SHARE",
   description: "Dance formation layout and playback tool",
 };
 
