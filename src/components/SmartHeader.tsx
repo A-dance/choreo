@@ -14,7 +14,6 @@ import {
   PasteIcon,
   PauseIcon,
   PlayIcon,
-  SaveIcon,
   ShareIcon,
   UndoIcon,
 } from "@/components/headerIcons";
@@ -69,7 +68,6 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
     setBamiriDepth,
     setMemberDotPx,
     memberDotPx,
-    saveProject,
     undo,
     canUndo,
     copyFormation,
@@ -314,14 +312,6 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
               onClick={undo}
               disabled={!canUndo || isViewOnly}
               title={UI.undoShortcut}
-            />
-            <span className="hdr-action-divider" aria-hidden />
-            <HeaderAction
-              icon={<SaveIcon />}
-              label="Save"
-              onClick={saveProject}
-              disabled={isViewOnly}
-              title="Save (⌘S / Ctrl+S)"
             />
             {!isViewOnly && (
               <HeaderAction

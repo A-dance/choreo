@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "supabase:setup": "node scripts/setup-supabase.mjs",
-    "supabase:setup-cli": "supabase db execute -f supabase/schema.sql"
+    "supabase:setup-cli": "supabase db execute -f supabase/schema.sql",
+    "demo:user": "node scripts/create-demo-user.mjs",
+    "demo:workspace": "node scripts/seed-demo-workspace.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.0",

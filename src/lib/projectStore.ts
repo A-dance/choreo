@@ -3,6 +3,7 @@ import {
   WORKSPACE_STORAGE_KEY,
 } from "./constants";
 import {
+  createBlankEditorState,
   createInitialState,
   createProjectState,
   deserializeState,
@@ -25,6 +26,15 @@ function newProjectId(): string {
 
 function stripPlayback(state: ChoreoState): ChoreoState {
   return normalizeChoreoState(state);
+}
+
+export function createEmptyWorkspace(): Workspace {
+  return { version: 1, activeProjectId: "", projects: [] };
+}
+
+export function workspaceHasActiveProject(workspace: Workspace): boolean {
+  if (!workspace.activeProjectId || !workspace.projects.length) return false;
+  return workspace.projects.some((project) => project.id === workspace.activeProjectId);
 }
 
 export function createProjectRecord(
@@ -78,30 +88,41 @@ export function patchActiveProject(
 
 function parseWorkspace(json: string): Workspace | null {
   try {
-    const raw = JSON.parse(json) as Partial<Workspace>;
-    if (raw.version !== 1 || !raw.activeProjectId || !Array.isArray(raw.projects)) {
-      return null;
-    }
-    const projects: ProjectRecord[] = [];
-    for (const item of raw.projects) {
-      if (!item?.id || !item.state) continue;
-      const state = stripPlayback(item.state as ChoreoState);
-      projects.push({
-        id: item.id,
-        createdAt: item.createdAt ?? Date.now(),
-        updatedAt: item.updatedAt ?? Date.now(),
-        state,
-        media: normalizeProjectMedia(item.media),
-      });
-    }
-    if (!projects.length) return null;
-    const activeProjectId = projects.some((p) => p.id === raw.activeProjectId)
-      ? raw.activeProjectId
-      : projects[0].id;
-    return { version: 1, activeProjectId, projects };
+    return normalizeWorkspacePayload(JSON.parse(json));
   } catch {
     return null;
   }
+}
+
+export function normalizeWorkspacePayload(raw: unknown): Workspace | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as Partial<Workspace>;
+  if (data.version !== 1 || !data.activeProjectId || !Array.isArray(data.projects)) {
+    return null;
+  }
+  const projects: ProjectRecord[] = [];
+  for (const item of data.projects) {
+    if (!item?.id || !item.state) continue;
+    const state = stripPlayback(item.state as ChoreoState);
+    projects.push({
+      id: item.id,
+      createdAt: item.createdAt ?? Date.now(),
+      updatedAt: item.updatedAt ?? Date.now(),
+      state,
+      media: normalizeProjectMedia(item.media),
+    });
+  }
+  if (!projects.length) {
+    return {
+      version: 1,
+      activeProjectId: typeof data.activeProjectId === "string" ? data.activeProjectId : "",
+      projects: [],
+    };
+  }
+  const activeProjectId = projects.some((p) => p.id === data.activeProjectId)
+    ? data.activeProjectId
+    : projects[0].id;
+  return { version: 1, activeProjectId, projects };
 }
 
 function migrateLegacyWorkspace(state: ChoreoState): Workspace {
@@ -158,6 +179,13 @@ export function loadWorkspace(): LoadedWorkspace {
   if (saved) {
     const workspace = parseWorkspace(saved);
     if (workspace) {
+      if (!workspace.projects.length) {
+        return {
+          workspace,
+          activeState: createBlankEditorState(),
+          activeMedia: emptyProjectMedia(),
+        };
+      }
       const active = workspace.projects.find(
         (p) => p.id === workspace.activeProjectId,
       );
@@ -194,6 +222,16 @@ export function addProject(
 ): { workspace: Workspace; record: ProjectRecord } {
   const state = createProjectState(params);
   const record = createProjectRecord(state);
+  if (!workspace.projects.length) {
+    return {
+      workspace: {
+        version: 1,
+        activeProjectId: record.id,
+        projects: [record],
+      },
+      record,
+    };
+  }
   return {
     workspace: {
       version: 1,
@@ -222,9 +260,11 @@ export function removeProject(
   workspace: Workspace,
   projectId: string,
 ): Workspace | null {
-  if (workspace.projects.length <= 1) return null;
   const projects = workspace.projects.filter((p) => p.id !== projectId);
   if (projects.length === workspace.projects.length) return null;
+  if (!projects.length) {
+    return createEmptyWorkspace();
+  }
   const activeProjectId =
     workspace.activeProjectId === projectId
       ? projects[0].id

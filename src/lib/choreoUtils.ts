@@ -537,6 +537,39 @@ function emptyState(language: ProjectLanguage = detectBrowserLanguage()): Choreo
   };
 }
 
+export function createBlankEditorState(
+  language: ProjectLanguage = detectBrowserLanguage(),
+): ChoreoState {
+  return emptyState(language);
+}
+
+export function createDemoReferenceState(
+  language: ProjectLanguage = "ja",
+): ChoreoState {
+  const strings = getStrings(language);
+  const state = createProjectState({
+    songTitle: strings.demoReferenceSongTitle,
+    bpm: 128,
+    countsPerSection: 8,
+    memberCount: DEFAULT_MEMBER_COUNT,
+    language,
+  });
+
+  for (let count = 2; count <= 3; count += 1) {
+    const cd = getCountData(state.countData, count);
+    state.members.forEach((member, index) => {
+      cd.positions[member.id] = defaultPosForIndex(
+        (index + count - 1) % state.members.length,
+        state.members.length,
+      );
+    });
+    state.countData[count] = cd;
+  }
+
+  state.currentCount = 3;
+  return state;
+}
+
 export function createDemoState(): ChoreoState {
   const state = emptyState();
   state.members = createMembers(DEFAULT_MEMBER_COUNT);

@@ -179,6 +179,11 @@ export function parseShareFromLocation(search: string): {
   };
 }
 
+export function isPublicShareUrl(search: string): boolean {
+  const { shareId, legacyToken } = parseShareFromLocation(search);
+  return Boolean(shareId || legacyToken);
+}
+
 export const SHARED_VIEW_PROJECT_ID = "__shared_view__";
 
 export function buildSharedViewWorkspace(

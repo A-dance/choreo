@@ -59,7 +59,6 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
   };
 
   const handleDeleteClick = (projectId: string, songTitle: string) => {
-    if (projects.length <= 1) return;
     setDeleteTarget({ id: projectId, songTitle });
   };
 
@@ -207,17 +206,13 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
                 <button
                   type="button"
                   className="project-item-delete"
-                  disabled={projects.length <= 1 || isViewOnly}
+                  disabled={isViewOnly}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     handleDeleteClick(project.id, project.songTitle);
                   }}
-                  title={
-                    projects.length <= 1
-                      ? UI.cannotDeleteLastProject
-                      : UI.deleteProject
-                  }
+                  title={UI.deleteProject}
                   aria-label={UI.deleteProjectAria(project.songTitle)}
                 >
                   ×

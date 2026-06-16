@@ -14,7 +14,6 @@ export function KeyboardShortcuts() {
     nextCount,
     togglePlayback,
     stopPlayback,
-    saveProject,
     undo,
     canUndo,
     copyFormation,
@@ -24,11 +23,6 @@ export function KeyboardShortcuts() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-        e.preventDefault();
-        saveProject();
-        return;
-      }
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         if (canUndo) undo();
@@ -84,7 +78,6 @@ export function KeyboardShortcuts() {
     prevCount,
     togglePlayback,
     stopPlayback,
-    saveProject,
     undo,
     canUndo,
     copyFormation,

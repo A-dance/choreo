@@ -82,6 +82,9 @@ export type UiStrings = {
   sectionNameDefault: (n: number) => string;
   progressAria: (current: number, total: number, sections: number) => string;
   defaultSongTitle: string;
+  demoReferenceSongTitle: string;
+  emptyProjectTitle: string;
+  emptyProjectDesc: string;
   booting: string;
   share: string;
   shareTitle: string;
@@ -138,6 +141,71 @@ export type UiStrings = {
   myPageAbout: string;
   myPageAppName: string;
   myPageVersion: (version: string) => string;
+  myPageDataDeletion: string;
+  myPageDataDeletionStoredLabel: string;
+  myPageDataDeletionItems: string[];
+  myPageDataDeletionWarnings: string[];
+  myPageDeleteAccount: string;
+  myPageDeleteAccountConfirmTitle: string;
+  myPageDeleteAccountFailed: string;
+  authLoginTitle: string;
+  authSignUpTitle: string;
+  authLoginHint: string;
+  authSignUpHint: string;
+  authSwitchToSignUp: string;
+  authSwitchToSignIn: string;
+  authSwitchToSignUpAction: string;
+  authSwitchToSignInAction: string;
+  authContinueWithGoogle: string;
+  authOrDivider: string;
+  authGoogleError: string;
+  authProviderNotEnabled: string;
+  authForgotPassword: string;
+  authForgotSent: string;
+  authForgotNeedsEmail: string;
+  authResetPasswordTitle: string;
+  authResetPasswordHint: string;
+  authResetPasswordSubmit: string;
+  authResetPasswordInvalidLink: string;
+  authShowPassword: string;
+  authHidePassword: string;
+  authLoginSubtitle: string;
+  authSignUpSubtitle: string;
+  loginHeroLabel: string;
+  loginHeroTagline: string;
+  loginHeroHeadline: string;
+  loginHeroDesc: string;
+  loginHeroFeatures: string[];
+  loginStageHint: string;
+  authSection: string;
+  authSignIn: string;
+  authSignUp: string;
+  authSignOut: string;
+  authPassword: string;
+  authPasswordConfirm: string;
+  authSubmitSignIn: string;
+  authSubmitSignUp: string;
+  authSignedInHint: string;
+  authNotConfigured: string;
+  authAnonKeyMissing: string;
+  authErrorGeneric: string;
+  authPasswordMismatch: string;
+  authPasswordHint: string;
+  authPasswordWeak: string;
+  authDisplayNameRequired: string;
+  authCheckEmail: string;
+  authCloudSynced: string;
+  authCloudUploaded: string;
+  authWelcomeTitle: string;
+  authWelcomeSubtitle: string;
+  authWelcomeBack: string;
+  authGoToMyPage: string;
+  authGoToEditor: string;
+  authContinueWithoutAccount: string;
+  authNotSignedInHint: string;
+  authGoToLogin: string;
+  authUnavailableTitle: string;
+  authUnavailableHint: string;
   backToEditor: string;
   sidebarMedia: string;
   mediaPanelTitle: string;
@@ -230,7 +298,7 @@ const en: UiStrings = {
   sections: "Sections",
   sectionName: "Section name",
   sectionTabHint:
-    "Click to select · drag to reorder · double-click to delete · shift+double-click to rename",
+    "Click to select · drag to reorder · double-click to rename and show delete",
   deleteSection: "Delete section",
   deleteSectionAria: (name) => `Delete section ${name}`,
   deleteSectionConfirm: (name) =>
@@ -278,6 +346,9 @@ const en: UiStrings = {
   progressAria: (current, total, sections) =>
     `${current}/${total}, ${sections} section${sections === 1 ? "" : "s"}`,
   defaultSongTitle: "Untitled",
+  demoReferenceSongTitle: "Sample (Reference)",
+  emptyProjectTitle: "No projects yet",
+  emptyProjectDesc: "Create a project to start arranging formations.",
   booting: "Loading…",
   share: "Share",
   shareTitle: "Share project",
@@ -337,6 +408,90 @@ const en: UiStrings = {
   myPageAbout: "About",
   myPageAppName: "bamiri — SHARE",
   myPageVersion: (version) => `Version ${version}`,
+  myPageDataDeletion: "Data & deletion",
+  myPageDataDeletionStoredLabel: "Stored in your account",
+  myPageDataDeletionItems: [
+    "Display name and email",
+    "Profile photo (if set)",
+    "Formation projects and settings",
+  ],
+  myPageDataDeletionWarnings: [
+    "All cloud data will be permanently deleted.",
+    "This cannot be undone.",
+    "Data saved only in this browser will also be cleared.",
+  ],
+  myPageDeleteAccount: "Delete account",
+  myPageDeleteAccountConfirmTitle: "Delete your account?",
+  myPageDeleteAccountFailed: "Could not delete account. Please try again.",
+  authLoginTitle: "Sign in",
+  authSignUpTitle: "Create account",
+  authLoginHint: "Enter your email and password.",
+  authSignUpHint: "Choose an email and password for your account.",
+  authSwitchToSignUp: "Don't have an account?",
+  authSwitchToSignIn: "Already have an account?",
+  authSwitchToSignUpAction: "Sign up",
+  authSwitchToSignInAction: "Sign in",
+  authContinueWithGoogle: "Continue with Google",
+  authOrDivider: "or",
+  authGoogleError: "Google sign-in failed. Please try again.",
+  authProviderNotEnabled:
+    "This sign-in method is not set up yet. Ask the app owner to enable it in Supabase.",
+  authForgotPassword: "Forgot password?",
+  authForgotSent: "Password reset email sent.",
+  authForgotNeedsEmail: "Enter your email first.",
+  authResetPasswordTitle: "Set a new password",
+  authResetPasswordHint: "Choose a new password for your account.",
+  authResetPasswordSubmit: "Save and sign in",
+  authResetPasswordInvalidLink:
+    "This reset link is invalid or has expired. Request a new one from the login page.",
+  authShowPassword: "Show password",
+  authHidePassword: "Hide password",
+  authLoginSubtitle: "",
+  authSignUpSubtitle: "",
+  loginHeroLabel: "About bamiri — SHARE",
+  loginHeroTagline: "FOR DANCERS & CHOREOGRAPHERS",
+  loginHeroHeadline: "Formations, digitally.",
+  loginHeroDesc:
+    "Create formations intuitively with BPM sync and drag & drop. A tool for choreographers to share with your team in real time.",
+  loginHeroFeatures: [
+    "BPM-synced timeline",
+    "Real-time sharing",
+    "Section management",
+    "6+ dancers",
+  ],
+  loginStageHint: "↑ Drag & drop to edit formations",
+  authSection: "Sign in",
+  authSignIn: "Sign in",
+  authSignUp: "Create account",
+  authSignOut: "Sign out",
+  authPassword: "Password",
+  authPasswordConfirm: "Confirm password",
+  authSubmitSignIn: "Sign in →",
+  authSubmitSignUp: "Create account →",
+  authSignedInHint: "Projects sync to your account across devices.",
+  authNotConfigured: "Cloud sign-in is not configured on this server.",
+  authAnonKeyMissing:
+    "The app could not connect to the account service. If you are the developer, check Supabase settings and restart the dev server.",
+  authErrorGeneric: "Sign-in failed. Check your email and password.",
+  authPasswordMismatch: "Passwords do not match.",
+  authPasswordHint: "At least 8 characters with uppercase and lowercase letters.",
+  authPasswordWeak:
+    "Password must be at least 8 characters and include uppercase and lowercase letters.",
+  authDisplayNameRequired: "Enter your display name.",
+  authCheckEmail: "Check your email to confirm your account.",
+  authCloudSynced: "Loaded projects from cloud",
+  authCloudUploaded: "Saved local projects to cloud",
+  authWelcomeTitle: "Welcome",
+  authWelcomeSubtitle: "Create an account or sign in to edit and sync your projects.",
+  authWelcomeBack: "Welcome back",
+  authGoToMyPage: "Go to my page",
+  authGoToEditor: "Open editor",
+  authContinueWithoutAccount: "Open editor without signing in",
+  authNotSignedInHint: "Sign in to sync projects across devices.",
+  authGoToLogin: "Sign in",
+  authUnavailableTitle: "Sign-in is temporarily unavailable",
+  authUnavailableHint:
+    "The app could not connect to the account service. If you are the developer, check Supabase settings and restart the dev server.",
   backToEditor: "Back to editor",
   sidebarMedia: "Media",
   mediaPanelTitle: "Project media",
@@ -432,7 +587,7 @@ const ja: UiStrings = {
   sections: "セクション",
   sectionName: "セクション名",
   sectionTabHint:
-    "クリックで選択 · ドラッグで並べ替え · ダブルクリックで削除 · Shift+ダブルクリックで名前変更",
+    "クリックで選択 · ドラッグで並べ替え · ダブルクリックで名前変更と×表示",
   deleteSection: "セクションを削除",
   deleteSectionAria: (name) => `セクション「${name}」を削除`,
   deleteSectionConfirm: (name) =>
@@ -480,6 +635,9 @@ const ja: UiStrings = {
   progressAria: (current, total, sections) =>
     `${current}/${total}、${sections}セクション`,
   defaultSongTitle: "新曲タイトル",
+  demoReferenceSongTitle: "サンプル（参考）",
+  emptyProjectTitle: "プロジェクトがありません",
+  emptyProjectDesc: "新規プロジェクトを作成して、編成づくりを始めましょう。",
   booting: "読み込み中…",
   share: "Share",
   shareTitle: "Share",
@@ -542,6 +700,89 @@ const ja: UiStrings = {
   myPageAbout: "アプリ",
   myPageAppName: "bamiri — SHARE",
   myPageVersion: (version) => `バージョン ${version}`,
+  myPageDataDeletion: "データの削除",
+  myPageDataDeletionStoredLabel: "保存している情報",
+  myPageDataDeletionItems: [
+    "表示名・メールアドレス",
+    "プロフィール画像（設定した場合）",
+    "ダンス配置のプロジェクトと関連設定",
+  ],
+  myPageDataDeletionWarnings: [
+    "クラウド上のデータはすべて完全に削除されます。",
+    "元に戻すことはできません。",
+    "このブラウザに保存されているデータも消去されます。",
+  ],
+  myPageDeleteAccount: "アカウントを削除",
+  myPageDeleteAccountConfirmTitle: "アカウントを削除しますか？",
+  myPageDeleteAccountFailed: "アカウントを削除できませんでした。もう一度お試しください。",
+  authLoginTitle: "ログイン",
+  authSignUpTitle: "新規登録",
+  authLoginHint: "メールアドレスとパスワードを入力してください。",
+  authSignUpHint: "使うメールアドレスとパスワードを設定してください。",
+  authSwitchToSignUp: "アカウントをお持ちでない方は",
+  authSwitchToSignIn: "すでにアカウントをお持ちの方は",
+  authSwitchToSignUpAction: "新規登録",
+  authSwitchToSignInAction: "ログイン",
+  authContinueWithGoogle: "Googleで続ける",
+  authOrDivider: "または",
+  authGoogleError: "Googleログインに失敗しました。もう一度お試しください。",
+  authProviderNotEnabled:
+    "このログイン方法はまだ設定されていません。Supabase でプロバイダを有効化してください。",
+  authForgotPassword: "忘れた方はこちら",
+  authForgotSent: "パスワード再設定メールを送信しました。",
+  authForgotNeedsEmail: "先にメールアドレスを入力してください。",
+  authResetPasswordTitle: "新しいパスワードを設定",
+  authResetPasswordHint: "アカウントの新しいパスワードを入力してください。",
+  authResetPasswordSubmit: "保存してログイン",
+  authResetPasswordInvalidLink:
+    "再設定リンクが無効か期限切れです。ログイン画面からもう一度リクエストしてください。",
+  authShowPassword: "パスワードを表示",
+  authHidePassword: "パスワードを隠す",
+  authLoginSubtitle: "",
+  authSignUpSubtitle: "",
+  loginHeroLabel: "bamiri — SHARE について",
+  loginHeroTagline: "FOR DANCERS & CHOREOGRAPHERS",
+  loginHeroHeadline: "フォーメーションを、デジタルに。",
+  loginHeroDesc:
+    "BPM同期・ドラッグ＆ドロップで直感的にフォーメーションを作成。チームとリアルタイムで共有できる振付師のためのツール。",
+  loginHeroFeatures: [
+    "BPM同期タイムライン",
+    "リアルタイム共有",
+    "セクション管理",
+    "6名以上対応",
+  ],
+  loginStageHint: "↑ フォーメーションをドラッグ＆ドロップで編集",
+  authSection: "ログイン",
+  authSignIn: "ログイン",
+  authSignUp: "新規登録",
+  authSignOut: "ログアウト",
+  authPassword: "パスワード",
+  authPasswordConfirm: "パスワード（確認）",
+  authSubmitSignIn: "ログイン →",
+  authSubmitSignUp: "アカウントを作成 →",
+  authSignedInHint: "ログインすると端末間でプロジェクトが同期されます。",
+  authNotConfigured: "このサーバーではクラウドログインが設定されていません。",
+  authAnonKeyMissing:
+    "アカウントサービスに接続できませんでした。開発中の場合は設定を確認し、サーバーを再起動してください。",
+  authErrorGeneric: "ログインに失敗しました。メールとパスワードを確認してください。",
+  authPasswordMismatch: "パスワードが一致しません。",
+  authPasswordHint: "8文字以上、大文字・小文字を含めてください。",
+  authPasswordWeak: "パスワードは8文字以上で、大文字と小文字を含めてください。",
+  authDisplayNameRequired: "表示名を入力してください。",
+  authCheckEmail: "確認メールを送信しました。メールを確認してください。",
+  authCloudSynced: "クラウドからプロジェクトを読み込みました",
+  authCloudUploaded: "ローカルのプロジェクトをクラウドに保存しました",
+  authWelcomeTitle: "ようこそ",
+  authWelcomeSubtitle: "アカウントを作成するか、ログインして配置を編集・同期しましょう。",
+  authWelcomeBack: "おかえりなさい",
+  authGoToMyPage: "マイページへ",
+  authGoToEditor: "エディターを開く",
+  authContinueWithoutAccount: "アカウントなしでエディターを開く",
+  authNotSignedInHint: "ログインすると端末間でプロジェクトが同期されます。",
+  authGoToLogin: "ログイン",
+  authUnavailableTitle: "ログインの準備ができていません",
+  authUnavailableHint:
+    "アカウントサービスに接続できませんでした。開発中の場合は設定を確認し、サーバーを再起動してください。",
   backToEditor: "エディターに戻る",
   sidebarMedia: "メディア",
   mediaPanelTitle: "プロジェクトのメディア",
@@ -599,6 +840,8 @@ const ja: UiStrings = {
 };
 
 export const STRINGS: Record<ProjectLanguage, UiStrings> = { en, ja };
+
+export const DEFAULT_LANGUAGE: ProjectLanguage = "en";
 
 export function getStrings(lang: ProjectLanguage | undefined): UiStrings {
   return STRINGS[lang === "ja" ? "ja" : "en"];

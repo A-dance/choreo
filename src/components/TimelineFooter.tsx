@@ -39,7 +39,6 @@ export function TimelineFooter() {
   const [countDeleteSlotIndex, setCountDeleteSlotIndex] = useState<
     number | null
   >(null);
-  const [sectionDeleteId, setSectionDeleteId] = useState<string | null>(null);
 
   const flatSlots = useMemo(
     () => flattenTimeline(state.sections),
@@ -56,7 +55,6 @@ export function TimelineFooter() {
 
   useEffect(() => {
     setCountDeleteSlotIndex(null);
-    setSectionDeleteId(null);
   }, [selectedSectionId]);
 
   useEffect(() => {
@@ -67,15 +65,6 @@ export function TimelineFooter() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [countDeleteSlotIndex]);
-
-  useEffect(() => {
-    if (sectionDeleteId === null) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSectionDeleteId(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [sectionDeleteId]);
 
   const selectedSection = state.sections.find(
     (s) => s.id === selectedSectionId,
@@ -112,7 +101,7 @@ export function TimelineFooter() {
       return;
     }
     deleteSection(sectionId);
-    setSectionDeleteId(null);
+    setEditingSectionId(null);
   };
 
   const handleSectionDoubleClick = (
@@ -122,16 +111,13 @@ export function TimelineFooter() {
   ) => {
     e.preventDefault();
     if (isViewOnly) return;
-    if (e.shiftKey) {
-      startEditSection(sectionId, name);
-      setSectionDeleteId(null);
-      return;
-    }
-    if (state.sections.length <= 1) {
-      startEditSection(sectionId, name);
-      return;
-    }
-    setSectionDeleteId((prev) => (prev === sectionId ? null : sectionId));
+    setSelectedSectionId(sectionId);
+    startEditSection(sectionId, name);
+  };
+
+  const exitSectionEdit = (sectionId: string, commit: boolean) => {
+    if (commit) commitSectionName(sectionId);
+    setEditingSectionId(null);
   };
 
   const handleDeleteCount = (sectionId: string, slotIndex: number, label: string) => {
@@ -151,7 +137,9 @@ export function TimelineFooter() {
   };
 
   const handleTabClick = (sectionId: string) => {
-    setSectionDeleteId(null);
+    if (editingSectionId && editingSectionId !== sectionId) {
+      exitSectionEdit(editingSectionId, true);
+    }
     setSelectedSectionId(sectionId);
     navigateTo(firstGlobalInSection(sectionId));
   };
@@ -235,19 +223,38 @@ export function TimelineFooter() {
 
           if (editingSectionId === sec.id) {
             return (
-              <input
+              <div
                 key={sec.id}
-                className="sec-tab-inp"
-                value={sectionNameDraft}
-                autoFocus
-                onChange={(e) => setSectionNameDraft(e.target.value)}
-                onBlur={() => commitSectionName(sec.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") commitSectionName(sec.id);
-                  if (e.key === "Escape") setEditingSectionId(null);
-                }}
-                aria-label={UI.sectionName}
-              />
+                className="sec-tab-wrap selected editing"
+              >
+                <input
+                  className="sec-tab-inp"
+                  value={sectionNameDraft}
+                  autoFocus
+                  onChange={(e) => setSectionNameDraft(e.target.value)}
+                  onBlur={() => exitSectionEdit(sec.id, true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") exitSectionEdit(sec.id, true);
+                    if (e.key === "Escape") exitSectionEdit(sec.id, false);
+                  }}
+                  aria-label={UI.sectionName}
+                />
+                {state.sections.length > 1 && (
+                  <button
+                    type="button"
+                    className="sec-tab-section-del"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSection(sec.id, sec.name);
+                    }}
+                    title={UI.deleteSection}
+                    aria-label={UI.deleteSectionAria(sec.name)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             );
           }
 
@@ -292,22 +299,6 @@ export function TimelineFooter() {
                 )}
                 {sec.name}
               </button>
-              {sectionDeleteId === sec.id &&
-                state.sections.length > 1 &&
-                !isViewOnly && (
-                <button
-                  type="button"
-                  className="sec-tab-section-del"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteSection(sec.id, sec.name);
-                  }}
-                  title={UI.deleteSection}
-                  aria-label={UI.deleteSectionAria(sec.name)}
-                >
-                  ×
-                </button>
-              )}
             </div>
           );
         })}

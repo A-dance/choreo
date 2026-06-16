@@ -2,15 +2,21 @@
 
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ProfileAvatarPicker } from "@/components/ProfileAvatarPicker";
+import { useAuth } from "@/context/AuthContext";
 import { useChoreo } from "@/context/ChoreoContext";
 import { useProfile } from "@/context/ProfileContext";
-import { formatProjectSavedAt } from "@/lib/videoLinkUtils";
+import { clearLocalUserData } from "@/lib/accountLocalData";
+import { cancelCloudWorkspacePush } from "@/lib/cloudSync";
 import { getStrings, type ProjectLanguage } from "@/lib/uiStrings";
+import { formatProjectSavedAt } from "@/lib/videoLinkUtils";
 
 const APP_VERSION = "0.1.0";
 
 export function MyPageScreen() {
+  const router = useRouter();
+  const { signOut, deleteAccount } = useAuth();
   const { projects, activeProjectId } = useChoreo();
   const {
     profile,
@@ -18,6 +24,7 @@ export function MyPageScreen() {
     avatarUrl,
     avatarColor,
     hasCustomAvatar,
+    isLoggedIn,
     setDisplayName,
     setEmail,
     setLanguage,
@@ -28,6 +35,9 @@ export function MyPageScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const sortedProjects = useMemo(
     () => [...projects].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -66,6 +76,27 @@ export function MyPageScreen() {
     await clearAvatar();
     setAvatarBusy(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    router.push("/login");
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError(null);
+    setDeleteBusy(true);
+    cancelCloudWorkspacePush();
+    const err = await deleteAccount();
+    if (err) {
+      setDeleteBusy(false);
+      setDeleteError(UI.myPageDeleteAccountFailed);
+      return;
+    }
+    await clearLocalUserData();
+    setDeleteOpen(false);
+    setDeleteBusy(false);
+    router.push("/login");
   }
 
   return (
@@ -148,6 +179,7 @@ export function MyPageScreen() {
                 value={profile.email}
                 placeholder={UI.emailPlaceholder}
                 onChange={(e) => setEmail(e.target.value)}
+                readOnly={isLoggedIn}
                 autoComplete="email"
                 inputMode="email"
                 maxLength={120}
@@ -209,8 +241,100 @@ export function MyPageScreen() {
             <p className="mypage-about-name">{UI.myPageAppName}</p>
             <p className="mypage-about-version">{UI.myPageVersion(APP_VERSION)}</p>
           </section>
+
+          {isLoggedIn ? (
+            <section
+              className="mypage-section mypage-data-deletion"
+              aria-label={UI.myPageDataDeletion}
+            >
+              <h2 className="mypage-section-title">{UI.myPageDataDeletion}</h2>
+              <button
+                type="button"
+                className="mypage-delete-account"
+                onClick={() => {
+                  setDeleteError(null);
+                  setDeleteOpen(true);
+                }}
+              >
+                {UI.myPageDeleteAccount}
+              </button>
+              {deleteError ? (
+                <p className="mypage-delete-error" role="alert">
+                  {deleteError}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {isLoggedIn ? (
+            <button
+              type="button"
+              className="mypage-signout"
+              onClick={() => void handleSignOut()}
+            >
+              {UI.authSignOut}
+            </button>
+          ) : null}
         </div>
       </div>
+
+      {deleteOpen ? (
+        <div
+          className="dialog-overlay"
+          onClick={() => {
+            if (!deleteBusy) setDeleteOpen(false);
+          }}
+          role="presentation"
+        >
+          <div
+            className="dialog-panel delete-account-dialog"
+            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+            aria-describedby="delete-account-desc"
+          >
+            <h2 id="delete-account-title" className="dialog-title">
+              {UI.myPageDeleteAccountConfirmTitle}
+            </h2>
+            <div id="delete-account-desc" className="delete-account-dialog-body">
+              <div className="delete-account-dialog-block">
+                <p className="delete-account-dialog-label">
+                  {UI.myPageDataDeletionStoredLabel}
+                </p>
+                <ul className="delete-account-dialog-list">
+                  {UI.myPageDataDeletionItems.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="delete-account-dialog-warning">
+                {UI.myPageDataDeletionWarnings.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+            </div>
+            <div className="dialog-actions">
+              <button
+                type="button"
+                className="dialog-btn secondary"
+                disabled={deleteBusy}
+                onClick={() => setDeleteOpen(false)}
+              >
+                {UI.cancel}
+              </button>
+              <button
+                type="button"
+                className="dialog-btn danger"
+                disabled={deleteBusy}
+                onClick={() => void handleDeleteAccount()}
+              >
+                {UI.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

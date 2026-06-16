@@ -1,6 +1,6 @@
 interface BrandLogoProps {
   className?: string;
-  size?: "header" | "loading";
+  size?: "header" | "loading" | "login";
 }
 
 const VIEW_WIDTH = 176;
@@ -10,7 +10,8 @@ const SHARE_X = 172;
 const ICON_SCALE = 0.58;
 
 export function BrandLogo({ className = "", size = "header" }: BrandLogoProps) {
-  const height = size === "loading" ? 48 : 34;
+  const height =
+    size === "login" ? 72 : size === "loading" ? 48 : 34;
   const width = Math.round((height * VIEW_WIDTH) / VIEW_HEIGHT);
 
   return (

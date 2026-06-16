@@ -1,4 +1,17 @@
+import type { User } from "@supabase/supabase-js";
 import { COLORS } from "./constants";
+
+export function readDisplayNameFromUser(user: User | null | undefined): string {
+  if (!user?.user_metadata || typeof user.user_metadata !== "object") return "";
+  const meta = user.user_metadata as Record<string, unknown>;
+  if (typeof meta.display_name === "string" && meta.display_name.trim()) {
+    return meta.display_name.trim();
+  }
+  if (typeof meta.full_name === "string" && meta.full_name.trim()) {
+    return meta.full_name.trim();
+  }
+  return "";
+}
 
 export function getProfileInitials(name: string): string {
   const trimmed = name.trim();

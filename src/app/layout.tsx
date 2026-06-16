@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Zen_Kaku_Gothic_New } from "next/font/google";
+import { AuthProvider } from "@/context/AuthContext";
 import { ProfileProvider } from "@/context/ProfileContext";
 import "./globals.css";
 
@@ -26,7 +27,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${zenKaku.variable}`}>
       <body>
-        <ProfileProvider>{children}</ProfileProvider>
+        <AuthProvider>
+          <ProfileProvider>{children}</ProfileProvider>
+        </AuthProvider>
       </body>
     </html>
   );

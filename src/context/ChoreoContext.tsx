@@ -15,6 +15,7 @@ import {
   beatIntervalMs,
   buildPlaybackPhases,
   clampStagePos,
+  createBlankEditorState,
   createInitialState,
   findFirstPhaseForGlobal,
   flattenTimeline,
@@ -60,7 +61,16 @@ import {
   removeProject,
   reorderProjects as reorderWorkspaceProjects,
   saveWorkspace,
+  workspaceHasActiveProject,
 } from "@/lib/projectStore";
+import {
+  fetchCloudWorkspace,
+  flushCloudWorkspacePush,
+  pushCloudWorkspace,
+  resolveUserWorkspace,
+  scheduleCloudWorkspacePush,
+} from "@/lib/cloudSync";
+import { useAuth } from "@/context/AuthContext";
 import {
   applySharedViewBundle,
   buildLegacyShareUrl,
@@ -146,7 +156,6 @@ interface ChoreoContextValue {
   nextCount: () => void;
   togglePlayback: () => void;
   stopPlayback: () => void;
-  saveProject: () => void;
   undo: () => void;
   canUndo: boolean;
   pushUndoHistory: () => void;
@@ -158,6 +167,7 @@ interface ChoreoContextValue {
   getMemberPos: (memberId: number) => Position;
   projects: ProjectSummary[];
   activeProjectId: string;
+  hasActiveProject: boolean;
   switchProject: (projectId: string) => void;
   createProject: (params: CreateProjectInput) => void;
   deleteProject: (projectId: string) => void;
@@ -203,6 +213,7 @@ function cloneChoreoState(state: ChoreoState): ChoreoState {
 
 export function ChoreoProvider({ children }: { children: ReactNode }) {
   const { language: profileLanguage } = useProfile();
+  const { authReady, user } = useAuth();
   const [state, setState] = useState<ChoreoState>(createInitialState);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [activeProjectId, setActiveProjectId] = useState("");
@@ -228,7 +239,10 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const activeProjectIdRef = useRef(activeProjectId);
   const appModeRef = useRef(appMode);
   const profileLanguageRef = useRef(profileLanguage);
+  const userIdRef = useRef<string | null>(null);
+  const cloudSyncedUserRef = useRef<string | null>(null);
   profileLanguageRef.current = profileLanguage;
+  userIdRef.current = user?.id ?? null;
   const externalShareViewRef = useRef(externalShareView);
   stateRef.current = state;
   workspaceRef.current = workspace;
@@ -236,6 +250,11 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   activeProjectIdRef.current = activeProjectId;
   appModeRef.current = appMode;
   externalShareViewRef.current = externalShareView;
+
+  const syncWorkspaceToCloud = useCallback((workspace: Workspace) => {
+    const uid = userIdRef.current;
+    if (uid) scheduleCloudWorkspacePush(uid, workspace);
+  }, []);
 
   const commitActiveProject = useCallback(
     (nextState: ChoreoState, nextMedia: ProjectMedia) => {
@@ -245,10 +264,11 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       const nextWs = patchActiveProject(ws, projectId, nextState, nextMedia);
       workspaceRef.current = nextWs;
       const ok = saveWorkspace(nextWs);
+      syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       return ok;
     },
-    [],
+    [syncWorkspaceToCloud],
   );
 
   const projects = useMemo((): ProjectSummary[] => {
@@ -266,6 +286,11 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       };
     });
   }, [workspace, activeProjectId, state.songTitle, state.bpm, media]);
+
+  const hasActiveProject = useMemo(
+    () => (workspace ? workspaceHasActiveProject(workspace) : false),
+    [workspace],
+  );
 
   const language = profileLanguage;
   const strings = useMemo(() => getStrings(profileLanguage), [profileLanguage]);
@@ -393,18 +418,40 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     showToast(getStrings(profileLanguageRef.current).undoDone);
   }, [stopPlayback, showToast]);
 
+  const applyWorkspace = useCallback(
+    (ws: Workspace) => {
+      workspaceRef.current = ws;
+      setWorkspace(ws);
+      setAppMode("edit");
+      setExternalShareView(false);
+
+      if (!workspaceHasActiveProject(ws)) {
+        setActiveProjectId("");
+        setState(createBlankEditorState(profileLanguageRef.current));
+        setMedia(emptyProjectMedia());
+        clearUndoHistory();
+        return;
+      }
+
+      const active =
+        ws.projects.find((project) => project.id === ws.activeProjectId) ??
+        ws.projects[0];
+      setActiveProjectId(active.id);
+      setState(normalizeChoreoState({ ...active.state, isPlaying: false }));
+      setMedia(normalizeProjectMedia(active.media));
+      clearUndoHistory();
+    },
+    [clearUndoHistory],
+  );
+
+  const applyWorkspaceRef = useRef(applyWorkspace);
+  applyWorkspaceRef.current = applyWorkspace;
+
   useEffect(() => {
     let cancelled = false;
 
     function applyLoadedWorkspace(loaded: ReturnType<typeof loadWorkspace>) {
-      workspaceRef.current = loaded.workspace;
-      setWorkspace(loaded.workspace);
-      setActiveProjectId(loaded.workspace.activeProjectId);
-      setAppMode("edit");
-      setExternalShareView(false);
-      setState(normalizeChoreoState(loaded.activeState));
-      setMedia(normalizeProjectMedia(loaded.activeMedia));
-      clearUndoHistory();
+      applyWorkspace(loaded.workspace);
     }
 
     function initFromLocalStorage() {
@@ -467,7 +514,60 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [clearUndoHistory, showToast]);
+  }, [applyWorkspace, clearUndoHistory, showToast]);
+
+  useEffect(() => {
+    if (!user) cloudSyncedUserRef.current = null;
+  }, [user]);
+
+  useEffect(() => {
+    if (!authReady || !hydrated || !user) return;
+    if (appModeRef.current === "view" || externalShareViewRef.current) return;
+    if (cloudSyncedUserRef.current === user.id) return;
+
+    const userId = user.id;
+    const userEmail = user.email ?? "";
+    let cancelled = false;
+    cloudSyncedUserRef.current = userId;
+
+    void (async () => {
+      const local = workspaceRef.current;
+      const cloud = await fetchCloudWorkspace(userId);
+      if (cancelled) return;
+
+      const resolution = resolveUserWorkspace(userEmail, local, cloud);
+      if (!resolution) return;
+
+      const { kind, workspace: resolved } = resolution;
+      const apply = applyWorkspaceRef.current;
+
+      if (kind === "cloud") {
+        apply(resolved);
+        saveWorkspace(resolved);
+        return;
+      }
+
+      apply(resolved);
+      saveWorkspace(resolved);
+
+      if (kind === "local") {
+        await pushCloudWorkspace(userId, resolved);
+        return;
+      }
+
+      await pushCloudWorkspace(userId, resolved);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, hydrated, user?.id, user?.email]);
+
+  useEffect(() => {
+    return () => {
+      void flushCloudWorkspacePush();
+    };
+  }, []);
 
   const scheduleNextPhase = useCallback(() => {
     clearPlaybackTimer();
@@ -605,21 +705,6 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     if (s.isPlaying) restartPlaybackAt(next);
   }, [restartPlaybackAt]);
 
-  const saveProject = useCallback(() => {
-    const ws = workspaceRef.current;
-    if (!ws || !activeProjectId) {
-      showToast(getStrings(profileLanguageRef.current).saveFailed);
-      return;
-    }
-    const ok = persistWorkspace(
-      ws,
-      activeProjectId,
-      stateRef.current,
-      mediaRef.current,
-    );
-    showToast(ok ? getStrings(profileLanguageRef.current).saved : getStrings(profileLanguageRef.current).saveFailed);
-  }, [activeProjectId, showToast]);
-
   const switchProject = useCallback(
     (projectId: string) => {
       if (appModeRef.current === "view") return;
@@ -641,6 +726,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       const nextWs = { ...saved, activeProjectId: projectId };
       workspaceRef.current = nextWs;
       saveWorkspace(nextWs);
+      syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       setActiveProjectId(projectId);
       setState(nextState);
@@ -649,7 +735,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       clearUndoHistory();
       showToast(getStrings(profileLanguageRef.current).switchedProject(nextState.songTitle));
     },
-    [activeProjectId, stopPlayback, showToast, clearUndoHistory],
+    [activeProjectId, stopPlayback, showToast, clearUndoHistory, syncWorkspaceToCloud],
   );
 
   const createProject = useCallback(
@@ -658,18 +744,22 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       const ws = workspaceRef.current;
       if (!ws) return;
       stopPlayback();
-      const saved = patchActiveProject(
-        ws,
-        activeProjectId,
-        stateRef.current,
-        mediaRef.current,
-      );
+      const saved =
+        workspaceHasActiveProject(ws) && activeProjectId
+          ? patchActiveProject(
+              ws,
+              activeProjectId,
+              stateRef.current,
+              mediaRef.current,
+            )
+          : ws;
       const { workspace: nextWs, record } = addProject(saved, {
         ...params,
         language: profileLanguageRef.current,
       });
       workspaceRef.current = nextWs;
       saveWorkspace(nextWs);
+      syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       setActiveProjectId(record.id);
       setState(record.state);
@@ -678,7 +768,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       clearUndoHistory();
       showToast(getStrings(profileLanguageRef.current).createdProject(record.state.songTitle));
     },
-    [activeProjectId, stopPlayback, showToast, clearUndoHistory],
+    [activeProjectId, stopPlayback, showToast, clearUndoHistory, syncWorkspaceToCloud],
   );
 
   const reorderProjects = useCallback((fromIndex: number, toIndex: number) => {
@@ -689,44 +779,51 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     if (nextWs === ws) return;
     workspaceRef.current = nextWs;
     saveWorkspace(nextWs);
+    syncWorkspaceToCloud(nextWs);
     setWorkspace(nextWs);
-  }, []);
+  }, [syncWorkspaceToCloud]);
 
   const deleteProject = useCallback(
     (projectId: string) => {
       if (appModeRef.current === "view") return;
       const ws = workspaceRef.current;
       if (!ws) return;
-      if (ws.projects.length <= 1) {
-        showToast(getStrings(profileLanguageRef.current).cannotDeleteLastProject);
-        return;
-      }
       stopPlayback();
-      const saved = patchActiveProject(
-        ws,
-        activeProjectId,
-        stateRef.current,
-        mediaRef.current,
-      );
+      const saved =
+        workspaceHasActiveProject(ws) && activeProjectId
+          ? patchActiveProject(
+              ws,
+              activeProjectId,
+              stateRef.current,
+              mediaRef.current,
+            )
+          : ws;
       const nextWs = removeProject(saved, projectId);
       if (!nextWs) return;
       void deleteProjectMedia(projectId);
       workspaceRef.current = nextWs;
       saveWorkspace(nextWs);
+      syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       if (activeProjectId === projectId) {
-        const nextState = getActiveState(nextWs, nextWs.activeProjectId);
-        if (nextState) {
+        if (workspaceHasActiveProject(nextWs)) {
           setActiveProjectId(nextWs.activeProjectId);
-          setState(nextState);
-          setMedia(normalizeProjectMedia(getActiveMedia(nextWs, nextWs.activeProjectId)));
-          setSelectedMemberId(null);
+          const nextState = getActiveState(nextWs, nextWs.activeProjectId);
+          if (nextState) {
+            setState(nextState);
+            setMedia(normalizeProjectMedia(getActiveMedia(nextWs, nextWs.activeProjectId)));
+          }
+        } else {
+          setActiveProjectId("");
+          setState(createBlankEditorState(profileLanguageRef.current));
+          setMedia(emptyProjectMedia());
         }
+        setSelectedMemberId(null);
       }
       clearUndoHistory();
       showToast(getStrings(profileLanguageRef.current).projectDeleted);
     },
-    [activeProjectId, stopPlayback, showToast, clearUndoHistory],
+    [activeProjectId, stopPlayback, showToast, clearUndoHistory, syncWorkspaceToCloud],
   );
 
   const copyFormation = useCallback(() => {
@@ -1406,7 +1503,6 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     nextCount,
     togglePlayback,
     stopPlayback,
-    saveProject,
     undo,
     canUndo,
     pushUndoHistory,
@@ -1424,6 +1520,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       ),
     projects,
     activeProjectId,
+    hasActiveProject,
     switchProject,
     createProject,
     deleteProject,
