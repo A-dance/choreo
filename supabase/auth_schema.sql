@@ -4,10 +4,13 @@ create table if not exists public.profiles (
   display_name text not null default '',
   language text not null default 'en',
   avatar_path text,
+  plan text not null default 'free' check (plan in ('free', 'pro')),
   updated_at timestamptz not null default now()
 );
 
 alter table public.profiles enable row level security;
+
+-- 既存DB向け: alter table public.profiles add column if not exists plan text not null default 'free' check (plan in ('free', 'pro'));
 
 drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"

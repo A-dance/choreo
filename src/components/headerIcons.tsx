@@ -112,3 +112,25 @@ export function ShareIcon() {
     </svg>
   );
 }
+
+export function HelpIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.35"
+      />
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+        d="M9.5 9.2a2.7 2.7 0 0 1 4.8 1.4c0 1.8-2.3 2.2-2.3 3.6M12 17.2h.01"
+      />
+    </svg>
+  );
+}

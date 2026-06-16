@@ -15,3 +15,19 @@ export function getSupabaseAdmin(): SupabaseClient | null {
   });
   return adminClient;
 }
+
+export function isShareBackendConfigured(): boolean {
+  return getSupabaseAdmin() !== null;
+}
+
+export function getShareMediaPublicUrl(
+  shareId: string,
+  mediaId: string,
+): string | null {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const { data } = admin.storage
+    .from("share-media")
+    .getPublicUrl(`${shareId}/${mediaId}`);
+  return data.publicUrl;
+}

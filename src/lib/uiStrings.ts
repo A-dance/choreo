@@ -148,6 +148,37 @@ export type UiStrings = {
   myPageDeleteAccount: string;
   myPageDeleteAccountConfirmTitle: string;
   myPageDeleteAccountFailed: string;
+  helpTitle: string;
+  helpSubtitle: string;
+  helpPlaceholder: string;
+  helpSend: string;
+  helpEmpty: string;
+  helpThinking: string;
+  helpError: string;
+  helpNotConfigured: string;
+  helpQuotaExceeded: string;
+  helpLimitReached: (priceYen: number) => string;
+  helpQuotaRemaining: (remaining: number, limit: number) => string;
+  helpOpen: string;
+  helpAskAi: string;
+  helpLauncherDismiss: string;
+  helpChatWelcome: string;
+  helpYouLabel: string;
+  helpBotLabel: string;
+  helpSuggestionsLabel: string;
+  helpComposerHint: string;
+  helpNewChat: string;
+  upgradeTitle: string;
+  upgradeDesc: (freeLimit: number) => string;
+  upgradePrice: (priceYen: number) => string;
+  upgradeFeatures: string[];
+  upgradeNote: string;
+  upgradeGoMyPage: string;
+  myPagePlan: string;
+  myPagePlanFree: string;
+  myPagePlanPro: string;
+  myPageUpgradeTitle: string;
+  myPageUpgradeDesc: string;
   authLoginTitle: string;
   authSignUpTitle: string;
   authLoginHint: string;
@@ -423,6 +454,46 @@ const en: UiStrings = {
   myPageDeleteAccount: "Delete account",
   myPageDeleteAccountConfirmTitle: "Delete your account?",
   myPageDeleteAccountFailed: "Could not delete account. Please try again.",
+  helpTitle: "ASK AI",
+  helpSubtitle: "",
+  helpPlaceholder: "e.g. How do I change dot size?",
+  helpSend: "Ask",
+  helpEmpty: "Pick a suggestion or type your question.",
+  helpThinking: "Thinking…",
+  helpError: "Could not get an answer. Please try again.",
+  helpNotConfigured: "Help is not configured yet (GEMINI_API_KEY).",
+  helpQuotaExceeded:
+    "The AI quota is temporarily exceeded. Please try again later.",
+  helpLimitReached: (price) =>
+    `Daily free limit reached. Pro (¥${price}/month) gives unlimited help.`,
+  helpQuotaRemaining: (remaining, limit) =>
+    `Free plan: ${remaining} of ${limit} questions left today`,
+  helpOpen: "Help",
+  helpAskAi: "ASK AI",
+  helpLauncherDismiss: "Hide",
+  helpChatWelcome:
+    "Hi! Ask me anything about bamiri — SHARE. I can explain formations, sections, playback, sharing, and more.",
+  helpYouLabel: "You",
+  helpBotLabel: "bamiri",
+  helpSuggestionsLabel: "Try asking",
+  helpComposerHint: "Enter to send · Shift+Enter for new line",
+  helpNewChat: "New chat",
+  upgradeTitle: "Upgrade to Pro",
+  upgradeDesc: (n) =>
+    `The free plan includes ${n} project. Create more with Pro.`,
+  upgradePrice: (price) => `¥${price} / month`,
+  upgradeFeatures: [
+    "Unlimited projects",
+    "Cloud sync",
+  ],
+  upgradeNote: "Payment via Stripe is coming soon. See My page for details.",
+  upgradeGoMyPage: "View plan on My page",
+  myPagePlan: "Plan",
+  myPagePlanFree: "Free (1 project)",
+  myPagePlanPro: "Pro",
+  myPageUpgradeTitle: "Pro — ¥500 / month",
+  myPageUpgradeDesc:
+    "Unlimited projects. Stripe checkout will be available soon.",
   authLoginTitle: "Sign in",
   authSignUpTitle: "Create account",
   authLoginHint: "Enter your email and password.",
@@ -715,6 +786,46 @@ const ja: UiStrings = {
   myPageDeleteAccount: "アカウントを削除",
   myPageDeleteAccountConfirmTitle: "アカウントを削除しますか？",
   myPageDeleteAccountFailed: "アカウントを削除できませんでした。もう一度お試しください。",
+  helpTitle: "ASK AI",
+  helpSubtitle: "",
+  helpPlaceholder: "例：ドットの大きさを変えるには？",
+  helpSend: "質問する",
+  helpEmpty: "例を選ぶか、質問を入力してください。",
+  helpThinking: "回答を生成中…",
+  helpError: "回答を取得できませんでした。もう一度お試しください。",
+  helpNotConfigured: "ヘルプが未設定です（GEMINI_API_KEY）。",
+  helpQuotaExceeded:
+    "AIの利用上限に達しています。しばらくしてからもう一度お試しください。",
+  helpLimitReached: (price) =>
+    `本日の無料枠を使い切りました。Pro（月額${price}円）で無制限に質問できます。`,
+  helpQuotaRemaining: (remaining, limit) =>
+    `無料プラン：本日あと ${remaining} / ${limit} 回`,
+  helpOpen: "ヘルプ",
+  helpAskAi: "ASK AI",
+  helpLauncherDismiss: "非表示",
+  helpChatWelcome:
+    "こんにちは。bamiri — SHARE の使い方なら何でも聞いてください。配置・セクション・再生・共有などを説明します。",
+  helpYouLabel: "あなた",
+  helpBotLabel: "bamiri",
+  helpSuggestionsLabel: "よくある質問",
+  helpComposerHint: "Enter で送信 · Shift+Enter で改行",
+  helpNewChat: "新しい会話",
+  upgradeTitle: "Proにアップグレード",
+  upgradeDesc: (n) =>
+    `無料プランはプロジェクト${n}件までです。2件目以降はProが必要です。`,
+  upgradePrice: (price) => `月額 ${price}円`,
+  upgradeFeatures: [
+    "プロジェクト無制限",
+    "クラウド同期",
+  ],
+  upgradeNote: "お支払い（Stripe）は準備中です。詳細はマイページをご覧ください。",
+  upgradeGoMyPage: "マイページでプランを見る",
+  myPagePlan: "プラン",
+  myPagePlanFree: "無料（プロジェクト1件）",
+  myPagePlanPro: "Pro",
+  myPageUpgradeTitle: "Pro — 月額500円",
+  myPageUpgradeDesc:
+    "プロジェクト無制限。Stripeでのお支払いは準備中です。",
   authLoginTitle: "ログイン",
   authSignUpTitle: "新規登録",
   authLoginHint: "メールアドレスとパスワードを入力してください。",

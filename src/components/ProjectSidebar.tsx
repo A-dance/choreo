@@ -4,8 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useChoreo } from "@/context/ChoreoContext";
+import { useProfile } from "@/context/ProfileContext";
+import { canCreateProject } from "@/lib/subscription";
 import { formatProjectSavedAt } from "@/lib/videoLinkUtils";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { MediaPanel, type MediaPanelSection } from "@/components/MediaPanel";
 
 interface ProjectSidebarProps {
@@ -24,7 +27,9 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
     language,
     strings: UI,
   } = useChoreo();
+  const { plan } = useProfile();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [mediaPanelOpen, setMediaPanelOpen] = useState(false);
   const [mediaSection, setMediaSection] = useState<MediaPanelSection>("audio");
   const [dragProjectId, setDragProjectId] = useState<string | null>(null);
@@ -140,7 +145,13 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
           <button
             type="button"
             className="project-new-btn"
-            onClick={() => setDialogOpen(true)}
+            onClick={() => {
+              if (!canCreateProject(projects.length, plan)) {
+                setUpgradeOpen(true);
+                return;
+              }
+              setDialogOpen(true);
+            }}
           >
             {UI.newProject}
           </button>
@@ -262,6 +273,10 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
 
       {dialogOpen && (
         <NewProjectDialog onClose={() => setDialogOpen(false)} />
+      )}
+
+      {upgradeOpen && (
+        <UpgradeDialog onClose={() => setUpgradeOpen(false)} />
       )}
 
       {mediaPanelOpen && (

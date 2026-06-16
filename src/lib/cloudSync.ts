@@ -17,6 +17,7 @@ export interface CloudProfileRow {
   display_name: string;
   language: string;
   avatar_path: string | null;
+  plan?: string | null;
   updated_at: string;
 }
 
@@ -39,7 +40,7 @@ export async function fetchCloudProfile(
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("profiles")
-    .select("display_name, language, avatar_path, updated_at")
+    .select("display_name, language, avatar_path, plan, updated_at")
     .eq("id", userId)
     .maybeSingle();
   if (error || !data) return null;

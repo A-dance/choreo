@@ -15,8 +15,10 @@ import {
   PauseIcon,
   PlayIcon,
   ShareIcon,
+  HelpIcon,
   UndoIcon,
 } from "@/components/headerIcons";
+import { HelpPanel } from "@/components/HelpPanel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { MemberPanel } from "@/components/MemberPanel";
 import { ShareDialog } from "@/components/ShareDialog";
@@ -29,6 +31,7 @@ function HeaderAction({
   disabled,
   active,
   title,
+  className,
 }: {
   icon: ReactNode;
   label: string;
@@ -36,11 +39,16 @@ function HeaderAction({
   disabled?: boolean;
   active?: boolean;
   title?: string;
+  className?: string;
 }) {
   return (
     <button
       type="button"
-      className={"hdr-action-btn" + (active ? " active" : "")}
+      className={
+        "hdr-action-btn" +
+        (active ? " active" : "") +
+        (className ? ` ${className}` : "")
+      }
       onClick={onClick}
       disabled={disabled}
       title={title}
@@ -84,6 +92,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
   const [dotInp, setDotInp] = useState(String(memberDotPx));
   const [memberPanelOpen, setMemberPanelOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   useEffect(() => {
     setDotInp(String(memberDotPx));
@@ -313,6 +322,14 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
               disabled={!canUndo || isViewOnly}
               title={UI.undoShortcut}
             />
+            <HeaderAction
+              icon={<HelpIcon />}
+              label={UI.helpAskAi}
+              onClick={() => setHelpOpen((v) => !v)}
+              active={helpOpen}
+              title={UI.helpAskAi}
+              className="help-action"
+            />
             {!isViewOnly && (
               <HeaderAction
                 icon={<ShareIcon />}
@@ -333,6 +350,9 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
       {shareOpen && (
         <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
       )}
+      <div className="help-panel-anchor">
+        <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
+      </div>
     </>
   );
 }

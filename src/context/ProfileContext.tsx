@@ -36,6 +36,10 @@ import {
   type ProjectLanguage,
 } from "@/lib/uiStrings";
 import {
+  normalizePlan,
+  type SubscriptionPlan,
+} from "@/lib/subscription";
+import {
   getProfileAvatarColor,
   getProfileInitials,
   readDisplayNameFromUser,
@@ -55,6 +59,7 @@ interface ProfileContextValue {
   setLanguage: (language: ProjectLanguage) => void;
   setAvatarFromFile: (file: File) => Promise<boolean>;
   clearAvatar: () => Promise<void>;
+  plan: SubscriptionPlan;
 }
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
@@ -67,6 +72,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     language: DEFAULT_LANGUAGE,
   }));
   const [hydrated, setHydrated] = useState(false);
+  const [plan, setPlan] = useState<SubscriptionPlan>("free");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const avatarUrlRef = useRef<string | null>(null);
   const profileRef = useRef(profile);
@@ -102,6 +108,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if (!cancelled) {
           const cleared = { ...local, displayName: "", email: "" };
           setProfile(cleared);
+          setPlan("free");
           saveProfile(cleared);
           try {
             const blob = await loadProfileAvatar();
@@ -131,12 +138,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             ...cloudProfileToUserProfile(cloud, email),
             email,
           };
+          setPlan(normalizePlan(cloud.plan));
           if (!nextProfile.displayName.trim() && metadataName) {
             nextProfile.displayName = metadataName;
           }
           cloudAvatarPathRef.current = cloud.avatar_path;
         } else {
           nextProfile.displayName = metadataName;
+          setPlan("free");
           await upsertCloudProfile(user.id, {
             displayName: nextProfile.displayName,
             language: nextProfile.language,
@@ -266,6 +275,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       avatarUrl,
       hasCustomAvatar: Boolean(avatarUrl),
       isLoggedIn: Boolean(user),
+      plan,
       setDisplayName,
       setEmail,
       setLanguage,
@@ -279,6 +289,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       avatarColor,
       avatarUrl,
       user,
+      plan,
       setDisplayName,
       setEmail,
       setLanguage,

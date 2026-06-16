@@ -9,6 +9,7 @@ import { useChoreo } from "@/context/ChoreoContext";
 import { useProfile } from "@/context/ProfileContext";
 import { clearLocalUserData } from "@/lib/accountLocalData";
 import { cancelCloudWorkspacePush } from "@/lib/cloudSync";
+import { planLabel, PRO_MONTHLY_PRICE_YEN } from "@/lib/subscription";
 import { getStrings, type ProjectLanguage } from "@/lib/uiStrings";
 import { formatProjectSavedAt } from "@/lib/videoLinkUtils";
 
@@ -25,6 +26,7 @@ export function MyPageScreen() {
     avatarColor,
     hasCustomAvatar,
     isLoggedIn,
+    plan,
     setDisplayName,
     setEmail,
     setLanguage,
@@ -197,6 +199,25 @@ export function MyPageScreen() {
               </select>
             </label>
           </section>
+
+          {isLoggedIn ? (
+            <section className="mypage-section" aria-label={UI.myPagePlan}>
+              <h2 className="mypage-section-title">{UI.myPagePlan}</h2>
+              <p className="mypage-plan-current">
+                {plan === "pro" ? UI.myPagePlanPro : UI.myPagePlanFree}
+                <span className="mypage-plan-badge">{planLabel(plan, language)}</span>
+              </p>
+              {plan === "free" ? (
+                <div className="mypage-upgrade-card">
+                  <p className="mypage-upgrade-title">{UI.myPageUpgradeTitle}</p>
+                  <p className="mypage-upgrade-desc">{UI.myPageUpgradeDesc}</p>
+                  <p className="mypage-upgrade-price">
+                    {UI.upgradePrice(PRO_MONTHLY_PRICE_YEN)}
+                  </p>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
           <section className="mypage-section" aria-label={UI.myPageProjectsSection}>
             <h2 className="mypage-section-title">{UI.myPageProjectsSection}</h2>

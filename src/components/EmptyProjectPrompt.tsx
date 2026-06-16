@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import { useChoreo } from "@/context/ChoreoContext";
+import { useProfile } from "@/context/ProfileContext";
+import { canCreateProject } from "@/lib/subscription";
 import { NewProjectDialog } from "@/components/NewProjectDialog";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 
 export function EmptyProjectPrompt() {
-  const { hasActiveProject, isViewOnly, strings: UI } = useChoreo();
+  const { hasActiveProject, isViewOnly, projects, strings: UI } = useChoreo();
+  const { plan } = useProfile();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   if (hasActiveProject || isViewOnly) return null;
 
@@ -19,13 +24,20 @@ export function EmptyProjectPrompt() {
           <button
             type="button"
             className="empty-project-prompt-btn"
-            onClick={() => setDialogOpen(true)}
+            onClick={() => {
+              if (!canCreateProject(projects.length, plan)) {
+                setUpgradeOpen(true);
+                return;
+              }
+              setDialogOpen(true);
+            }}
           >
             {UI.newProject}
           </button>
         </div>
       </div>
       {dialogOpen ? <NewProjectDialog onClose={() => setDialogOpen(false)} /> : null}
+      {upgradeOpen ? <UpgradeDialog onClose={() => setUpgradeOpen(false)} /> : null}
     </>
   );
 }

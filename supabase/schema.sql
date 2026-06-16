@@ -32,6 +32,7 @@ create table if not exists public.profiles (
   display_name text not null default '',
   language text not null default 'en',
   avatar_path text,
+  plan text not null default 'free' check (plan in ('free', 'pro')),
   updated_at timestamptz not null default now()
 );
 

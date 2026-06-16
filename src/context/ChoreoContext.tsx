@@ -100,6 +100,7 @@ import { displayMusicTitle } from "@/lib/openGraphMetadata";
 import { parseVideoLink } from "@/lib/videoLinkUtils";
 import { useProfile } from "@/context/ProfileContext";
 import { BrandLogo } from "@/components/BrandLogo";
+import { canCreateProject } from "@/lib/subscription";
 import { getStrings, detectBrowserLanguage, type ProjectLanguage, type UiStrings } from "@/lib/uiStrings";
 import type {
   AppMode,
@@ -212,7 +213,7 @@ function cloneChoreoState(state: ChoreoState): ChoreoState {
 }
 
 export function ChoreoProvider({ children }: { children: ReactNode }) {
-  const { language: profileLanguage } = useProfile();
+  const { language: profileLanguage, plan } = useProfile();
   const { authReady, user } = useAuth();
   const [state, setState] = useState<ChoreoState>(createInitialState);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -743,6 +744,10 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       if (appModeRef.current === "view") return;
       const ws = workspaceRef.current;
       if (!ws) return;
+      if (!canCreateProject(ws.projects.length, plan)) {
+        showToast(getStrings(profileLanguageRef.current).upgradeTitle);
+        return;
+      }
       stopPlayback();
       const saved =
         workspaceHasActiveProject(ws) && activeProjectId
@@ -768,7 +773,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       clearUndoHistory();
       showToast(getStrings(profileLanguageRef.current).createdProject(record.state.songTitle));
     },
-    [activeProjectId, stopPlayback, showToast, clearUndoHistory, syncWorkspaceToCloud],
+    [activeProjectId, stopPlayback, showToast, clearUndoHistory, syncWorkspaceToCloud, plan],
   );
 
   const reorderProjects = useCallback((fromIndex: number, toIndex: number) => {
