@@ -43,8 +43,9 @@ export function buildDemoReferenceWorkspace() {
   ];
 
   return {
-    version: 1,
+    version: 2,
     activeProjectId: DEMO_REFERENCE_PROJECT_ID,
+    folders: [],
     projects: [
       {
         id: DEMO_REFERENCE_PROJECT_ID,

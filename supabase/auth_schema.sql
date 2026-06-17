@@ -5,12 +5,38 @@ create table if not exists public.profiles (
   language text not null default 'en',
   avatar_path text,
   plan text not null default 'free' check (plan in ('free', 'pro')),
+  stripe_customer_id text,
+  stripe_subscription_id text,
   updated_at timestamptz not null default now()
 );
 
 alter table public.profiles enable row level security;
 
--- 既存DB向け: alter table public.profiles add column if not exists plan text not null default 'free' check (plan in ('free', 'pro'));
+-- 既存DB向け:
+-- alter table public.profiles add column if not exists plan text not null default 'free' check (plan in ('free', 'pro'));
+-- alter table public.profiles add column if not exists stripe_customer_id text;
+-- alter table public.profiles add column if not exists stripe_subscription_id text;
+
+create or replace function public.protect_profile_billing()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null and auth.uid() = old.id then
+    new.plan := old.plan;
+    new.stripe_customer_id := old.stripe_customer_id;
+    new.stripe_subscription_id := old.stripe_subscription_id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_billing on public.profiles;
+create trigger protect_profile_billing
+  before update on public.profiles
+  for each row
+  execute function public.protect_profile_billing();
 
 drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"

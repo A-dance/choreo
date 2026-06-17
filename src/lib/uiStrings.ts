@@ -3,6 +3,26 @@ export type ProjectLanguage = "en" | "ja";
 export type UiStrings = {
   projects: string;
   projectList: string;
+  projectSearchPlaceholder: string;
+  projectSearchEmpty: string;
+  bookmarksSection: string;
+  foldersGroupLabel: string;
+  uncategorizedSection: string;
+  uncategorizedDropHint: string;
+  newFolder: string;
+  newFolderDefaultName: string;
+  renameFolder: string;
+  renameProject: string;
+  projectRenameHint: string;
+  deleteFolder: string;
+  deleteFolderConfirm: (name: string) => string;
+  expandFolder: string;
+  collapseFolder: string;
+  toggleBookmark: string;
+  bookmarkOn: string;
+  bookmarkOff: string;
+  moveToFolder: string;
+  noFolder: string;
   close: string;
   songTitle: string;
   tools: string;
@@ -21,6 +41,26 @@ export type UiStrings = {
   resizeWidth: string;
   resizeHeight: string;
   resizeStage: string;
+  stageToolMove: string;
+  stageToolSelect: string;
+  stageToolArrow: string;
+  stageToolMark: string;
+  stageToolPen: string;
+  stageToolClear: string;
+  stageToolToggle: string;
+  stageDrawToolLabel: string;
+  stageToolClose: string;
+  stageToolStrokeThin: string;
+  stageToolStrokeMid: string;
+  stageToolStrokeThick: string;
+  stageToolColor: string;
+  stageToolHeading: string;
+  stageToolDeleteSelected: string;
+  stageToolClearAll: string;
+  stageToolMarkSmall: string;
+  stageToolMarkMid: string;
+  stageToolMarkLarge: string;
+  stageToolSelectedHint: string;
   newProject: string;
   deleteProject: string;
   cannotDeleteLastProject: string;
@@ -102,6 +142,10 @@ export type UiStrings = {
   shareViaCopy: string;
   shareSheetText: (songTitle: string) => string;
   previewViewMode: string;
+  previewSelectProject: string;
+  shareSelectProject: string;
+  shareSelectFolder: string;
+  shareAllProjects: string;
   viewPreviewStarted: string;
   viewPreviewEnded: string;
   shareLinkCopied: string;
@@ -117,6 +161,7 @@ export type UiStrings = {
   viewOnlyProjectHint: string;
   projectLastSaved: (when: string) => string;
   projectReorderHint: string;
+  projectDeleteRevealHint: string;
   projectReorderAria: (name: string) => string;
   myPage: string;
   myPageTitle: string;
@@ -144,7 +189,9 @@ export type UiStrings = {
   myPageDataDeletion: string;
   myPageDataDeletionStoredLabel: string;
   myPageDataDeletionItems: string[];
-  myPageDataDeletionWarnings: string[];
+  myPageDeleteAccountIntro: string[];
+  myPageDeleteAccountProHeading: string;
+  myPageDeleteAccountProBody: string[];
   myPageDeleteAccount: string;
   myPageDeleteAccountConfirmTitle: string;
   myPageDeleteAccountFailed: string;
@@ -171,12 +218,32 @@ export type UiStrings = {
   upgradeTitle: string;
   upgradeDesc: (freeLimit: number) => string;
   upgradePrice: (priceYen: number) => string;
-  upgradeFeatures: string[];
   upgradeNote: string;
   upgradeGoMyPage: string;
+  upgradeCheckout: string;
+  upgradeCheckoutBusy: string;
+  stripeCheckoutError: string;
+  stripeNotConfigured: string;
+  stripeMissingPriceId: string;
+  stripeMissingSecretKey: string;
+  myPageSubscribe: string;
+  myPageManageSubscription: string;
+  myPageManageSubscriptionBusy: string;
+  myPageManageSubscriptionHint: string;
+  portalReturnNotice: string;
+  checkoutSuccess: string;
+  checkoutCancel: string;
   myPagePlan: string;
   myPagePlanFree: string;
   myPagePlanPro: string;
+  myPageProModeBadge: string;
+  myPagePlanProActive: string;
+  myPageFreeBadge: string;
+  myPageSubscriptionLoading: string;
+  myPageSubscriptionPeriod: string;
+  myPageSubscriptionPeriodRange: (start: string, end: string) => string;
+  myPageSubscriptionRenewsOn: (date: string) => string;
+  myPageSubscriptionEndsOn: (date: string) => string[];
   myPageUpgradeTitle: string;
   myPageUpgradeDesc: string;
   authLoginTitle: string;
@@ -293,6 +360,26 @@ export type UiStrings = {
 const en: UiStrings = {
   projects: "Projects",
   projectList: "Project list",
+  projectSearchPlaceholder: "Search…",
+  projectSearchEmpty: "No results",
+  bookmarksSection: "Bookmarks",
+  foldersGroupLabel: "Folders",
+  uncategorizedSection: "Other",
+  uncategorizedDropHint: "Drop here to remove from folder",
+  newFolder: "New folder",
+  newFolderDefaultName: "New folder",
+  renameFolder: "Rename folder",
+  renameProject: "Rename project",
+  projectRenameHint: "Double-click to rename",
+  deleteFolder: "Delete folder",
+  deleteFolderConfirm: (name) => `Delete folder “${name}”? Projects inside will stay in your list.`,
+  expandFolder: "Expand folder",
+  collapseFolder: "Collapse folder",
+  toggleBookmark: "Toggle bookmark",
+  bookmarkOn: "Remove bookmark",
+  bookmarkOff: "Add bookmark",
+  moveToFolder: "Move to folder",
+  noFolder: "No folder",
   close: "Close",
   songTitle: "Song title",
   tools: "Tools",
@@ -311,6 +398,26 @@ const en: UiStrings = {
   resizeWidth: "Resize width",
   resizeHeight: "Resize height",
   resizeStage: "Resize stage",
+  stageToolMove: "Move members",
+  stageToolSelect: "Select",
+  stageToolArrow: "Arrow",
+  stageToolMark: "X mark",
+  stageToolPen: "Draw",
+  stageToolClear: "Clear all",
+  stageToolToggle: "Drawing tools",
+  stageDrawToolLabel: "Tool",
+  stageToolClose: "Close",
+  stageToolStrokeThin: "Thin line",
+  stageToolStrokeMid: "Line width",
+  stageToolStrokeThick: "Thick line",
+  stageToolColor: "Color",
+  stageToolHeading: "Draw",
+  stageToolDeleteSelected: "Delete selected",
+  stageToolClearAll: "Clear all",
+  stageToolMarkSmall: "Small",
+  stageToolMarkMid: "X size",
+  stageToolMarkLarge: "Large",
+  stageToolSelectedHint: "Drag to move · drag ends/tips to resize · Delete to remove",
   newProject: "+ New project",
   deleteProject: "Delete project",
   cannotDeleteLastProject: "Cannot delete the last project",
@@ -399,6 +506,10 @@ const en: UiStrings = {
   shareSheetText: (songTitle: string) =>
     `Formation for "${songTitle}" — view it here:`,
   previewViewMode: "Preview in view mode",
+  previewSelectProject: "Preview project",
+  shareSelectProject: "Project to share",
+  shareSelectFolder: "Folder",
+  shareAllProjects: "All songs",
   viewPreviewStarted: "View mode — editing disabled",
   viewPreviewEnded: "Back to edit mode",
   shareLinkCopied: "Link copied",
@@ -413,7 +524,8 @@ const en: UiStrings = {
   exitViewMode: "Exit view mode",
   viewOnlyProjectHint: "View-only — only this project is shown",
   projectLastSaved: (when) => `Last saved ${when}`,
-  projectReorderHint: "Click to open · drag to reorder",
+  projectReorderHint: "Click to open · drag to reorder or move to a folder",
+  projectDeleteRevealHint: "Double-click to show delete",
   projectReorderAria: (name) => `Reorder ${name}`,
   myPage: "My page",
   myPageTitle: "My page",
@@ -440,16 +552,23 @@ const en: UiStrings = {
   myPageAppName: "bamiri — SHARE",
   myPageVersion: (version) => `Version ${version}`,
   myPageDataDeletion: "Data & deletion",
-  myPageDataDeletionStoredLabel: "Stored in your account",
+  myPageDataDeletionStoredLabel: "What will be deleted",
   myPageDataDeletionItems: [
     "Display name and email",
     "Profile photo (if set)",
-    "Formation projects and settings",
+    "Projects and settings",
   ],
-  myPageDataDeletionWarnings: [
-    "All cloud data will be permanently deleted.",
+  myPageDeleteAccountIntro: [
+    "All cloud data and data in this browser will be deleted.",
     "This cannot be undone.",
-    "Data saved only in this browser will also be cleared.",
+  ],
+  myPageDeleteAccountProHeading: "About your Pro subscription",
+  myPageDeleteAccountProBody: [
+    "You are currently on Pro.",
+    "Deleting your account cancels your subscription immediately.",
+    "Pro features (such as unlimited projects) will stop working right away.",
+    "You cannot use any remaining time in your billing period.",
+    "You will not be charged again.",
   ],
   myPageDeleteAccount: "Delete account",
   myPageDeleteAccountConfirmTitle: "Delete your account?",
@@ -482,18 +601,41 @@ const en: UiStrings = {
   upgradeDesc: (n) =>
     `The free plan includes ${n} project. Create more with Pro.`,
   upgradePrice: (price) => `¥${price} / month`,
-  upgradeFeatures: [
-    "Unlimited projects",
-    "Cloud sync",
-  ],
-  upgradeNote: "Payment via Stripe is coming soon. See My page for details.",
+  upgradeNote: "Secure monthly payment via Stripe. Cancel anytime from My page.",
   upgradeGoMyPage: "View plan on My page",
+  upgradeCheckout: "Subscribe with Stripe",
+  upgradeCheckoutBusy: "Opening checkout…",
+  stripeCheckoutError: "Could not start checkout. Try again from My page.",
+  stripeNotConfigured: "Payments are not set up yet. Please try again later.",
+  stripeMissingPriceId:
+    "STRIPE_PRO_PRICE_ID is not set. Create a Pro product in Stripe (Test mode), copy the Price ID (price_...), and add it to .env.local, then restart the dev server.",
+  stripeMissingSecretKey:
+    "STRIPE_SECRET_KEY is not set. Add your Stripe secret key to .env.local.",
+  myPageSubscribe: "Subscribe to Pro",
+  myPageManageSubscription: "Manage subscription",
+  myPageManageSubscriptionBusy: "Opening portal…",
+  myPageManageSubscriptionHint: "Cancel, resume, or change payment below.",
+  portalReturnNotice: "Subscription updated.",
+  checkoutSuccess: "Welcome to Pro! Your plan will update in a moment.",
+  checkoutCancel: "Checkout was canceled.",
   myPagePlan: "Plan",
   myPagePlanFree: "Free (1 project)",
   myPagePlanPro: "Pro",
+  myPageProModeBadge: "PRO",
+  myPagePlanProActive: "Pro plan active",
+  myPageFreeBadge: "Free",
+  myPageSubscriptionLoading: "Loading subscription details…",
+  myPageSubscriptionPeriod: "Current billing period",
+  myPageSubscriptionPeriodRange: (start, end) => `${start} – ${end}`,
+  myPageSubscriptionRenewsOn: (date) => `Renews on ${date}.`,
+  myPageSubscriptionEndsOn: (date) => [
+    `Your billing period ends on ${date}.`,
+    "Your subscription will be removed.",
+    "You can use Pro until then.",
+  ],
   myPageUpgradeTitle: "Pro — ¥500 / month",
   myPageUpgradeDesc:
-    "Unlimited projects. Stripe checkout will be available soon.",
+    "Unlimited projects. Subscribe below to upgrade.",
   authLoginTitle: "Sign in",
   authSignUpTitle: "Create account",
   authLoginHint: "Enter your email and password.",
@@ -563,7 +705,7 @@ const en: UiStrings = {
   authUnavailableTitle: "Sign-in is temporarily unavailable",
   authUnavailableHint:
     "The app could not connect to the account service. If you are the developer, check Supabase settings and restart the dev server.",
-  backToEditor: "Back to editor",
+  backToEditor: "Back",
   sidebarMedia: "Media",
   mediaPanelTitle: "Project media",
   mediaPerProjectHint: "Audio and reference videos are saved per project.",
@@ -622,6 +764,26 @@ const en: UiStrings = {
 const ja: UiStrings = {
   projects: "Projects",
   projectList: "プロジェクト一覧",
+  projectSearchPlaceholder: "検索…",
+  projectSearchEmpty: "見つかりません",
+  bookmarksSection: "ブックマーク",
+  foldersGroupLabel: "フォルダー",
+  uncategorizedSection: "その他",
+  uncategorizedDropHint: "ここにドロップしてフォルダーから出す",
+  newFolder: "フォルダーを作成",
+  newFolderDefaultName: "新しいフォルダー",
+  renameFolder: "フォルダー名を変更",
+  renameProject: "プロジェクト名を変更",
+  projectRenameHint: "ダブルクリックで名前を変更",
+  deleteFolder: "フォルダーを削除",
+  deleteFolderConfirm: (name) => `フォルダー「${name}」を削除しますか？中のプロジェクトは一覧に残ります。`,
+  expandFolder: "フォルダーを開く",
+  collapseFolder: "フォルダーを閉じる",
+  toggleBookmark: "ブックマーク",
+  bookmarkOn: "ブックマークを外す",
+  bookmarkOff: "ブックマークに追加",
+  moveToFolder: "フォルダーに移動",
+  noFolder: "フォルダーなし",
   close: "閉じる",
   songTitle: "曲名",
   tools: "ツール",
@@ -640,6 +802,26 @@ const ja: UiStrings = {
   resizeWidth: "横幅を調整",
   resizeHeight: "高さを調整",
   resizeStage: "サイズを調整",
+  stageToolMove: "メンバー移動",
+  stageToolSelect: "選択",
+  stageToolArrow: "矢印",
+  stageToolMark: "×マーク",
+  stageToolPen: "ペン",
+  stageToolClear: "すべて消す",
+  stageToolToggle: "描画ツール",
+  stageDrawToolLabel: "Tool",
+  stageToolClose: "閉じる",
+  stageToolStrokeThin: "細い線",
+  stageToolStrokeMid: "線の太さ",
+  stageToolStrokeThick: "太い線",
+  stageToolColor: "色",
+  stageToolHeading: "描画",
+  stageToolDeleteSelected: "選択を消す",
+  stageToolClearAll: "すべて消す",
+  stageToolMarkSmall: "小",
+  stageToolMarkMid: "×の大きさ",
+  stageToolMarkLarge: "大",
+  stageToolSelectedHint: "ドラッグで移動 · 端をドラッグでサイズ変更 · 色で変更 · Deleteで削除",
   newProject: "+ 新規プロジェクト",
   deleteProject: "プロジェクトを削除",
   cannotDeleteLastProject: "最後のプロジェクトは削除できません",
@@ -728,6 +910,10 @@ const ja: UiStrings = {
   shareSheetText: (songTitle: string) =>
     `「${songTitle}」のダンス配置を共有します。こちらから見られます↓`,
   previewViewMode: "閲覧モードでプレビュー",
+  previewSelectProject: "プレビューする曲",
+  shareSelectProject: "共有する曲",
+  shareSelectFolder: "フォルダー",
+  shareAllProjects: "すべての曲",
   viewPreviewStarted: "閲覧モード — 編集できません",
   viewPreviewEnded: "編集モードに戻りました",
   shareLinkCopied: "リンクをコピーしました",
@@ -742,7 +928,8 @@ const ja: UiStrings = {
   exitViewMode: "閲覧モードを終了",
   viewOnlyProjectHint: "閲覧専用 — このプロジェクトのみ表示",
   projectLastSaved: (when) => `最終保存 ${when}`,
-  projectReorderHint: "クリックで開く · ドラッグで並べ替え",
+  projectReorderHint: "クリックで開く · ドラッグで並べ替え・フォルダーへ移動",
+  projectDeleteRevealHint: "ダブルクリックで削除を表示",
   projectReorderAria: (name) => `「${name}」の順番を変更`,
   myPage: "マイページ",
   myPageTitle: "マイページ",
@@ -772,16 +959,23 @@ const ja: UiStrings = {
   myPageAppName: "bamiri — SHARE",
   myPageVersion: (version) => `バージョン ${version}`,
   myPageDataDeletion: "データの削除",
-  myPageDataDeletionStoredLabel: "保存している情報",
+  myPageDataDeletionStoredLabel: "削除される情報",
   myPageDataDeletionItems: [
     "表示名・メールアドレス",
     "プロフィール画像（設定した場合）",
-    "ダンス配置のプロジェクトと関連設定",
+    "プロジェクトと関連設定",
   ],
-  myPageDataDeletionWarnings: [
-    "クラウド上のデータはすべて完全に削除されます。",
-    "元に戻すことはできません。",
-    "このブラウザに保存されているデータも消去されます。",
+  myPageDeleteAccountIntro: [
+    "クラウド上のデータと、このブラウザのデータがすべて削除されます。",
+    "この操作は元に戻せません。",
+  ],
+  myPageDeleteAccountProHeading: "Proプランについて",
+  myPageDeleteAccountProBody: [
+    "現在 Pro プランをご利用中です。",
+    "アカウントを削除すると、サブスクリプションは即時に解約されます。",
+    "解約後は Pro の機能（プロジェクト無制限など）をすぐに使えなくなります。",
+    "請求期間の残りがあっても、残り期間分は利用できません。",
+    "以降の請求は発生しません。",
   ],
   myPageDeleteAccount: "アカウントを削除",
   myPageDeleteAccountConfirmTitle: "アカウントを削除しますか？",
@@ -814,18 +1008,41 @@ const ja: UiStrings = {
   upgradeDesc: (n) =>
     `無料プランはプロジェクト${n}件までです。2件目以降はProが必要です。`,
   upgradePrice: (price) => `月額 ${price}円`,
-  upgradeFeatures: [
-    "プロジェクト無制限",
-    "クラウド同期",
-  ],
-  upgradeNote: "お支払い（Stripe）は準備中です。詳細はマイページをご覧ください。",
+  upgradeNote: "Stripeで安全にお支払い。マイページからいつでも解約できます。",
   upgradeGoMyPage: "マイページでプランを見る",
+  upgradeCheckout: "Stripeで申し込む",
+  upgradeCheckoutBusy: "決済ページを開いています…",
+  stripeCheckoutError: "決済を開始できませんでした。マイページから再度お試しください。",
+  stripeNotConfigured: "決済の設定がまだ完了していません。しばらくしてからお試しください。",
+  stripeMissingPriceId:
+    "STRIPE_PRO_PRICE_ID が未設定です。Stripe（テストモード）で Pro 商品（月額500円）を作成し、Price ID（price_...）を .env.local に追加して、開発サーバーを再起動してください。",
+  stripeMissingSecretKey:
+    "STRIPE_SECRET_KEY が未設定です。.env.local に Stripe のシークレットキーを追加してください。",
+  myPageSubscribe: "Proに申し込む",
+  myPageManageSubscription: "サブスクリプションを管理",
+  myPageManageSubscriptionBusy: "管理ページを開いています…",
+  myPageManageSubscriptionHint: "解約・再開・支払い方法は下のボタンから変更できます。",
+  portalReturnNotice: "サブスクリプション情報を更新しました。",
+  checkoutSuccess: "Proへようこそ！プランがまもなく反映されます。",
+  checkoutCancel: "お支払いはキャンセルされました。",
   myPagePlan: "プラン",
   myPagePlanFree: "無料（プロジェクト1件）",
   myPagePlanPro: "Pro",
+  myPageProModeBadge: "PRO",
+  myPagePlanProActive: "Proプラン利用中",
+  myPageFreeBadge: "無料",
+  myPageSubscriptionLoading: "サブスクリプション情報を読み込み中…",
+  myPageSubscriptionPeriod: "現在の適用期間",
+  myPageSubscriptionPeriodRange: (start, end) => `${start} 〜 ${end}`,
+  myPageSubscriptionRenewsOn: (date) => `次回更新日は ${date} です。`,
+  myPageSubscriptionEndsOn: (date) => [
+    `${date} に請求期間が終了します。`,
+    "サブスクリプションは削除されます。",
+    "それまで Pro を利用できます。",
+  ],
   myPageUpgradeTitle: "Pro — 月額500円",
   myPageUpgradeDesc:
-    "プロジェクト無制限。Stripeでのお支払いは準備中です。",
+    "プロジェクト無制限。下のボタンからProに申し込めます。",
   authLoginTitle: "ログイン",
   authSignUpTitle: "新規登録",
   authLoginHint: "メールアドレスとパスワードを入力してください。",
@@ -894,7 +1111,7 @@ const ja: UiStrings = {
   authUnavailableTitle: "ログインの準備ができていません",
   authUnavailableHint:
     "アカウントサービスに接続できませんでした。開発中の場合は設定を確認し、サーバーを再起動してください。",
-  backToEditor: "エディターに戻る",
+  backToEditor: "戻る",
   sidebarMedia: "メディア",
   mediaPanelTitle: "プロジェクトのメディア",
   mediaPerProjectHint: "音源・参考動画はプロジェクトごとに保存されます。",

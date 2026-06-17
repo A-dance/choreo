@@ -41,11 +41,44 @@ export interface CountData {
   hidden?: number[];
   /** このカウント以降、再表示するメンバー ID（hidden より優先） */
   shown?: number[];
+  /** ステージ上の矢印・×・ペン描画 */
+  annotations?: StageAnnotation[];
 }
 
 export interface FormationClipboard {
   positions: Record<number, Position>;
 }
+
+export type StageAnnotation =
+  | {
+      id: string;
+      type: "arrow";
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      color?: string;
+      strokeWidth?: number;
+    }
+  | {
+      id: string;
+      type: "mark";
+      x: number;
+      y: number;
+      color?: string;
+      strokeWidth?: number;
+      /** × の大きさ（viewBox 単位） */
+      size?: number;
+    }
+  | {
+      id: string;
+      type: "pen";
+      points: Position[];
+      color?: string;
+      strokeWidth?: number;
+    };
+
+export type StageDrawTool = "move" | "arrow" | "mark" | "pen";
 
 export interface StageConfig {
   bamiriHalfWidth: number;
@@ -113,6 +146,16 @@ export interface ProjectRecord {
   updatedAt: number;
   state: ChoreoState;
   media: ProjectMedia;
+  folderId?: string | null;
+  bookmarked?: boolean;
+}
+
+export interface ProjectFolder {
+  id: string;
+  name: string;
+  createdAt: number;
+  collapsed?: boolean;
+  bookmarked?: boolean;
 }
 
 export interface ProjectSummary {
@@ -122,12 +165,15 @@ export interface ProjectSummary {
   updatedAt: number;
   audioCount: number;
   videoCount: number;
+  folderId: string | null;
+  bookmarked: boolean;
 }
 
 export interface Workspace {
-  version: 1;
+  version: 2;
   activeProjectId: string;
   projects: ProjectRecord[];
+  folders: ProjectFolder[];
 }
 
 export interface CreateProjectInput {

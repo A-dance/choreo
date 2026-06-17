@@ -7,8 +7,11 @@ export function KeyboardShortcuts() {
   const {
     state,
     selectedMemberId,
+    selectedAnnotationId,
     hideMemberFromCurrentCount,
     selectMember,
+    selectAnnotation,
+    removeStageAnnotation,
     removeCurrentCount,
     prevCount,
     nextCount,
@@ -41,6 +44,10 @@ export function KeyboardShortcuts() {
         togglePlayback();
       }
       if (e.key === "Escape") {
+        if (selectedAnnotationId !== null) {
+          selectAnnotation(null);
+          return;
+        }
         if (selectedMemberId !== null) {
           selectMember(null);
           return;
@@ -48,6 +55,11 @@ export function KeyboardShortcuts() {
         if (state.isPlaying) stopPlayback();
       }
       if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedAnnotationId !== null) {
+          e.preventDefault();
+          removeStageAnnotation(selectedAnnotationId);
+          return;
+        }
         if (selectedMemberId !== null) {
           e.preventDefault();
           hideMemberFromCurrentCount(selectedMemberId);
@@ -71,8 +83,11 @@ export function KeyboardShortcuts() {
   }, [
     state.isPlaying,
     selectedMemberId,
+    selectedAnnotationId,
     hideMemberFromCurrentCount,
     selectMember,
+    selectAnnotation,
+    removeStageAnnotation,
     removeCurrentCount,
     nextCount,
     prevCount,

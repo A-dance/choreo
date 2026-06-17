@@ -194,8 +194,9 @@ export function buildSharedViewWorkspace(
   const normalizedMedia = normalizeProjectMedia(media);
   const now = Date.now();
   return {
-    version: 1,
+    version: 2,
     activeProjectId: SHARED_VIEW_PROJECT_ID,
+    folders: [],
     projects: [
       {
         id: SHARED_VIEW_PROJECT_ID,

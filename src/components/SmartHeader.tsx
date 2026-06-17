@@ -84,6 +84,9 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
     isViewOnly,
     canExitViewMode,
     exitViewMode,
+    shareDialogOpen,
+    openShareDialog,
+    closeShareDialog,
   } = useChoreo();
 
   const [halfWInp, setHalfWInp] = useState(String(state.stage.bamiriHalfWidth));
@@ -91,8 +94,11 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
   const [bpmInp, setBpmInp] = useState(String(state.bpm));
   const [dotInp, setDotInp] = useState(String(memberDotPx));
   const [memberPanelOpen, setMemberPanelOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+
+  useEffect(() => {
+    if (isViewOnly) setHelpOpen(false);
+  }, [isViewOnly]);
 
   useEffect(() => {
     setDotInp(String(memberDotPx));
@@ -322,22 +328,23 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
               disabled={!canUndo || isViewOnly}
               title={UI.undoShortcut}
             />
-            <HeaderAction
-              icon={<HelpIcon />}
-              label={UI.helpAskAi}
-              onClick={() => setHelpOpen((v) => !v)}
-              active={helpOpen}
-              title={UI.helpAskAi}
-              className="help-action"
-            />
             {!isViewOnly && (
               <HeaderAction
                 icon={<ShareIcon />}
                 label={UI.share}
-                onClick={() => setShareOpen(true)}
+                onClick={() => openShareDialog()}
                 title={UI.shareTitle}
               />
             )}
+            <HeaderAction
+              icon={<HelpIcon />}
+              label={UI.helpAskAi}
+              onClick={() => setHelpOpen((v) => !v)}
+              disabled={isViewOnly}
+              active={helpOpen}
+              title={UI.helpAskAi}
+              className="help-action"
+            />
           </div>
 
         </div>
@@ -347,12 +354,12 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
         open={memberPanelOpen}
         onClose={() => setMemberPanelOpen(false)}
       />
-      {shareOpen && (
-        <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} />
+      {shareDialogOpen && <ShareDialog onClose={closeShareDialog} />}
+      {!isViewOnly && (
+        <div className="help-panel-anchor">
+          <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
+        </div>
       )}
-      <div className="help-panel-anchor">
-        <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
-      </div>
     </>
   );
 }

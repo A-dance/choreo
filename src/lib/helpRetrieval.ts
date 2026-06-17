@@ -13,7 +13,7 @@ const TERM_GROUPS_JA: string[][] = [
   ["共有", "Share", "リンク", "URL", "送る", "見せる", "閲覧", "LINE", "プレビュー"],
   ["コピー", "ペースト", "貼り付け", "複製", "コピペ", "Copy", "Paste"],
   ["Undo", "元に戻す", "戻す", "戻したい", "取り消し", "間違え", "間違えた", "ミス", "やり直し"],
-  ["プロジェクト", "曲", "作品", "データ", "保存", "新規", "サイドバー"],
+  ["プロジェクト", "曲", "作品", "データ", "保存", "新規", "サイドバー", "フォルダー", "フォルダ", "ブックマーク", "お気に入り", "星", "検索", "絞り込み"],
   ["音源", "メディア", "音楽", "曲リンク", "Spotify", "参考動画", "動画", "YouTube"],
   ["メガファイル", "ギガファイル", "ファイル便", "データ便", "mega", "ドライブ", "Dropbox", "MP3", "直リンク", "使える", "URL"],
   ["ログイン", "アカウント", "マイページ", "パスワード", "Google", "ログアウト", "削除"],
@@ -38,7 +38,7 @@ const TERM_GROUPS_EN: string[][] = [
   ["share", "link", "url", "send", "view-only", "line", "preview"],
   ["copy", "paste", "duplicate"],
   ["undo", "revert", "back", "mistake", "wrong", "redo"],
-  ["project", "song", "save", "new", "sidebar"],
+  ["project", "song", "save", "new", "sidebar", "folder", "bookmark", "star", "search", "filter"],
   ["media", "music", "spotify", "video", "audio"],
   ["mega", "file transfer", "google drive", "dropbox", "mp3", "direct link", "url"],
   ["login", "account", "my page", "password", "google", "sign out"],
@@ -64,7 +64,11 @@ const FORCE_HEADING_JA: Array<{ re: RegExp; keys: string[] }> = [
   { re: /メガファイル|ギガファイル|ファイル便|データ便|mega\.nz|megaファイル|ドライブ|dropbox|mp3|直リンク|使える.*url|url.*使える/i, keys: ["13.", "音源", "使え", "対応"] },
   { re: /動画|youtube|参考動画/i, keys: ["13.", "参考動画"] },
   { re: /ログイン|パスワード|アカウント/i, keys: ["3.", "ログイン"] },
-  { re: /名前|ネーム|改名|リネーム|名称/i, keys: ["メンバー", "曲名", "セクション", "表示名", "音源", "タイトル"] },
+  { re: /名前|ネーム|改名|リネーム|名称/i, keys: ["4.", "5.", "7.", "8.", "メンバー", "曲名", "セクション", "表示名", "音源", "タイトル", "ダブルクリック"] },
+  { re: /フォルダ|folder/i, keys: ["4.", "フォルダー"] },
+  { re: /ブックマーク|お気に入り|星/i, keys: ["4.", "ブックマーク"] },
+  { re: /検索|絞り込|探/i, keys: ["4.", "検索"] },
+  { re: /pro|アップグレード|プラン|stripe|解約|サブスク/i, keys: ["4.10", "3.4", "プラン", "Pro"] },
 ];
 
 const FORCE_HEADING_EN: Array<{ re: RegExp; keys: string[] }> = [
@@ -77,7 +81,11 @@ const FORCE_HEADING_EN: Array<{ re: RegExp; keys: string[] }> = [
   { re: /music|spotify|audio link/i, keys: ["13.", "Music"] },
   { re: /mega|file.?bin|file transfer|google drive|dropbox|mp3|direct link|can i use.*url/i, keys: ["13.", "Not supported", "Music"] },
   { re: /login|password|account/i, keys: ["3.", "Login"] },
-  { re: /name|rename|title/i, keys: ["Member", "Song", "Section", "display", "Media", "title"] },
+  { re: /name|rename|title/i, keys: ["4.", "5.", "7.", "8.", "Member", "Song", "Section", "display", "Media", "title", "double-click"] },
+  { re: /folder/i, keys: ["4.", "Folder"] },
+  { re: /bookmark|star/i, keys: ["4.", "Bookmark"] },
+  { re: /search|find|filter/i, keys: ["4.", "Search"] },
+  { re: /pro|upgrade|plan|stripe|cancel|subscription/i, keys: ["4.10", "3.4", "Plan", "Pro"] },
 ];
 
 const QUICK_REF_JA = `
@@ -93,6 +101,12 @@ const QUICK_REF_JA = `
 | 丸の大きさ変更 | ヘッダー ドット 欄（14〜64） |
 | メンバー非表示（この拍だけ） | メンバー選択 → Delete |
 | 共有リンク作成 | ヘッダー Share |
+| プロジェクト名変更（サイドバー） | サイドバーでプロジェクト名をダブルクリック |
+| フォルダー作成 | サイドバー フォルダーを作成 |
+| フォルダーへ移動 | プロジェクトをドラッグしてフォルダー見出しへ |
+| フォルダーから出す | プロジェクトをドラッグして「その他」へ |
+| ブックマーク | 行右端の ☆（× の左） |
+| 検索 | サイドバー上部 検索… |
 `.trim();
 
 const QUICK_REF_EN = `
@@ -108,6 +122,12 @@ const QUICK_REF_EN = `
 | Dot size | Header Dots field (14–64) |
 | Hide member (this count) | Select member → Delete |
 | Share link | Header Share |
+| Rename project (sidebar) | Double-click project name in sidebar |
+| New folder | Sidebar Folder button |
+| Move to folder | Drag project onto folder header |
+| Remove from folder | Drag project to Other section |
+| Bookmark | ☆ left of × on row |
+| Search | Sidebar Search… field |
 `.trim();
 
 function termGroups(language: ProjectLanguage): string[][] {
@@ -248,7 +268,7 @@ const DISAMBIGUATION_JA = `
 
 「名前を変更したい」「名前変えたい」など:
 1. ダンサー（メンバー）の名前 → ヘッダー「人数」→ メンバーパネルで名前欄を編集
-2. 曲名（このプロジェクトのタイトル）→ ヘッダー左の曲名入力欄
+2. 曲名（このプロジェクトのタイトル）→ ヘッダー左の曲名入力欄、またはサイドバーでプロジェクト名をダブルクリック
 3. セクション名（イントロ・サビなど）→ 下部のセクションタブをダブルクリック
 4. 自分のアカウント表示名 → マイページの表示名
 5. 音源・参考動画のタイトル → サイドバー「音源」または「参考動画」→ タイトル欄
@@ -270,7 +290,7 @@ If a short question matches multiple features, list numbered options and ask whi
 
 "change the name" / "rename":
 1. Member (dancer) name → header Members → edit name in panel
-2. Song / project title → song title field in header
+2. Song / project title → song title in header, or double-click name in sidebar
 3. Section name → double-click section tab at bottom
 4. Account display name → My page
 5. Music / video title → sidebar Music or Reference videos
@@ -300,9 +320,12 @@ export function buildGlossaryHint(language: ProjectLanguage): string {
 - 「メガファイル便・ギガファイル便・ファイル便」→ 音源に追加可。ただしアプリ内再生は Spotify/YouTube Music が主。外部リンクで開く
 - 「動画・振付動画」→ サイドバー 参考動画（YouTube / Vimeo のみ）
 - 「共有リンクで見るだけ」→ 閲覧専用（編集不可）
-- 「Pro・2個目のプロジェクト」→ 無料は1件まで、Proで無制限
+- 「Pro・2個目のプロジェクト」→ 無料は1件まで、Proで無制限。Stripeで申し込み、解約はマイページ「サブスクリプションを管理」
+- 「クラウド同期」→ ログイン中は無料・Proとも同期（Pro限定ではない）
+- 「フォルダー・整理」→ サイドバー フォルダーを作成、ドラッグで移動、検索…で絞り込み
+- 「ブックマーク・お気に入り」→ 行右端の ☆
 - 「アカウント削除」→ マイページ アカウントを削除
-- 「名前を変えたい」（どれか不明）→ 上の「曖昧な質問」に従い候補を提示。特定できれば: メンバー名=人数パネル / 曲名=ヘッダー曲名欄 / セクション=タブダブルクリック / 表示名=マイページ
+- 「名前を変えたい」（どれか不明）→ 上の「曖昧な質問」に従い候補を提示。特定できれば: メンバー名=人数パネル / 曲名=ヘッダーまたはサイドバーダブルクリック / セクション=タブダブルクリック / 表示名=マイページ / フォルダー名=フォルダー見出しクリック
 
 マニュアルに該当する操作は必ず案内する。「マニュアルに記載がない」とだけ答えない。`;
   }
@@ -316,6 +339,10 @@ export function buildGlossaryHint(language: ProjectLanguage): string {
 - "music link" → sidebar Music (most http(s) URLs work; streaming links recommended)
 - "file-bin / mega URL for music" → can add as Smart link; opens externally; Spotify/YouTube Music for in-app preview
 - "reference video" → sidebar Reference videos (YouTube / Vimeo only)
+- "folder / organize" → sidebar Folder button, drag to folder header, Search field
+- "bookmark / star" → ☆ left of × on project or folder row
+- "Pro / upgrade" → free = 1 project; Pro = unlimited; subscribe via Stripe; cancel via My page Manage subscription
+- "cloud sync" → when logged in, both Free and Pro sync (not Pro-only)
 
 Explain fully in your answer. Do not say "not documented" when the manual covers it.`;
 }

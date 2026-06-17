@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProfileAvatarPicker } from "@/components/ProfileAvatarPicker";
+import { MyPagePlanSection } from "@/components/MyPagePlanSection";
 import { useAuth } from "@/context/AuthContext";
 import { useChoreo } from "@/context/ChoreoContext";
 import { useProfile } from "@/context/ProfileContext";
 import { clearLocalUserData } from "@/lib/accountLocalData";
 import { cancelCloudWorkspacePush } from "@/lib/cloudSync";
-import { planLabel, PRO_MONTHLY_PRICE_YEN } from "@/lib/subscription";
 import { getStrings, type ProjectLanguage } from "@/lib/uiStrings";
 import { formatProjectSavedAt } from "@/lib/videoLinkUtils";
 
@@ -22,21 +22,24 @@ export function MyPageScreen() {
   const {
     profile,
     language,
+    plan,
     avatarUrl,
     avatarColor,
     hasCustomAvatar,
     isLoggedIn,
-    plan,
     setDisplayName,
     setEmail,
     setLanguage,
     setAvatarFromFile,
     clearAvatar,
+    refreshPlan,
   } = useProfile();
   const UI = getStrings(language);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
+  const [portalNotice, setPortalNotice] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -58,6 +61,30 @@ export function MyPageScreen() {
       ),
     [projects],
   );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
+    const portal = params.get("portal");
+    if (checkout === "success") {
+      setCheckoutNotice(UI.checkoutSuccess);
+      void refreshPlan();
+      for (const delay of [1000, 2500, 5000, 10000]) {
+        window.setTimeout(() => void refreshPlan(), delay);
+      }
+    } else if (checkout === "cancel") {
+      setCheckoutNotice(UI.checkoutCancel);
+    } else if (portal === "return") {
+      setPortalNotice(UI.portalReturnNotice);
+      void refreshPlan();
+      for (const delay of [500, 1500, 3000]) {
+        window.setTimeout(() => void refreshPlan(), delay);
+      }
+    }
+    if (checkout || portal) {
+      window.history.replaceState({}, "", "/mypage");
+    }
+  }, [UI.checkoutCancel, UI.checkoutSuccess, UI.portalReturnNotice, refreshPlan]);
 
   async function handleAvatarPick(file: File | undefined) {
     if (!file) return;
@@ -201,26 +228,18 @@ export function MyPageScreen() {
           </section>
 
           {isLoggedIn ? (
-            <section className="mypage-section" aria-label={UI.myPagePlan}>
-              <h2 className="mypage-section-title">{UI.myPagePlan}</h2>
-              <p className="mypage-plan-current">
-                {plan === "pro" ? UI.myPagePlanPro : UI.myPagePlanFree}
-                <span className="mypage-plan-badge">{planLabel(plan, language)}</span>
-              </p>
-              {plan === "free" ? (
-                <div className="mypage-upgrade-card">
-                  <p className="mypage-upgrade-title">{UI.myPageUpgradeTitle}</p>
-                  <p className="mypage-upgrade-desc">{UI.myPageUpgradeDesc}</p>
-                  <p className="mypage-upgrade-price">
-                    {UI.upgradePrice(PRO_MONTHLY_PRICE_YEN)}
-                  </p>
-                </div>
-              ) : null}
-            </section>
+            <MyPagePlanSection
+              checkoutNotice={checkoutNotice}
+              portalNotice={portalNotice}
+            />
           ) : null}
 
           <section className="mypage-section" aria-label={UI.myPageProjectsSection}>
             <h2 className="mypage-section-title">{UI.myPageProjectsSection}</h2>
+            <div
+              className="mypage-project-list-scroll"
+              onWheel={(e) => e.stopPropagation()}
+            >
             <ul className="mypage-project-list">
               {sortedProjects.map((project) => {
                 const title =
@@ -255,6 +274,7 @@ export function MyPageScreen() {
                 );
               })}
             </ul>
+            </div>
           </section>
 
           <section className="mypage-section mypage-about" aria-label={UI.myPageAbout}>
@@ -274,6 +294,7 @@ export function MyPageScreen() {
                 className="mypage-delete-account"
                 onClick={() => {
                   setDeleteError(null);
+                  void refreshPlan();
                   setDeleteOpen(true);
                 }}
               >
@@ -301,7 +322,7 @@ export function MyPageScreen() {
 
       {deleteOpen ? (
         <div
-          className="dialog-overlay"
+          className="dialog-overlay delete-account-dialog-overlay"
           onClick={() => {
             if (!deleteBusy) setDeleteOpen(false);
           }}
@@ -319,6 +340,11 @@ export function MyPageScreen() {
               {UI.myPageDeleteAccountConfirmTitle}
             </h2>
             <div id="delete-account-desc" className="delete-account-dialog-body">
+              <div className="delete-account-dialog-intro">
+                {UI.myPageDeleteAccountIntro.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
               <div className="delete-account-dialog-block">
                 <p className="delete-account-dialog-label">
                   {UI.myPageDataDeletionStoredLabel}
@@ -329,11 +355,21 @@ export function MyPageScreen() {
                   ))}
                 </ul>
               </div>
-              <div className="delete-account-dialog-warning">
-                {UI.myPageDataDeletionWarnings.map((line) => (
-                  <p key={line}>{line}</p>
-                ))}
-              </div>
+              {plan === "pro" ? (
+                <div className="delete-account-dialog-pro-section">
+                  <div className="delete-account-dialog-pro-head">
+                    <span className="delete-account-dialog-pro-badge">PRO</span>
+                    <p className="delete-account-dialog-pro-heading">
+                      {UI.myPageDeleteAccountProHeading}
+                    </p>
+                  </div>
+                  <div className="delete-account-dialog-pro-body">
+                    {UI.myPageDeleteAccountProBody.map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
             <div className="dialog-actions">
               <button

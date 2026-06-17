@@ -17,15 +17,15 @@ export interface HelpMessage {
 
 const SUGGESTIONS_JA = [
   "名前を変更したい",
+  "フォルダーでプロジェクトを整理したい",
   "メガファイル便のURLは音源に使える？",
-  "サビみたいなパートを追加したい",
   "間違えた、戻したい",
 ];
 
 const SUGGESTIONS_EN = [
   "I want to change a name",
-  "How do I make the dots bigger?",
-  "I want to add another section",
+  "How do I organize projects in folders?",
+  "Can I use a file-sharing URL for music?",
   "I made a mistake, how do I undo?",
 ];
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { cancelStripeBillingForUser } from "@/lib/stripeBilling";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function POST(request: Request) {
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
   if (userError || !user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+
+  await cancelStripeBillingForUser(user.id);
 
   await admin.storage.from("avatars").remove([`${user.id}/avatar.jpg`]);
 

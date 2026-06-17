@@ -53,14 +53,22 @@ import { MAX_COUNTS_PER_SECTION } from "@/lib/constants";
 import { clampMemberDotPx, normalizeStage } from "@/lib/gridUtils";
 import {
   addProject,
+  createFolder,
+  deleteFolder,
   getActiveMedia,
   getActiveState,
   loadWorkspace,
   patchActiveProject,
   projectToSummary,
   removeProject,
+  renameFolder,
+  renameProjectTitle,
   reorderProjects as reorderWorkspaceProjects,
   saveWorkspace,
+  setProjectFolder,
+  toggleFolderBookmark,
+  toggleFolderCollapsed,
+  toggleProjectBookmark,
   workspaceHasActiveProject,
 } from "@/lib/projectStore";
 import {
@@ -110,7 +118,9 @@ import type {
   FormationClipboard,
   Position,
   ProjectMedia,
+  ProjectFolder,
   ProjectSummary,
+  StageAnnotation,
   Workspace,
 } from "@/lib/types";
 
@@ -125,6 +135,7 @@ interface ChoreoContextValue {
   selectMember: (memberId: number | null) => void;
   beatIntervalSec: number;
   currentBeatSec: number;
+  displayCount: number;
   setSongTitle: (v: string) => void;
   setBpm: (bpm: number) => void;
   setBamiriHalfWidth: (v: number) => void;
@@ -166,13 +177,29 @@ interface ChoreoContextValue {
   updateMemberPosition: (memberId: number, x: number, y: number) => void;
   setDraggingMemberId: (id: number | null) => void;
   getMemberPos: (memberId: number) => Position;
+  addStageAnnotation: (annotation: StageAnnotation) => void;
+  updateStageAnnotation: (id: string, next: StageAnnotation) => void;
+  removeStageAnnotation: (id: string) => void;
+  clearStageAnnotations: () => void;
+  selectedAnnotationId: string | null;
+  setSelectedAnnotationId: (id: string | null) => void;
+  selectAnnotation: (id: string | null) => void;
   projects: ProjectSummary[];
+  folders: ProjectFolder[];
   activeProjectId: string;
   hasActiveProject: boolean;
   switchProject: (projectId: string) => void;
   createProject: (params: CreateProjectInput) => void;
   deleteProject: (projectId: string) => void;
+  renameProject: (projectId: string, songTitle: string) => void;
   reorderProjects: (fromIndex: number, toIndex: number) => void;
+  createFolder: (name: string) => void;
+  renameFolder: (folderId: string, name: string) => void;
+  deleteFolder: (folderId: string) => void;
+  toggleFolderCollapsed: (folderId: string) => void;
+  toggleFolderBookmark: (folderId: string) => void;
+  setProjectFolder: (projectId: string, folderId: string | null) => void;
+  toggleProjectBookmark: (projectId: string) => void;
   appMode: AppMode;
   isViewOnly: boolean;
   /** 共有 URL から開いた閲覧（編集に戻れない） */
@@ -190,9 +217,12 @@ interface ChoreoContextValue {
   removeReferenceVideo: (videoId: string) => Promise<void>;
   getVideoUrl: (videoId: string) => Promise<string | null>;
   copyShareLink: () => Promise<void>;
-  createShareUrl: () => Promise<string | null>;
-  enterViewPreview: () => void;
+  createShareUrl: (projectId?: string) => Promise<string | null>;
+  enterViewPreview: (projectId?: string) => void;
   exitViewMode: () => void;
+  shareDialogOpen: boolean;
+  openShareDialog: () => void;
+  closeShareDialog: () => void;
 }
 
 const ChoreoContext = createContext<ChoreoContextValue | null>(null);
@@ -221,12 +251,14 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<string | null>(null);
   const [draggingMemberId, setDraggingMemberId] = useState<number | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<FormationClipboard | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [bootingLabel, setBootingLabel] = useState<string | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [appMode, setAppMode] = useState<AppMode>("edit");
   const [externalShareView, setExternalShareView] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [media, setMedia] = useState<ProjectMedia>(emptyProjectMedia());
 
   const stateRef = useRef(state);
@@ -287,6 +319,11 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       };
     });
   }, [workspace, activeProjectId, state.songTitle, state.bpm, media]);
+
+  const folders = useMemo(
+    (): ProjectFolder[] => workspace?.folders ?? [],
+    [workspace],
+  );
 
   const hasActiveProject = useMemo(
     () => (workspace ? workspaceHasActiveProject(workspace) : false),
@@ -734,9 +771,8 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       setMedia(normalizeProjectMedia(getActiveMedia(nextWs, projectId)));
       setSelectedMemberId(null);
       clearUndoHistory();
-      showToast(getStrings(profileLanguageRef.current).switchedProject(nextState.songTitle));
     },
-    [activeProjectId, stopPlayback, showToast, clearUndoHistory, syncWorkspaceToCloud],
+    [activeProjectId, stopPlayback, clearUndoHistory, syncWorkspaceToCloud],
   );
 
   const createProject = useCallback(
@@ -787,6 +823,109 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     syncWorkspaceToCloud(nextWs);
     setWorkspace(nextWs);
   }, [syncWorkspaceToCloud]);
+
+  const persistOrganizeChange = useCallback(
+    (nextWs: Workspace) => {
+      if (appModeRef.current === "view") return;
+      workspaceRef.current = nextWs;
+      saveWorkspace(nextWs);
+      syncWorkspaceToCloud(nextWs);
+      setWorkspace(nextWs);
+    },
+    [syncWorkspaceToCloud],
+  );
+
+  const createFolderInWorkspace = useCallback(
+    (name: string) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      persistOrganizeChange(createFolder(ws, name));
+    },
+    [persistOrganizeChange],
+  );
+
+  const renameFolderInWorkspace = useCallback(
+    (folderId: string, name: string) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      persistOrganizeChange(renameFolder(ws, folderId, name));
+    },
+    [persistOrganizeChange],
+  );
+
+  const deleteFolderInWorkspace = useCallback(
+    (folderId: string) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      persistOrganizeChange(deleteFolder(ws, folderId));
+    },
+    [persistOrganizeChange],
+  );
+
+  const toggleFolderCollapsedInWorkspace = useCallback(
+    (folderId: string) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      persistOrganizeChange(toggleFolderCollapsed(ws, folderId));
+    },
+    [persistOrganizeChange],
+  );
+
+  const toggleFolderBookmarkInWorkspace = useCallback(
+    (folderId: string) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      persistOrganizeChange(toggleFolderBookmark(ws, folderId));
+    },
+    [persistOrganizeChange],
+  );
+
+  const setProjectFolderInWorkspace = useCallback(
+    (projectId: string, folderId: string | null) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      persistOrganizeChange(setProjectFolder(ws, projectId, folderId));
+    },
+    [persistOrganizeChange],
+  );
+
+  const toggleProjectBookmarkInWorkspace = useCallback(
+    (projectId: string) => {
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      persistOrganizeChange(toggleProjectBookmark(ws, projectId));
+    },
+    [persistOrganizeChange],
+  );
+
+  const renameProject = useCallback(
+    (projectId: string, songTitle: string) => {
+      if (appModeRef.current === "view") return;
+      const nextTitle = songTitle.trim();
+      if (!nextTitle) return;
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      const saved =
+        workspaceHasActiveProject(ws) && activeProjectId
+          ? patchActiveProject(
+              ws,
+              activeProjectId,
+              stateRef.current,
+              mediaRef.current,
+            )
+          : ws;
+      const nextWs = renameProjectTitle(saved, projectId, nextTitle);
+      if (nextWs === saved) return;
+      workspaceRef.current = nextWs;
+      saveWorkspace(nextWs);
+      syncWorkspaceToCloud(nextWs);
+      setWorkspace(nextWs);
+      if (projectId === activeProjectId) {
+        setState((prev) => ({ ...prev, songTitle: nextTitle }));
+      }
+    },
+    [activeProjectId, syncWorkspaceToCloud],
+  );
 
   const deleteProject = useCallback(
     (projectId: string) => {
@@ -849,6 +988,9 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         memo: existing?.memo ?? "",
         ...(existing?.hidden !== undefined ? { hidden: existing.hidden } : {}),
         ...(existing?.shown !== undefined ? { shown: existing.shown } : {}),
+        ...(existing?.annotations !== undefined
+          ? { annotations: existing.annotations }
+          : {}),
       };
       return { ...s, countData };
     });
@@ -865,6 +1007,59 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         countData[s.currentCount] = cd;
         return { ...s, countData };
       }, false);
+    },
+    [mutateState],
+  );
+
+  const addStageAnnotation = useCallback(
+    (annotation: StageAnnotation) => {
+      mutateState((s) => {
+        const countData = { ...s.countData };
+        const cd = { ...getCountData(countData, s.currentCount) };
+        cd.annotations = [...(cd.annotations ?? []), annotation];
+        countData[s.currentCount] = cd;
+        return { ...s, countData };
+      });
+    },
+    [mutateState],
+  );
+
+  const updateStageAnnotation = useCallback(
+    (id: string, next: StageAnnotation) => {
+      mutateState((s) => {
+        const countData = { ...s.countData };
+        const cd = { ...getCountData(countData, s.currentCount) };
+        if (!cd.annotations?.some((a) => a.id === id)) return s;
+        cd.annotations = cd.annotations.map((a) => (a.id === id ? next : a));
+        countData[s.currentCount] = cd;
+        return { ...s, countData };
+      }, false);
+    },
+    [mutateState],
+  );
+
+  const clearStageAnnotations = useCallback(() => {
+    mutateState((s) => {
+      const countData = { ...s.countData };
+      const cd = { ...getCountData(countData, s.currentCount) };
+      if (!cd.annotations?.length) return s;
+      cd.annotations = [];
+      countData[s.currentCount] = cd;
+      return { ...s, countData };
+    });
+  }, [mutateState]);
+
+  const removeStageAnnotation = useCallback(
+    (id: string) => {
+      mutateState((s) => {
+        const countData = { ...s.countData };
+        const cd = { ...getCountData(countData, s.currentCount) };
+        if (!cd.annotations?.length) return s;
+        cd.annotations = cd.annotations.filter((a) => a.id !== id);
+        countData[s.currentCount] = cd;
+        return { ...s, countData };
+      });
+      setSelectedAnnotationId((cur) => (cur === id ? null : cur));
     },
     [mutateState],
   );
@@ -889,6 +1084,12 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
   const selectMember = useCallback((memberId: number | null) => {
     setSelectedMemberId(memberId);
+    if (memberId !== null) setSelectedAnnotationId(null);
+  }, []);
+
+  const selectAnnotation = useCallback((id: string | null) => {
+    setSelectedAnnotationId(id);
+    if (id !== null) setSelectedMemberId(null);
   }, []);
 
   const deleteMember = useCallback(
@@ -1350,19 +1551,25 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     [activeProjectId],
   );
 
-  const buildCurrentShareUrl = useCallback(async (): Promise<
-    { url: string; kind: "remote" | "legacy" } | null
-  > => {
-    if (appModeRef.current === "view") return null;
-    const state = stateRef.current;
-    const projectId = activeProjectId;
-    const ws = workspaceRef.current;
-    const media =
-      ws && projectId
-        ? normalizeProjectMedia(getActiveMedia(ws, projectId))
-        : normalizeProjectMedia(mediaRef.current);
+  const buildShareUrlForProject = useCallback(
+    async (
+      projectId: string,
+    ): Promise<{ url: string; kind: "remote" | "legacy" } | null> => {
+      if (appModeRef.current === "view") return null;
+      const ws = workspaceRef.current;
+      if (!ws) return null;
 
-    if (projectId) {
+      const state =
+        projectId === activeProjectIdRef.current
+          ? stateRef.current
+          : getActiveState(ws, projectId);
+      if (!state) return null;
+
+      const media =
+        projectId === activeProjectIdRef.current
+          ? normalizeProjectMedia(mediaRef.current)
+          : normalizeProjectMedia(getActiveMedia(ws, projectId));
+
       const remote = await createRemoteShare(state, media);
       if (remote.ok) {
         return { url: buildShareUrlFromId(remote.shareId), kind: "remote" };
@@ -1370,28 +1577,36 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       if (remote.reason === "failed") {
         console.error("[share] create failed:", remote.error);
       }
-    }
 
-    const legacyUrl = buildLegacyShareUrl(state, media);
-    return legacyUrl ? { url: legacyUrl, kind: "legacy" } : null;
-  }, [activeProjectId]);
+      const legacyUrl = buildLegacyShareUrl(state, media);
+      return legacyUrl ? { url: legacyUrl, kind: "legacy" } : null;
+    },
+    [],
+  );
 
-  const createShareUrl = useCallback(async (): Promise<string | null> => {
-    const result = await buildCurrentShareUrl();
-    return result?.url ?? null;
-  }, [buildCurrentShareUrl]);
+  const createShareUrl = useCallback(
+    async (projectId?: string): Promise<string | null> => {
+      const pid = projectId ?? activeProjectIdRef.current;
+      if (!pid) return null;
+      const result = await buildShareUrlForProject(pid);
+      return result?.url ?? null;
+    },
+    [buildShareUrlForProject],
+  );
 
   const copyShareLink = useCallback(async () => {
     if (appModeRef.current === "view") return;
     const lang = getStrings(profileLanguageRef.current);
-    const projectId = activeProjectId;
+    const projectId = activeProjectIdRef.current;
     const ws = workspaceRef.current;
     const media =
       ws && projectId
         ? normalizeProjectMedia(getActiveMedia(ws, projectId))
         : normalizeProjectMedia(mediaRef.current);
 
-    const result = await buildCurrentShareUrl();
+    const result = projectId
+      ? await buildShareUrlForProject(projectId)
+      : null;
     if (!result) {
       showToast(lang.shareLinkTooLong);
       return;
@@ -1406,14 +1621,30 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     } catch {
       showToast(lang.shareLinkCopyFailed);
     }
-  }, [activeProjectId, buildCurrentShareUrl, showToast]);
+  }, [buildShareUrlForProject, showToast]);
 
-  const enterViewPreview = useCallback(() => {
-    stopPlayback();
-    setExternalShareView(false);
-    setAppMode("view");
-    showToast(getStrings(profileLanguageRef.current).viewPreviewStarted);
-  }, [stopPlayback, showToast]);
+  const openShareDialog = useCallback(() => {
+    if (appModeRef.current === "view") return;
+    setShareDialogOpen(true);
+  }, []);
+
+  const closeShareDialog = useCallback(() => {
+    setShareDialogOpen(false);
+  }, []);
+
+  const enterViewPreview = useCallback(
+    (projectId?: string) => {
+      const targetId = projectId ?? activeProjectIdRef.current;
+      if (targetId && targetId !== activeProjectIdRef.current) {
+        switchProject(targetId);
+      }
+      stopPlayback();
+      setExternalShareView(false);
+      setAppMode("view");
+      showToast(getStrings(profileLanguageRef.current).viewPreviewStarted);
+    },
+    [stopPlayback, showToast, switchProject],
+  );
 
   const exitViewMode = useCallback(() => {
     if (externalShareViewRef.current) return;
@@ -1450,6 +1681,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     selectMember,
     beatIntervalSec,
     currentBeatSec,
+    displayCount: playbackPosCount,
     setSongTitle: (v) => mutateState((s) => ({ ...s, songTitle: v })),
     setBpm: (bpm) =>
       mutateState((s) => ({
@@ -1523,13 +1755,29 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         state.countData,
         state.members,
       ),
+    addStageAnnotation,
+    updateStageAnnotation,
+    removeStageAnnotation,
+    clearStageAnnotations,
+    selectedAnnotationId,
+    setSelectedAnnotationId,
+    selectAnnotation,
     projects,
+    folders,
     activeProjectId,
     hasActiveProject,
     switchProject,
     createProject,
     deleteProject,
+    renameProject,
     reorderProjects,
+    createFolder: createFolderInWorkspace,
+    renameFolder: renameFolderInWorkspace,
+    deleteFolder: deleteFolderInWorkspace,
+    toggleFolderCollapsed: toggleFolderCollapsedInWorkspace,
+    toggleFolderBookmark: toggleFolderBookmarkInWorkspace,
+    setProjectFolder: setProjectFolderInWorkspace,
+    toggleProjectBookmark: toggleProjectBookmarkInWorkspace,
     appMode,
     isViewOnly: appMode === "view",
     externalShareView,
@@ -1549,6 +1797,9 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     createShareUrl,
     enterViewPreview,
     exitViewMode,
+    shareDialogOpen,
+    openShareDialog,
+    closeShareDialog,
   };
 
   return (

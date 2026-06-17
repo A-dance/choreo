@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { StripeSubscribeButton } from "@/components/StripeSubscribeButton";
 import { useProfile } from "@/context/ProfileContext";
 import {
   FREE_PROJECT_LIMIT,
@@ -35,20 +36,16 @@ export function UpgradeDialog({ onClose }: UpgradeDialogProps) {
           <p className="upgrade-plan-price">
             {UI.upgradePrice(PRO_MONTHLY_PRICE_YEN)}
           </p>
-          <ul className="upgrade-plan-features">
-            {UI.upgradeFeatures.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
         </div>
 
         <p className="upgrade-note">{UI.upgradeNote}</p>
 
-        <div className="dialog-actions">
+        <div className="dialog-actions upgrade-dialog-actions">
           <button type="button" className="dialog-btn secondary" onClick={onClose}>
             {UI.close}
           </button>
-          <Link href="/mypage" className="dialog-btn primary upgrade-mypage-link">
+          <StripeSubscribeButton variant="primary" />
+          <Link href="/mypage" className="dialog-btn secondary upgrade-mypage-link">
             {UI.upgradeGoMyPage}
           </Link>
         </div>

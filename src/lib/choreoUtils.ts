@@ -160,10 +160,10 @@ export function resolveMemberDotPx(
 }
 
 export function dotFontPx(dotPx: number): number {
-  if (dotPx <= 20) return 7;
-  if (dotPx <= 28) return 8;
-  if (dotPx <= 36) return 9;
-  return 10;
+  if (dotPx <= 20) return 8;
+  if (dotPx <= 28) return 9;
+  if (dotPx <= 36) return 10;
+  return 11;
 }
 
 export function createMembers(count: number, startId = 1): Member[] {

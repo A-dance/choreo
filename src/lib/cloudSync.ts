@@ -93,14 +93,17 @@ export async function pushCloudWorkspace(
   const supabase = getSupabaseBrowser();
   if (!supabase) return false;
   const payload: Workspace = {
-    version: 1,
+    version: 2,
     activeProjectId: workspace.activeProjectId,
+    folders: workspace.folders,
     projects: workspace.projects.map((p) => ({
       id: p.id,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
       state: { ...p.state, isPlaying: false },
       media: p.media,
+      folderId: p.folderId ?? null,
+      bookmarked: Boolean(p.bookmarked),
     })),
   };
   const { error } = await supabase.from("user_workspaces").upsert({

@@ -15,8 +15,9 @@ export function createDemoReferenceWorkspace(): Workspace {
     DEMO_REFERENCE_PROJECT_ID,
   );
   return {
-    version: 1,
+    version: 2,
     activeProjectId: record.id,
     projects: [record],
+    folders: [],
   };
 }

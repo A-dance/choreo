@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChoreo } from "@/context/ChoreoContext";
+import type { ProjectSummary } from "@/lib/types";
 
 interface ShareDialogProps {
-  open: boolean;
   onClose: () => void;
 }
 
 type SnsTarget = "line" | "x" | "mail";
+type FolderFilterKey = "all" | "uncategorized" | string;
 
 function LineIcon() {
   return (
@@ -26,7 +27,7 @@ function XIcon() {
     <svg viewBox="0 0 24 24" aria-hidden focusable="false">
       <path
         fill="currentColor"
-        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25h6.826l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"
+        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H6.657l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25h6.826l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z"
       />
     </svg>
   );
@@ -62,19 +63,6 @@ function LinkIcon() {
   );
 }
 
-function MoreShareIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden focusable="false">
-      <g fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="6" cy="12" r="2.6" />
-        <circle cx="17.5" cy="5.5" r="2.6" />
-        <circle cx="17.5" cy="18.5" r="2.6" />
-        <path strokeLinecap="round" d="m8.4 10.7 6.8-3.9m-6.8 6.5 6.8 3.9" />
-      </g>
-    </svg>
-  );
-}
-
 function EyeIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden focusable="false">
@@ -86,10 +74,22 @@ function EyeIcon() {
   );
 }
 
-export function ShareDialog({ open, onClose }: ShareDialogProps) {
+function projectsForFolder(
+  projects: ProjectSummary[],
+  folderKey: FolderFilterKey,
+) {
+  if (folderKey === "all") return projects;
+  if (folderKey === "uncategorized")
+    return projects.filter((p) => !p.folderId);
+  return projects.filter((p) => p.folderId === folderKey);
+}
+
+export function ShareDialog({ onClose }: ShareDialogProps) {
   const {
     strings: UI,
-    state,
+    projects,
+    folders,
+    activeProjectId,
     appMode,
     canExitViewMode,
     createShareUrl,
@@ -100,25 +100,61 @@ export function ShareDialog({ open, onClose }: ShareDialogProps) {
   const [creating, setCreating] = useState(false);
   const [createFailed, setCreateFailed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [canWebShare, setCanWebShare] = useState(false);
+  const [selectedFolderKey, setSelectedFolderKey] =
+    useState<FolderFilterKey>("all");
+  const [selectedProjectId, setSelectedProjectId] = useState(activeProjectId);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const viewOnly = appMode === "view";
-  const songTitle = state.songTitle || UI.defaultSongTitle;
+
+  const showFolderPicker =
+    folders.length > 0 || projects.some((p) => !p.folderId);
+
+  const projectsInFolder = useMemo(
+    () => projectsForFolder(projects, selectedFolderKey),
+    [projects, selectedFolderKey],
+  );
+
+  const selectedProject =
+    projectsInFolder.find((p) => p.id === selectedProjectId) ??
+    projectsInFolder.find((p) => p.id === activeProjectId) ??
+    projectsInFolder[0];
+
+  const songTitle = selectedProject?.songTitle || UI.defaultSongTitle;
+  const showProjectPicker = projectsInFolder.length > 1;
 
   useEffect(() => {
-    setCanWebShare(typeof navigator !== "undefined" && !!navigator.share);
+    const active = projects.find((p) => p.id === activeProjectId);
+    const hasFolderFilter =
+      folders.length > 0 || projects.some((p) => !p.folderId);
+    const folderKey: FolderFilterKey = !hasFolderFilter
+      ? "all"
+      : active?.folderId
+        ? active.folderId
+        : "uncategorized";
+    const list = projectsForFolder(projects, folderKey);
+    setSelectedFolderKey(folderKey);
+    setSelectedProjectId(
+      list.find((p) => p.id === activeProjectId)?.id ??
+        list[0]?.id ??
+        activeProjectId,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when dialog opens
   }, []);
 
-  // Create the share link once each time the dialog opens.
   useEffect(() => {
-    if (!open || viewOnly) return;
+    if (projectsInFolder.some((p) => p.id === selectedProjectId)) return;
+    setSelectedProjectId(projectsInFolder[0]?.id ?? activeProjectId);
+  }, [selectedFolderKey, projectsInFolder, selectedProjectId, activeProjectId]);
+
+  useEffect(() => {
+    if (viewOnly || !selectedProjectId) return;
     let cancelled = false;
     setShareUrl(null);
     setCreateFailed(false);
     setCopied(false);
     setCreating(true);
-    void createShareUrl()
+    void createShareUrl(selectedProjectId)
       .then((url) => {
         if (cancelled) return;
         setShareUrl(url);
@@ -130,18 +166,15 @@ export function ShareDialog({ open, onClose }: ShareDialogProps) {
     return () => {
       cancelled = true;
     };
-  }, [open, viewOnly, createShareUrl]);
+  }, [viewOnly, selectedProjectId, createShareUrl]);
 
   useEffect(() => {
-    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  if (!open) return null;
+  }, [onClose]);
 
   const shareMessage = UI.shareSheetText(songTitle);
 
@@ -153,20 +186,7 @@ export function ShareDialog({ open, onClose }: ShareDialogProps) {
       if (copiedTimer.current) clearTimeout(copiedTimer.current);
       copiedTimer.current = setTimeout(() => setCopied(false), 2000);
     } catch {
-      // clipboard unavailable — user can select the URL text manually
-    }
-  };
-
-  const handleWebShare = async () => {
-    if (!shareUrl) return;
-    try {
-      await navigator.share({
-        title: songTitle,
-        text: shareMessage,
-        url: shareUrl,
-      });
-    } catch {
-      // user cancelled the share sheet — nothing to do
+      // clipboard unavailable
     }
   };
 
@@ -220,129 +240,160 @@ export function ShareDialog({ open, onClose }: ShareDialogProps) {
         </div>
 
         <div className="share-body">
-        {viewOnly && <p className="view-mode-banner">{UI.viewModeBanner}</p>}
+          {viewOnly && <p className="view-mode-banner">{UI.viewModeBanner}</p>}
 
-        {!viewOnly && (
-          <>
-            <div className="share-url-box">
-              <span className="share-url-icon">
-                <LinkIcon />
-              </span>
-              <span className={"share-url-text" + (ready ? "" : " pending")}>
-                {creating
-                  ? UI.shareLinkCopying
-                  : createFailed
-                    ? UI.shareLinkCreateFailed
-                    : shareUrl}
-              </span>
-              <button
-                type="button"
-                className="share-url-copy"
-                disabled={!ready}
-                onClick={() => void handleCopy()}
-              >
-                {copied ? UI.shareCopied : UI.shareCopy}
-              </button>
-            </div>
+          {!viewOnly && (
+            <>
+              {showFolderPicker ? (
+                <label className="share-project-picker">
+                  <span className="share-project-picker-label">
+                    {UI.shareSelectFolder}
+                  </span>
+                  <select
+                    className="share-project-select"
+                    value={selectedFolderKey}
+                    onChange={(e) => setSelectedFolderKey(e.target.value)}
+                  >
+                    <option value="all">{UI.shareAllProjects}</option>
+                    {projects.some((p) => !p.folderId) ? (
+                      <option value="uncategorized">
+                        {UI.uncategorizedSection}
+                      </option>
+                    ) : null}
+                    {folders.map((folder) => (
+                      <option key={folder.id} value={folder.id}>
+                        {folder.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
 
-            <div
-              className="share-icon-row"
-              role="group"
-              aria-label={UI.shareTitle}
-            >
-              <button
-                type="button"
-                className="share-icon-btn"
-                disabled={!ready}
-                onClick={() => handleSnsShare("line")}
-              >
-                <span className="share-icon-circle line">
-                  <LineIcon />
-                </span>
-                <span className="share-icon-label">LINE</span>
-              </button>
-              <button
-                type="button"
-                className="share-icon-btn"
-                disabled={!ready}
-                onClick={() => handleSnsShare("x")}
-              >
-                <span className="share-icon-circle x">
-                  <XIcon />
-                </span>
-                <span className="share-icon-label">X</span>
-              </button>
-              <button
-                type="button"
-                className="share-icon-btn"
-                disabled={!ready}
-                onClick={() => handleSnsShare("mail")}
-              >
-                <span className="share-icon-circle neutral">
-                  <MailIcon />
-                </span>
-                <span className="share-icon-label">{UI.shareViaMail}</span>
-              </button>
-              <button
-                type="button"
-                className="share-icon-btn"
-                disabled={!ready}
-                onClick={() => void handleCopy()}
-              >
-                <span className="share-icon-circle outline">
+              {showProjectPicker ? (
+                <label className="share-project-picker">
+                  <span className="share-project-picker-label">
+                    {UI.shareSelectProject}
+                  </span>
+                  <select
+                    className="share-project-select"
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                  >
+                    {projectsInFolder.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.songTitle}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              <div className="share-url-box">
+                <span className="share-url-icon">
                   <LinkIcon />
                 </span>
-                <span className="share-icon-label">
-                  {copied ? UI.shareCopied : UI.shareViaCopy}
+                <span className={"share-url-text" + (ready ? "" : " pending")}>
+                  {creating
+                    ? UI.shareLinkCopying
+                    : createFailed
+                      ? UI.shareLinkCreateFailed
+                      : shareUrl}
                 </span>
-              </button>
-              {canWebShare && (
+                <button
+                  type="button"
+                  className="share-url-copy"
+                  disabled={!ready}
+                  onClick={() => void handleCopy()}
+                >
+                  {copied ? UI.shareCopied : UI.shareCopy}
+                </button>
+              </div>
+
+              <div
+                className="share-icon-row"
+                role="group"
+                aria-label={UI.shareTitle}
+              >
                 <button
                   type="button"
                   className="share-icon-btn"
                   disabled={!ready}
-                  onClick={() => void handleWebShare()}
+                  onClick={() => handleSnsShare("line")}
+                >
+                  <span className="share-icon-circle line">
+                    <LineIcon />
+                  </span>
+                  <span className="share-icon-label">LINE</span>
+                </button>
+                <button
+                  type="button"
+                  className="share-icon-btn"
+                  disabled={!ready}
+                  onClick={() => handleSnsShare("x")}
+                >
+                  <span className="share-icon-circle x">
+                    <XIcon />
+                  </span>
+                  <span className="share-icon-label">X</span>
+                </button>
+                <button
+                  type="button"
+                  className="share-icon-btn"
+                  disabled={!ready}
+                  onClick={() => handleSnsShare("mail")}
+                >
+                  <span className="share-icon-circle neutral">
+                    <MailIcon />
+                  </span>
+                  <span className="share-icon-label">{UI.shareViaMail}</span>
+                </button>
+                <button
+                  type="button"
+                  className="share-icon-btn"
+                  disabled={!ready}
+                  onClick={() => void handleCopy()}
                 >
                   <span className="share-icon-circle outline">
-                    <MoreShareIcon />
+                    <LinkIcon />
                   </span>
-                  <span className="share-icon-label">{UI.shareViaMore}</span>
+                  <span className="share-icon-label">
+                    {copied ? UI.shareCopied : UI.shareViaCopy}
+                  </span>
                 </button>
-              )}
-            </div>
+              </div>
 
-            <div className="share-preview-wrap">
+              <div className="share-preview-wrap">
+                <button
+                  type="button"
+                  className="share-preview-btn"
+                  onClick={() => {
+                    enterViewPreview(selectedProjectId);
+                    onClose();
+                  }}
+                >
+                  <EyeIcon />
+                  {UI.previewViewMode}
+                </button>
+
+                <p className="share-footer-hint">{UI.shareViewerHint}</p>
+              </div>
+            </>
+          )}
+
+          {canExitViewMode && (
+            <div className="dialog-actions">
               <button
                 type="button"
-                className="share-preview-btn"
+                className="dialog-btn secondary"
                 onClick={() => {
-                  enterViewPreview();
+                  exitViewMode();
                   onClose();
                 }}
               >
-                <EyeIcon />
-                {UI.previewViewMode}
+                {UI.exitViewMode}
               </button>
-
-              <p className="share-footer-hint">{UI.shareViewerHint}</p>
             </div>
-          </>
-        )}
-
-        {canExitViewMode && (
-          <div className="dialog-actions">
-            <button
-              type="button"
-              className="dialog-btn secondary"
-              onClick={() => {
-                exitViewMode();
-                onClose();
-              }}
-            >
-              {UI.exitViewMode}
-            </button>
-          </div>
-        )}
+          )}
         </div>
       </div>
     </div>

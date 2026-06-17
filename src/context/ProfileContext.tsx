@@ -39,6 +39,7 @@ import {
   normalizePlan,
   type SubscriptionPlan,
 } from "@/lib/subscription";
+import { syncPlanFromStripe } from "@/lib/stripeCheckoutClient";
 import {
   getProfileAvatarColor,
   getProfileInitials,
@@ -60,12 +61,13 @@ interface ProfileContextValue {
   setAvatarFromFile: (file: File) => Promise<boolean>;
   clearAvatar: () => Promise<void>;
   plan: SubscriptionPlan;
+  refreshPlan: () => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const { authReady, user } = useAuth();
+  const { authReady, user, session } = useAuth();
   const [profile, setProfile] = useState<UserProfile>(() => ({
     displayName: "",
     email: "",
@@ -159,6 +161,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setProfile(nextProfile);
       saveProfile(nextProfile);
 
+      const token = session?.access_token;
+      if (token) {
+        const synced = await syncPlanFromStripe(token);
+        if (!cancelled && synced) setPlan(synced);
+      }
+
       try {
         let blob: Blob | null = null;
         if (cloudAvatarPathRef.current) {
@@ -178,7 +186,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       revokeAvatarUrl();
     };
-  }, [authReady, user, applyAvatarBlob, revokeAvatarUrl]);
+  }, [authReady, user, session?.access_token, applyAvatarBlob, revokeAvatarUrl]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -256,6 +264,27 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     revokeAvatarUrl();
   }, [revokeAvatarUrl, user]);
 
+  const refreshPlan = useCallback(async () => {
+    if (!user) {
+      setPlan("free");
+      return;
+    }
+    const token = session?.access_token;
+    if (token) {
+      const synced = await syncPlanFromStripe(token);
+      if (synced) {
+        setPlan(synced);
+        return;
+      }
+    }
+    try {
+      const cloud = await fetchCloudProfile(user.id);
+      if (cloud) setPlan(normalizePlan(cloud.plan));
+    } catch {
+      /* ignore */
+    }
+  }, [user, session?.access_token]);
+
   const initials = useMemo(
     () => getProfileInitials(profile.displayName),
     [profile.displayName],
@@ -281,6 +310,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setLanguage,
       setAvatarFromFile,
       clearAvatar,
+      refreshPlan,
     }),
     [
       profile,
@@ -295,6 +325,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setLanguage,
       setAvatarFromFile,
       clearAvatar,
+      refreshPlan,
     ],
   );
 
