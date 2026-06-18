@@ -1,7 +1,11 @@
-# CHOREO
+# bamiri — SHARE（choreo）
 
 ダンスフォーメーション（配置）を **人数・空間・移動・BPM** で組み立てる Web アプリです。  
-ステップ名入力や Markdown 出力などは含まず、**ステージ上の配置** に特化しています。
+認証・クラウド同期・共有リンク・ASK AI（Gemini）・Stripe Pro 課金に対応しています。
+
+**要件・非機能要件:** [`../CHOREO_要件定義書.md`](../CHOREO_要件定義書.md)（v2.1）  
+**操作マニュアル:** [`docs/manual.ja.md`](docs/manual.ja.md) / [`docs/manual.en.md`](docs/manual.en.md)  
+**設計書:** [`docs/design/README.md`](docs/design/README.md)（アーキテクチャ・ER・API・Figma 等）
 
 ## 起動
 
@@ -131,9 +135,11 @@ ChoreoState {
 
 ## 技術スタック
 
-- **Next.js 16**（App Router）
-- **React 19** / **TypeScript**
-- 状態: React Context + localStorage
+- **Next.js 16**（App Router）/ **React 19** / **TypeScript**
+- 状態: ChoreoContext + localStorage / IndexedDB
+- **Supabase**（認証・クラウド同期・共有）
+- **Stripe**（Pro サブスクリプション）
+- **Google Gemini**（ASK AI）
 - スタイル: カスタム CSS（`globals.css`）
 
 ## レガシー

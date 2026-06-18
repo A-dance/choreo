@@ -1,0 +1,471 @@
+openapi: 3.0.3
+info:
+  title: bamiri — SHARE API
+  description: Next.js Route Handlers for share, help, billing, and account management.
+  version: 2.1.0
+servers:
+  - url: /
+    description: Same origin as the web app
+
+paths:
+  /api/share:
+    get:
+      summary: Get shared choreography snapshot
+      operationId: getShare
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Share payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareGetResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/NotConfigured"
+    post:
+      summary: Create share link
+      operationId: createShare
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareCreateRequest"
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - manifest
+              properties:
+                manifest:
+                  type: string
+                  description: JSON string with state and media
+      responses:
+        "200":
+          description: Created share
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareCreateResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "503":
+          $ref: "#/components/responses/NotConfigured"
+
+  /api/share/upload-url:
+    post:
+      summary: Get signed upload URL for share media
+      operationId: createShareUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - shareId
+                - mediaId
+              properties:
+                shareId:
+                  type: string
+                  format: uuid
+                mediaId:
+                  type: string
+      responses:
+        "200":
+          description: Signed upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignedUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "503":
+          $ref: "#/components/responses/NotConfigured"
+
+  /api/help:
+    post:
+      summary: ASK AI help (Gemini)
+      operationId: postHelp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HelpRequest"
+      responses:
+        "200":
+          description: Assistant answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HelpResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/NotConfigured"
+
+  /api/music-metadata:
+    get:
+      summary: Fetch music link metadata
+      operationId: getMusicMetadata
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+      responses:
+        "200":
+          description: Metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MusicMetadataResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/account/delete:
+    post:
+      summary: Delete user account
+      operationId: deleteAccount
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "503":
+          $ref: "#/components/responses/NotConfigured"
+
+  /api/stripe/checkout:
+    post:
+      summary: Create Stripe Checkout session
+      operationId: stripeCheckout
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "503":
+          $ref: "#/components/responses/NotConfigured"
+
+  /api/stripe/portal:
+    post:
+      summary: Create Stripe Billing Portal session
+      operationId: stripePortal
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Portal URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/NotConfigured"
+
+  /api/stripe/subscription:
+    get:
+      summary: Get subscription details
+      operationId: stripeSubscription
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Subscription info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionDetails"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/stripe/sync:
+    post:
+      summary: Sync plan from Stripe
+      operationId: stripeSync
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current plan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: string
+                    enum: [free, pro]
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/stripe/webhook:
+    post:
+      summary: Stripe webhook receiver
+      operationId: stripeWebhook
+      parameters:
+        - name: stripe-signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                    example: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "503":
+          $ref: "#/components/responses/NotConfigured"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BadGateway:
+      description: Upstream API error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotConfigured:
+      description: Feature not configured
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+
+    ShareCreateRequest:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: object
+          description: ChoreoState JSON
+        media:
+          type: object
+          description: ProjectMedia JSON
+
+    ShareCreateResponse:
+      type: object
+      required:
+        - shareId
+      properties:
+        shareId:
+          type: string
+          format: uuid
+        skippedFiles:
+          type: array
+          items:
+            type: string
+
+    ShareGetResponse:
+      type: object
+      properties:
+        state:
+          type: object
+        media:
+          type: object
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShareFile"
+
+    ShareFile:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [audio, video]
+        name:
+          type: string
+        mimeType:
+          type: string
+        url:
+          type: string
+          format: uri
+
+    SignedUploadResponse:
+      type: object
+      properties:
+        signedUrl:
+          type: string
+          format: uri
+        token:
+          type: string
+        path:
+          type: string
+
+    HelpRequest:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: object
+            required:
+              - role
+              - text
+            properties:
+              role:
+                type: string
+                enum: [user, assistant]
+              text:
+                type: string
+                maxLength: 500
+        language:
+          type: string
+          enum: [ja, en]
+
+    HelpResponse:
+      type: object
+      required:
+        - answer
+      properties:
+        answer:
+          type: string
+
+    MusicMetadataResponse:
+      type: object
+      properties:
+        title:
+          type: string
+        thumbnailUrl:
+          type: string
+          nullable: true
+        source:
+          type: string
+        externalUrl:
+          type: string
+          format: uri
+
+    SubscriptionDetails:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [free, pro]
+        status:
+          type: string
+          nullable: true
+        currentPeriodStart:
+          type: integer
+          nullable: true
+        currentPeriodEnd:
+          type: integer
+          nullable: true
+        cancelAtPeriodEnd:
+          type: boolean
+        amountYen:
+          type: integer
+          nullable: true
