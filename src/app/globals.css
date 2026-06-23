@@ -5999,13 +5999,16 @@ input[type="range"]::-webkit-slider-thumb {
 
 .login-hero-desc {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.7;
-  color: rgba(232, 235, 248, 0.72);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: rgba(167, 139, 250, 0.95);
   text-wrap: pretty;
 }
 
 @media (min-width: 720px) {
+  .login-hero-headline,
   .login-hero-desc {
     white-space: nowrap;
   }
@@ -7010,9 +7013,9 @@ input[type="range"]::-webkit-slider-thumb {
     align-items: center;
   }
 
+  .login-hero-headline,
   .login-hero-desc {
     white-space: normal;
-    max-width: 20rem;
   }
 
   .login-stage-preview {

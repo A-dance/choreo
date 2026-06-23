@@ -661,9 +661,8 @@ const en: UiStrings = {
   authSignUpSubtitle: "",
   loginHeroLabel: "About bamiri — SHARE",
   loginHeroTagline: "FOR DANCERS & CHOREOGRAPHERS",
-  loginHeroHeadline: "Formations, digitally.",
-  loginHeroDesc:
-    "Place dancers on stage by count, then preview moves with BPM playback.",
+  loginHeroHeadline: "Digital formations",
+  loginHeroDesc: "DX for dance placement management",
   authSection: "Sign in",
   authSignIn: "Sign in",
   authSignUp: "Create account",
@@ -1061,9 +1060,8 @@ const ja: UiStrings = {
   authSignUpSubtitle: "",
   loginHeroLabel: "bamiri — SHARE について",
   loginHeroTagline: "FOR DANCERS & CHOREOGRAPHERS",
-  loginHeroHeadline: "フォーメーションを、デジタルに。",
-  loginHeroDesc:
-    "カウントごとにステージへ配置し、BPM再生で動きを確認できます。",
+  loginHeroHeadline: "フォーメーションをデジタルに",
+  loginHeroDesc: "ダンス配置管理のDX",
   authSection: "ログイン",
   authSignIn: "ログイン",
   authSignUp: "新規登録",
