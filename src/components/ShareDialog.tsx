@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChoreo } from "@/context/ChoreoContext";
+import type { FolderShareKey } from "@/lib/shareUtils";
 import type { ProjectSummary } from "@/lib/types";
 
 interface ShareDialogProps {
@@ -9,7 +10,7 @@ interface ShareDialogProps {
 }
 
 type SnsTarget = "line" | "x" | "mail";
-type FolderFilterKey = "all" | "uncategorized" | string;
+type ShareScope = "folder" | "song";
 
 function LineIcon() {
   return (
@@ -76,11 +77,11 @@ function EyeIcon() {
 
 function projectsForFolder(
   projects: ProjectSummary[],
-  folderKey: FolderFilterKey,
+  folderKey: FolderShareKey,
 ) {
-  if (folderKey === "all") return projects;
-  if (folderKey === "uncategorized")
+  if (folderKey === "uncategorized") {
     return projects.filter((p) => !p.folderId);
+  }
   return projects.filter((p) => p.folderId === folderKey);
 }
 
@@ -93,6 +94,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
     appMode,
     canExitViewMode,
     createShareUrl,
+    createShareFolderUrl,
     enterViewPreview,
     exitViewMode,
   } = useChoreo();
@@ -100,69 +102,87 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
   const [creating, setCreating] = useState(false);
   const [createFailed, setCreateFailed] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareScope, setShareScope] = useState<ShareScope>("song");
   const [selectedFolderKey, setSelectedFolderKey] =
-    useState<FolderFilterKey>("all");
+    useState<FolderShareKey>("uncategorized");
   const [selectedProjectId, setSelectedProjectId] = useState(activeProjectId);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const viewOnly = appMode === "view";
-
   const hasFolders = folders.length > 0;
   const hasUncategorized = projects.some((p) => !p.folderId);
+  const showScopePicker = hasFolders;
 
-  const showFolderPicker = hasFolders;
-
-  const projectsInFolder = useMemo(() => {
-    if (!showFolderPicker) return projects;
-    return projectsForFolder(projects, selectedFolderKey);
-  }, [projects, selectedFolderKey, showFolderPicker]);
+  const projectsInFolder = useMemo(
+    () => projectsForFolder(projects, selectedFolderKey),
+    [projects, selectedFolderKey],
+  );
 
   const selectedProject =
-    projectsInFolder.find((p) => p.id === selectedProjectId) ??
-    projectsInFolder.find((p) => p.id === activeProjectId) ??
-    projectsInFolder[0];
+    projects.find((p) => p.id === selectedProjectId) ??
+    projects.find((p) => p.id === activeProjectId) ??
+    projects[0];
+
+  const selectedFolderLabel = useMemo(() => {
+    if (selectedFolderKey === "uncategorized") return UI.uncategorizedSection;
+    return folders.find((folder) => folder.id === selectedFolderKey)?.name ?? "";
+  }, [selectedFolderKey, folders, UI.uncategorizedSection]);
+
+  const previewProjectId =
+    shareScope === "folder"
+      ? (projectsInFolder.find((p) => p.id === activeProjectId)?.id ??
+        projectsInFolder[0]?.id ??
+        activeProjectId)
+      : selectedProjectId;
 
   const songTitle = selectedProject?.songTitle || UI.defaultSongTitle;
-  const showProjectPicker = showFolderPicker
-    ? projectsInFolder.length > 0
-    : projects.length > 1;
+  const shareLabel =
+    shareScope === "folder" ? selectedFolderLabel : songTitle;
+  const shareMessage =
+    shareScope === "folder"
+      ? UI.shareSheetTextFolder(selectedFolderLabel)
+      : UI.shareSheetText(songTitle);
+
+  const showFolderPicker = hasFolders && shareScope === "folder";
+  const showProjectPicker =
+    shareScope === "song" && projects.length > 1;
 
   useEffect(() => {
     const active = projects.find((p) => p.id === activeProjectId);
     if (!folders.length) {
-      setSelectedFolderKey("all");
+      setShareScope("song");
       setSelectedProjectId(activeProjectId);
       return;
     }
 
-    const folderKey: FolderFilterKey = active?.folderId
+    const folderKey: FolderShareKey = active?.folderId
       ? active.folderId
       : hasUncategorized
         ? "uncategorized"
-        : folders[0]?.id ?? "uncategorized";
-    const list = projectsForFolder(projects, folderKey);
+        : (folders[0]?.id ?? "uncategorized");
+    setShareScope("folder");
     setSelectedFolderKey(folderKey);
-    setSelectedProjectId(
-      list.find((p) => p.id === activeProjectId)?.id ??
-        list[0]?.id ??
-        activeProjectId,
-    );
+    setSelectedProjectId(activeProjectId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when dialog opens
   }, []);
 
   useEffect(() => {
-    if (projectsInFolder.some((p) => p.id === selectedProjectId)) return;
-    setSelectedProjectId(projectsInFolder[0]?.id ?? activeProjectId);
-  }, [selectedFolderKey, projectsInFolder, selectedProjectId, activeProjectId]);
+    if (viewOnly) return;
+    if (shareScope === "folder" && !projectsInFolder.length) return;
+    if (shareScope === "song" && !selectedProjectId) return;
 
-  useEffect(() => {
-    if (viewOnly || !selectedProjectId) return;
     let cancelled = false;
     setShareUrl(null);
     setCreateFailed(false);
     setCopied(false);
     setCreating(true);
-    void createShareUrl(selectedProjectId)
+
+    const create =
+      shareScope === "folder"
+        ? createShareFolderUrl(selectedFolderKey)
+        : createShareUrl(selectedProjectId);
+
+    void create
       .then((url) => {
         if (cancelled) return;
         setShareUrl(url);
@@ -171,10 +191,19 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
       .finally(() => {
         if (!cancelled) setCreating(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [viewOnly, selectedProjectId, createShareUrl]);
+  }, [
+    viewOnly,
+    shareScope,
+    selectedFolderKey,
+    selectedProjectId,
+    projectsInFolder.length,
+    createShareUrl,
+    createShareFolderUrl,
+  ]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -183,8 +212,6 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-
-  const shareMessage = UI.shareSheetText(songTitle);
 
   const handleCopy = async () => {
     if (!shareUrl) return;
@@ -206,7 +233,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
     } else if (target === "x") {
       intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareMessage)}&url=${encodeURIComponent(shareUrl)}`;
     } else {
-      intent = `mailto:?subject=${encodeURIComponent(songTitle)}&body=${encodeURIComponent(`${shareMessage}\n${shareUrl}`)}`;
+      intent = `mailto:?subject=${encodeURIComponent(shareLabel)}&body=${encodeURIComponent(`${shareMessage}\n${shareUrl}`)}`;
     }
     if (target === "mail") {
       window.location.href = intent;
@@ -250,6 +277,35 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
 
           {!viewOnly && (
             <>
+              {showScopePicker ? (
+                <div
+                  className="share-scope-toggle"
+                  role="group"
+                  aria-label={UI.shareTitle}
+                >
+                  <button
+                    type="button"
+                    className={
+                      "share-scope-btn" +
+                      (shareScope === "folder" ? " active" : "")
+                    }
+                    onClick={() => setShareScope("folder")}
+                  >
+                    {UI.shareScopeFolder}
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      "share-scope-btn" +
+                      (shareScope === "song" ? " active" : "")
+                    }
+                    onClick={() => setShareScope("song")}
+                  >
+                    {UI.shareScopeSong}
+                  </button>
+                </div>
+              ) : null}
+
               {showFolderPicker ? (
                 <label className="share-project-picker">
                   <span className="share-project-picker-label">
@@ -258,7 +314,9 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                   <select
                     className="share-project-select"
                     value={selectedFolderKey}
-                    onChange={(e) => setSelectedFolderKey(e.target.value)}
+                    onChange={(e) =>
+                      setSelectedFolderKey(e.target.value as FolderShareKey)
+                    }
                   >
                     {hasUncategorized ? (
                       <option value="uncategorized">
@@ -284,7 +342,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                     value={selectedProjectId}
                     onChange={(e) => setSelectedProjectId(e.target.value)}
                   >
-                    {projectsInFolder.map((project) => (
+                    {projects.map((project) => (
                       <option key={project.id} value={project.id}>
                         {project.songTitle}
                       </option>
@@ -372,7 +430,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                   type="button"
                   className="share-preview-btn"
                   onClick={() => {
-                    enterViewPreview(selectedProjectId);
+                    enterViewPreview(previewProjectId);
                     onClose();
                   }}
                 >

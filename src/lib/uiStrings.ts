@@ -149,6 +149,9 @@ export type UiStrings = {
   shareSelectProject: string;
   shareSelectFolder: string;
   shareAllProjects: string;
+  shareScopeFolder: string;
+  shareScopeSong: string;
+  shareSheetTextFolder: (folderName: string) => string;
   viewPreviewStarted: string;
   viewPreviewEnded: string;
   shareLinkCopied: string;
@@ -515,6 +518,10 @@ const en: UiStrings = {
   shareSelectProject: "Project to share",
   shareSelectFolder: "Folder",
   shareAllProjects: "All songs",
+  shareScopeFolder: "Share folder",
+  shareScopeSong: "Share one song",
+  shareSheetTextFolder: (folderName: string) =>
+    `Shared dance formations folder: ${folderName}`,
   viewPreviewStarted: "View mode — editing disabled",
   viewPreviewEnded: "Back to edit mode",
   shareLinkCopied: "Link copied",
@@ -915,6 +922,10 @@ const ja: UiStrings = {
   shareSelectProject: "共有する曲",
   shareSelectFolder: "フォルダー",
   shareAllProjects: "すべての曲",
+  shareScopeFolder: "フォルダーで共有",
+  shareScopeSong: "曲を選んで共有",
+  shareSheetTextFolder: (folderName: string) =>
+    `「${folderName}」フォルダーのダンス配置を共有します。こちらから見られます↓`,
   viewPreviewStarted: "閲覧モード — 編集できません",
   viewPreviewEnded: "編集モードに戻りました",
   shareLinkCopied: "リンクをコピーしました",

@@ -82,16 +82,20 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import {
   applySharedViewBundle,
+  applySharedWorkspaceBundle,
+  buildFolderShareWorkspace,
   buildLegacyShareUrl,
   decodeLegacyShareToken,
   emptyProjectMedia,
   normalizeProjectMedia,
   parseShareFromLocation,
   SHARED_VIEW_PROJECT_ID,
+  type FolderShareKey,
 } from "@/lib/shareUtils";
 import {
   buildShareUrlFromId,
   createRemoteShare,
+  createRemoteShareWorkspace,
   hydrateRemoteShare,
   isShareId,
   shareCopiedToastMessage,
@@ -220,6 +224,7 @@ interface ChoreoContextValue {
   getVideoUrl: (videoId: string) => Promise<string | null>;
   copyShareLink: () => Promise<void>;
   createShareUrl: (projectId?: string) => Promise<string | null>;
+  createShareFolderUrl: (folderKey: FolderShareKey) => Promise<string | null>;
   enterViewPreview: (projectId?: string) => void;
   exitViewMode: () => void;
   shareDialogOpen: boolean;
@@ -517,6 +522,26 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
             initFromLocalStorage();
             return;
           }
+          if (bundle.workspace) {
+            const applied = applySharedWorkspaceBundle(
+              bundle.workspace,
+              viewOnly,
+            );
+            workspaceRef.current = applied.workspace;
+            setWorkspace(applied.workspace);
+            setActiveProjectId(applied.workspace.activeProjectId);
+            setAppMode(applied.appMode);
+            setExternalShareView(viewOnly);
+            setState(applied.state);
+            setMedia(applied.media);
+            clearUndoHistory();
+            return;
+          }
+          if (!bundle.state || !bundle.media) {
+            showToast(getStrings(profileLanguageRef.current).shareLoadFailed);
+            initFromLocalStorage();
+            return;
+          }
           const applied = applySharedViewBundle(
             { state: bundle.state, media: bundle.media },
             viewOnly,
@@ -778,11 +803,28 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
   const switchProject = useCallback(
     (projectId: string) => {
-      if (appModeRef.current === "view") return;
       if (projectId === activeProjectId) return;
       const ws = workspaceRef.current;
       if (!ws) return;
+      const inViewMode = appModeRef.current === "view";
+      if (inViewMode && !externalShareViewRef.current) return;
       stopPlayback();
+      if (inViewMode && externalShareViewRef.current) {
+        const nextState = getActiveState(
+          { ...ws, activeProjectId: projectId },
+          projectId,
+        );
+        if (!nextState) return;
+        const nextWs = { ...ws, activeProjectId: projectId };
+        workspaceRef.current = nextWs;
+        setWorkspace(nextWs);
+        setActiveProjectId(projectId);
+        setState(nextState);
+        setMedia(normalizeProjectMedia(getActiveMedia(nextWs, projectId)));
+        setSelectedMemberId(null);
+        clearUndoHistory();
+        return;
+      }
       const saved = patchActiveProject(
         ws,
         activeProjectId,
@@ -1617,6 +1659,39 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const buildShareUrlForFolder = useCallback(
+    async (
+      folderKey: FolderShareKey,
+    ): Promise<{ url: string; kind: "remote" | "legacy" } | null> => {
+      if (appModeRef.current === "view") return null;
+      const ws = workspaceRef.current;
+      if (!ws) return null;
+
+      const shareWorkspace = buildFolderShareWorkspace(
+        ws,
+        folderKey,
+        activeProjectIdRef.current,
+        stateRef.current,
+        mediaRef.current,
+      );
+      if (!shareWorkspace) return null;
+
+      const remote = await createRemoteShareWorkspace(shareWorkspace);
+      if (remote.ok) {
+        return { url: buildShareUrlFromId(remote.shareId), kind: "remote" };
+      }
+      if (remote.reason === "failed") {
+        console.error("[share] folder create failed:", remote.error);
+      }
+
+      if (shareWorkspace.projects.length !== 1) return null;
+      const project = shareWorkspace.projects[0];
+      const legacyUrl = buildLegacyShareUrl(project.state, project.media);
+      return legacyUrl ? { url: legacyUrl, kind: "legacy" } : null;
+    },
+    [],
+  );
+
   const createShareUrl = useCallback(
     async (projectId?: string): Promise<string | null> => {
       const pid = projectId ?? activeProjectIdRef.current;
@@ -1625,6 +1700,14 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       return result?.url ?? null;
     },
     [buildShareUrlForProject],
+  );
+
+  const createShareFolderUrl = useCallback(
+    async (folderKey: FolderShareKey): Promise<string | null> => {
+      const result = await buildShareUrlForFolder(folderKey);
+      return result?.url ?? null;
+    },
+    [buildShareUrlForFolder],
   );
 
   const copyShareLink = useCallback(async () => {
@@ -1829,6 +1912,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     getVideoUrl,
     copyShareLink,
     createShareUrl,
+    createShareFolderUrl,
     enterViewPreview,
     exitViewMode,
     shareDialogOpen,

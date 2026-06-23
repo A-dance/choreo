@@ -47,6 +47,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
     setProjectFolder,
     toggleProjectBookmark,
     isViewOnly,
+    externalShareView,
     language,
     strings: UI,
   } = useChoreo();
@@ -78,7 +79,9 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
 
   const activeProject = projects.find((p) => p.id === activeProjectId);
   const visibleProjects = isViewOnly
-    ? projects.filter((p) => p.id === activeProjectId)
+    ? externalShareView
+      ? projects
+      : projects.filter((p) => p.id === activeProjectId)
     : projects;
 
   const folderNameById = useMemo(() => {
@@ -335,14 +338,29 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
       >
         <div className="project-item-inner">
           {isViewOnly ? (
-            <div className="project-item-main project-item-main-static">
-              <span className="project-item-leading" aria-hidden>
-                <ProjectIcon />
-              </span>
-              <span className="project-item-body">
-                <span className="project-item-title">{project.songTitle}</span>
-              </span>
-            </div>
+            externalShareView && projects.length > 1 ? (
+              <button
+                type="button"
+                className="project-item-main"
+                onClick={() => scheduleProjectSwitch(project.id)}
+              >
+                <span className="project-item-leading" aria-hidden>
+                  <ProjectIcon />
+                </span>
+                <span className="project-item-body">
+                  <span className="project-item-title">{project.songTitle}</span>
+                </span>
+              </button>
+            ) : (
+              <div className="project-item-main project-item-main-static">
+                <span className="project-item-leading" aria-hidden>
+                  <ProjectIcon />
+                </span>
+                <span className="project-item-body">
+                  <span className="project-item-title">{project.songTitle}</span>
+                </span>
+              </div>
+            )
           ) : editingProjectId === project.id ? (
             <div className="project-item-main project-item-editing">
               <span className="project-item-leading" aria-hidden>

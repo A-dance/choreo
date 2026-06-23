@@ -5,18 +5,79 @@ import {
   getSupabaseAdmin,
   isShareBackendConfigured,
 } from "@/lib/supabaseAdmin";
-import { normalizeProjectMedia } from "@/lib/shareUtils";
-import type { ChoreoState, ProjectMedia } from "@/lib/types";
+import { normalizeProjectMedia, normalizeShareWorkspace } from "@/lib/shareUtils";
+import type { ChoreoState, ProjectMedia, Workspace } from "@/lib/types";
 
 export const maxDuration = 60;
 
 /** Supabase Free プランのグローバル上限（50MB） */
 export const SHARE_FILE_MAX_BYTES = 52_428_800;
 
-interface SharePayload {
+interface SharePayloadV1 {
   v: 1;
   state: ChoreoState;
   media: ProjectMedia;
+}
+
+interface SharePayloadV2 {
+  v: 2;
+  workspace: Workspace;
+}
+
+type SharePayload = SharePayloadV1 | SharePayloadV2;
+
+function shareTitleForWorkspace(workspace: Workspace): string {
+  if (workspace.folders.length === 1) return workspace.folders[0].name;
+  const active =
+    workspace.projects.find((p) => p.id === workspace.activeProjectId) ??
+    workspace.projects[0];
+  return active?.state.songTitle ?? "Share";
+}
+
+function collectShareFiles(
+  shareId: string,
+  media: ProjectMedia,
+): Array<{
+  id: string;
+  kind: "audio" | "video";
+  name: string;
+  mimeType: string;
+  url: string;
+}> {
+  const files: Array<{
+    id: string;
+    kind: "audio" | "video";
+    name: string;
+    mimeType: string;
+    url: string;
+  }> = [];
+
+  for (const track of media.audioTracks) {
+    if (track.source !== "file") continue;
+    const url = getShareMediaPublicUrl(shareId, track.id);
+    if (!url) continue;
+    files.push({
+      id: track.id,
+      kind: "audio",
+      name: track.name,
+      mimeType: "audio/mpeg",
+      url,
+    });
+  }
+  for (const video of media.referenceVideos) {
+    if (video.source !== "file") continue;
+    const url = getShareMediaPublicUrl(shareId, video.id);
+    if (!url) continue;
+    files.push({
+      id: video.id,
+      kind: "video",
+      name: video.name,
+      mimeType: "video/mp4",
+      url,
+    });
+  }
+
+  return files;
 }
 
 export async function POST(request: Request) {
@@ -26,22 +87,37 @@ export async function POST(request: Request) {
   }
 
   const contentType = request.headers.get("content-type") ?? "";
-  let state: ChoreoState;
-  let media: ProjectMedia;
+  let payload: SharePayload;
+  let songTitle: string;
   const fileEntries: Array<{ mediaId: string; blob: Blob }> = [];
 
   if (contentType.includes("application/json")) {
-    let body: { state?: ChoreoState; media?: ProjectMedia };
+    let body: {
+      state?: ChoreoState;
+      media?: ProjectMedia;
+      workspace?: Workspace;
+    };
     try {
       body = (await request.json()) as typeof body;
     } catch {
       return NextResponse.json({ error: "invalid body" }, { status: 400 });
     }
-    if (!body.state) {
+
+    if (body.workspace) {
+      const workspace = normalizeShareWorkspace(body.workspace);
+      if (!workspace) {
+        return NextResponse.json({ error: "invalid workspace" }, { status: 400 });
+      }
+      payload = { v: 2, workspace };
+      songTitle = shareTitleForWorkspace(workspace);
+    } else if (body.state) {
+      const state = normalizeChoreoState({ ...body.state, isPlaying: false });
+      const media = normalizeProjectMedia(body.media);
+      payload = { v: 1, state, media };
+      songTitle = state.songTitle;
+    } else {
       return NextResponse.json({ error: "missing state" }, { status: 400 });
     }
-    state = normalizeChoreoState({ ...body.state, isPlaying: false });
-    media = normalizeProjectMedia(body.media);
   } else {
     let formData: FormData;
     try {
@@ -65,8 +141,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid manifest" }, { status: 400 });
     }
 
-    state = normalizeChoreoState({ ...manifest.state, isPlaying: false });
-    media = normalizeProjectMedia(manifest.media);
+    const state = normalizeChoreoState({ ...manifest.state, isPlaying: false });
+    const media = normalizeProjectMedia(manifest.media);
+    payload = { v: 1, state, media };
+    songTitle = state.songTitle;
 
     for (const [key, value] of formData.entries()) {
       if (!key.startsWith("file:") || !(value instanceof Blob)) continue;
@@ -100,11 +178,11 @@ export async function POST(request: Request) {
     }
   }
 
-  const payload: SharePayload = { v: 1, state, media };
+  const payloadToStore: SharePayload = payload;
   const { error: dbError } = await admin.from("shares").insert({
     id: shareId,
-    song_title: state.songTitle,
-    payload,
+    song_title: songTitle,
+    payload: payloadToStore,
   });
   if (dbError) {
     console.error("[share] db insert failed:", dbError.message);
@@ -143,41 +221,25 @@ export async function GET(request: Request) {
   }
 
   const payload = data.payload as SharePayload;
+  if (payload.v === 2) {
+    const workspace = normalizeShareWorkspace(payload.workspace);
+    if (!workspace) {
+      return NextResponse.json({ error: "invalid payload" }, { status: 500 });
+    }
+    const active =
+      workspace.projects.find((p) => p.id === workspace.activeProjectId) ??
+      workspace.projects[0];
+    const state = normalizeChoreoState(active.state);
+    const media = normalizeProjectMedia(active.media);
+    const files = workspace.projects.flatMap((project) =>
+      collectShareFiles(id, normalizeProjectMedia(project.media)),
+    );
+    return NextResponse.json({ workspace, state, media, files });
+  }
+
   const state = normalizeChoreoState(payload.state);
   const media = normalizeProjectMedia(payload.media);
-
-  const files: Array<{
-    id: string;
-    kind: "audio" | "video";
-    name: string;
-    mimeType: string;
-    url: string;
-  }> = [];
-
-  for (const track of media.audioTracks) {
-    if (track.source !== "file") continue;
-    const url = getShareMediaPublicUrl(id, track.id);
-    if (!url) continue;
-    files.push({
-      id: track.id,
-      kind: "audio",
-      name: track.name,
-      mimeType: "audio/mpeg",
-      url,
-    });
-  }
-  for (const video of media.referenceVideos) {
-    if (video.source !== "file") continue;
-    const url = getShareMediaPublicUrl(id, video.id);
-    if (!url) continue;
-    files.push({
-      id: video.id,
-      kind: "video",
-      name: video.name,
-      mimeType: "video/mp4",
-      url,
-    });
-  }
+  const files = collectShareFiles(id, media);
 
   return NextResponse.json({ state, media, files });
 }

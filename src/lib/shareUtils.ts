@@ -2,7 +2,9 @@ import type {
   AudioTrackMeta,
   ChoreoState,
   MusicSource,
+  ProjectFolder,
   ProjectMedia,
+  ProjectRecord,
   ReferenceVideoMeta,
   ReferenceVideoSource,
   Workspace,
@@ -233,5 +235,140 @@ export function applySharedViewBundle(
     state: bundle.state,
     media: bundle.media,
     appMode: viewOnly ? "view" : "edit",
+  };
+}
+
+function normalizeProjectRecord(record: unknown): ProjectRecord | null {
+  if (!record || typeof record !== "object") return null;
+  const raw = record as Partial<ProjectRecord>;
+  if (typeof raw.id !== "string" || !raw.state) return null;
+  return {
+    id: raw.id,
+    createdAt: typeof raw.createdAt === "number" ? raw.createdAt : Date.now(),
+    updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : Date.now(),
+    folderId:
+      typeof raw.folderId === "string"
+        ? raw.folderId
+        : raw.folderId === null
+          ? null
+          : undefined,
+    bookmarked: Boolean(raw.bookmarked),
+    state: normalizeChoreoState({ ...raw.state, isPlaying: false }),
+    media: normalizeProjectMedia(raw.media),
+  };
+}
+
+function normalizeProjectFolder(folder: unknown): ProjectFolder | null {
+  if (!folder || typeof folder !== "object") return null;
+  const raw = folder as Partial<ProjectFolder>;
+  if (typeof raw.id !== "string" || typeof raw.name !== "string") return null;
+  return {
+    id: raw.id,
+    name: raw.name,
+    createdAt: typeof raw.createdAt === "number" ? raw.createdAt : Date.now(),
+    collapsed: Boolean(raw.collapsed),
+    bookmarked: Boolean(raw.bookmarked),
+  };
+}
+
+/** 共有用ワークスペース（複数曲・フォルダー構造）を正規化 */
+export function normalizeShareWorkspace(workspace: unknown): Workspace | null {
+  if (!workspace || typeof workspace !== "object") return null;
+  const raw = workspace as Partial<Workspace>;
+  const projects = Array.isArray(raw.projects)
+    ? raw.projects
+        .map(normalizeProjectRecord)
+        .filter((p): p is ProjectRecord => p !== null)
+    : [];
+  if (!projects.length) return null;
+  const folders = Array.isArray(raw.folders)
+    ? raw.folders
+        .map(normalizeProjectFolder)
+        .filter((f): f is ProjectFolder => f !== null)
+    : [];
+  const activeProjectId =
+    typeof raw.activeProjectId === "string" &&
+    projects.some((p) => p.id === raw.activeProjectId)
+      ? raw.activeProjectId
+      : projects[0].id;
+  return {
+    version: 2,
+    activeProjectId,
+    folders,
+    projects,
+  };
+}
+
+export function applySharedWorkspaceBundle(
+  workspace: Workspace,
+  viewOnly: boolean,
+): {
+  workspace: Workspace;
+  state: ChoreoState;
+  media: ProjectMedia;
+  appMode: "edit" | "view";
+} {
+  const normalized = normalizeShareWorkspace(workspace);
+  if (!normalized) {
+    throw new Error("invalid shared workspace");
+  }
+  const record =
+    normalized.projects.find((p) => p.id === normalized.activeProjectId) ??
+    normalized.projects[0];
+  const state = normalizeChoreoState({ ...record.state, isPlaying: false });
+  const media = normalizeProjectMedia(record.media);
+  return {
+    workspace: { ...normalized, activeProjectId: record.id },
+    state,
+    media,
+    appMode: viewOnly ? "view" : "edit",
+  };
+}
+
+export type FolderShareKey = "uncategorized" | string;
+
+export function buildFolderShareWorkspace(
+  workspace: Workspace,
+  folderKey: FolderShareKey,
+  activeProjectId: string,
+  liveState?: ChoreoState,
+  liveMedia?: ProjectMedia,
+): Workspace | null {
+  let projects: ProjectRecord[];
+  let folders: ProjectFolder[];
+
+  if (folderKey === "uncategorized") {
+    projects = workspace.projects.filter((p) => !p.folderId);
+    folders = [];
+  } else {
+    projects = workspace.projects.filter((p) => p.folderId === folderKey);
+    folders = workspace.folders.filter((f) => f.id === folderKey);
+  }
+
+  if (!projects.length) return null;
+
+  const patchedProjects = projects.map((project) => {
+    if (project.id !== activeProjectId || !liveState) {
+      return {
+        ...project,
+        state: normalizeChoreoState({ ...project.state, isPlaying: false }),
+      };
+    }
+    return {
+      ...project,
+      state: normalizeChoreoState({ ...liveState, isPlaying: false }),
+      media: normalizeProjectMedia(liveMedia ?? project.media),
+    };
+  });
+
+  const nextActiveId = patchedProjects.some((p) => p.id === activeProjectId)
+    ? activeProjectId
+    : patchedProjects[0].id;
+
+  return {
+    version: 2,
+    activeProjectId: nextActiveId,
+    folders,
+    projects: patchedProjects,
   };
 }

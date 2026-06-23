@@ -4966,6 +4966,40 @@ input[type="range"]::-webkit-slider-thumb {
   margin-bottom: 14px;
 }
 
+.share-scope-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.share-scope-btn {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg3);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.share-scope-btn.active {
+  border-color: rgba(61, 220, 132, 0.55);
+  background: rgba(61, 220, 132, 0.12);
+  color: var(--text);
+}
+
+.share-scope-btn:hover:not(.active) {
+  border-color: rgba(61, 220, 132, 0.25);
+  color: var(--text);
+}
+
 .share-project-picker-label {
   font-size: 11px;
   font-weight: 700;
