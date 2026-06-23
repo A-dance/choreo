@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChoreo } from "@/context/ChoreoContext";
 import type { ProjectSummary } from "@/lib/types";
-import type { UiStrings } from "@/lib/uiStrings";
 
 interface ShareDialogProps {
   onClose: () => void;
@@ -85,23 +84,6 @@ function projectsForFolder(
   return projects.filter((p) => p.folderId === folderKey);
 }
 
-function folderPickerLabel(
-  folderKey: FolderFilterKey,
-  projects: ProjectSummary[],
-  folders: { id: string; name: string }[],
-  UI: UiStrings,
-): string {
-  const inFolder = projectsForFolder(projects, folderKey);
-  const songTitles = inFolder.map((p) => p.songTitle);
-  const baseName =
-    folderKey === "all"
-      ? UI.shareAllProjects
-      : folderKey === "uncategorized"
-        ? UI.uncategorizedSection
-        : folders.find((f) => f.id === folderKey)?.name ?? "";
-  return UI.shareFolderOption(baseName, songTitles);
-}
-
 export function ShareDialog({ onClose }: ShareDialogProps) {
   const {
     strings: UI,
@@ -125,13 +107,15 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
 
   const viewOnly = appMode === "view";
 
-  const showFolderPicker =
-    folders.length > 0 || projects.some((p) => !p.folderId);
+  const hasFolders = folders.length > 0;
+  const hasUncategorized = projects.some((p) => !p.folderId);
 
-  const projectsInFolder = useMemo(
-    () => projectsForFolder(projects, selectedFolderKey),
-    [projects, selectedFolderKey],
-  );
+  const showFolderPicker = hasFolders;
+
+  const projectsInFolder = useMemo(() => {
+    if (!showFolderPicker) return projects;
+    return projectsForFolder(projects, selectedFolderKey);
+  }, [projects, selectedFolderKey, showFolderPicker]);
 
   const selectedProject =
     projectsInFolder.find((p) => p.id === selectedProjectId) ??
@@ -139,17 +123,23 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
     projectsInFolder[0];
 
   const songTitle = selectedProject?.songTitle || UI.defaultSongTitle;
-  const showProjectPicker = projectsInFolder.length > 0;
+  const showProjectPicker = showFolderPicker
+    ? projectsInFolder.length > 0
+    : projects.length > 1;
 
   useEffect(() => {
     const active = projects.find((p) => p.id === activeProjectId);
-    const hasFolderFilter =
-      folders.length > 0 || projects.some((p) => !p.folderId);
-    const folderKey: FolderFilterKey = !hasFolderFilter
-      ? "all"
-      : active?.folderId
-        ? active.folderId
-        : "uncategorized";
+    if (!folders.length) {
+      setSelectedFolderKey("all");
+      setSelectedProjectId(activeProjectId);
+      return;
+    }
+
+    const folderKey: FolderFilterKey = active?.folderId
+      ? active.folderId
+      : hasUncategorized
+        ? "uncategorized"
+        : folders[0]?.id ?? "uncategorized";
     const list = projectsForFolder(projects, folderKey);
     setSelectedFolderKey(folderKey);
     setSelectedProjectId(
@@ -270,22 +260,14 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                     value={selectedFolderKey}
                     onChange={(e) => setSelectedFolderKey(e.target.value)}
                   >
-                    <option value="all">
-                      {folderPickerLabel("all", projects, folders, UI)}
-                    </option>
-                    {projects.some((p) => !p.folderId) ? (
+                    {hasUncategorized ? (
                       <option value="uncategorized">
-                        {folderPickerLabel(
-                          "uncategorized",
-                          projects,
-                          folders,
-                          UI,
-                        )}
+                        {UI.uncategorizedSection}
                       </option>
                     ) : null}
                     {folders.map((folder) => (
                       <option key={folder.id} value={folder.id}>
-                        {folderPickerLabel(folder.id, projects, folders, UI)}
+                        {folder.name}
                       </option>
                     ))}
                   </select>
