@@ -6070,6 +6070,43 @@ input[type="range"]::-webkit-slider-thumb {
   max-width: 380px;
 }
 
+.login-auth-signed-in {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-signed-in-greeting {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.login-signed-in-email {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text2);
+  word-break: break-all;
+}
+
+.login-sign-out-btn {
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  align-self: center;
+}
+
+.login-sign-out-btn:hover {
+  color: var(--text);
+}
+
 .login-auth-error .login-title,
 .login-auth-error .login-hint {
   text-align: left;
@@ -6974,10 +7011,19 @@ input[type="range"]::-webkit-slider-thumb {
 
   .login-layout {
     flex-direction: column;
+    align-items: center;
+    gap: 28px;
   }
 
   .login-hero {
-    display: none;
+    display: flex;
+    max-width: min(400px, 100%);
+    width: 100%;
+  }
+
+  .login-stage-preview {
+    max-width: min(300px, 100%);
+    margin: 0 auto;
   }
 
   .login-auth {
