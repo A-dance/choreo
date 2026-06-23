@@ -71,6 +71,9 @@ export type UiStrings = {
   delete: string;
   newProjectTitle: string;
   newProjectDesc: string;
+  welcomeProjectTitle: string;
+  welcomeProjectDesc: string;
+  welcomeProjectSubmit: string;
   songTitleLabel: string;
   countsPerSection: string;
   languageLabel: string;
@@ -427,6 +430,10 @@ const en: UiStrings = {
   delete: "Delete",
   newProjectTitle: "New project",
   newProjectDesc: "Set song title, BPM, member count, and counts per section.",
+  welcomeProjectTitle: "Create your first project",
+  welcomeProjectDesc:
+    "Set the song title, BPM, member count, and counts per section to start arranging formations.",
+  welcomeProjectSubmit: "Get started",
   songTitleLabel: "Song title",
   countsPerSection: "Counts per section",
   languageLabel: "Language",
@@ -823,6 +830,10 @@ const ja: UiStrings = {
   delete: "削除",
   newProjectTitle: "新規プロジェクト",
   newProjectDesc: "曲名・BPM・人数・各セクションのカウント数を設定します。",
+  welcomeProjectTitle: "はじめてのプロジェクトを作成しましょう",
+  welcomeProjectDesc:
+    "曲名・BPM・人数・カウント数を確認して、編成づくりを始められます。",
+  welcomeProjectSubmit: "作成して始める",
   songTitleLabel: "曲名",
   countsPerSection: "カウント数（各セクション）",
   languageLabel: "言語",

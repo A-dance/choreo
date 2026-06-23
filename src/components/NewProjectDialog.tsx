@@ -14,9 +14,10 @@ import { useChoreo } from "@/context/ChoreoContext";
 
 interface NewProjectDialogProps {
   onClose: () => void;
+  welcome?: boolean;
 }
 
-export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
+export function NewProjectDialog({ onClose, welcome = false }: NewProjectDialogProps) {
   const { createProject, strings: UI } = useChoreo();
   const [songTitle, setSongTitle] = useState("");
   const [bpm, setBpm] = useState(String(DEFAULT_BPM));
@@ -58,9 +59,11 @@ export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
         aria-labelledby="new-project-title"
       >
         <h2 id="new-project-title" className="dialog-title">
-          {UI.newProjectTitle}
+          {welcome ? UI.welcomeProjectTitle : UI.newProjectTitle}
         </h2>
-        <p className="dialog-desc">{UI.newProjectDesc}</p>
+        <p className="dialog-desc">
+          {welcome ? UI.welcomeProjectDesc : UI.newProjectDesc}
+        </p>
 
         <form className="dialog-form" onSubmit={handleSubmit}>
           <label className="dialog-field">
@@ -116,7 +119,7 @@ export function NewProjectDialog({ onClose }: NewProjectDialogProps) {
               {UI.cancel}
             </button>
             <button type="submit" className="dialog-btn primary">
-              {UI.create}
+              {welcome ? UI.welcomeProjectSubmit : UI.create}
             </button>
           </div>
         </form>

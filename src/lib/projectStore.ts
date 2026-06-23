@@ -4,7 +4,6 @@ import {
 } from "./constants";
 import {
   createBlankEditorState,
-  createInitialState,
   createProjectState,
   deserializeState,
   normalizeChoreoState,
@@ -233,9 +232,12 @@ export function getActiveMedia(
 
 export function loadWorkspace(): LoadedWorkspace {
   if (typeof window === "undefined") {
-    const state = createInitialState();
-    const workspace = migrateLegacyWorkspace(state);
-    return { workspace, activeState: state, activeMedia: emptyProjectMedia() };
+    const workspace = createEmptyWorkspace();
+    return {
+      workspace,
+      activeState: createBlankEditorState(),
+      activeMedia: emptyProjectMedia(),
+    };
   }
 
   const saved = localStorage.getItem(WORKSPACE_STORAGE_KEY);
@@ -273,8 +275,8 @@ export function loadWorkspace(): LoadedWorkspace {
     }
   }
 
-  const state = createInitialState();
-  const workspace = migrateLegacyWorkspace(state);
+  const state = createBlankEditorState();
+  const workspace = createEmptyWorkspace();
   saveWorkspace(workspace);
   return { workspace, activeState: state, activeMedia: emptyProjectMedia() };
 }

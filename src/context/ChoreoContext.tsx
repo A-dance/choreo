@@ -188,6 +188,7 @@ interface ChoreoContextValue {
   folders: ProjectFolder[];
   activeProjectId: string;
   hasActiveProject: boolean;
+  workspaceSettled: boolean;
   switchProject: (projectId: string) => void;
   createProject: (params: CreateProjectInput) => void;
   deleteProject: (projectId: string) => void;
@@ -254,6 +255,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<FormationClipboard | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [workspaceSettled, setWorkspaceSettled] = useState(false);
   const [bootingLabel, setBootingLabel] = useState<string | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [appMode, setAppMode] = useState<AppMode>("edit");
@@ -559,41 +561,62 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    if (!authReady || !hydrated || !user) return;
-    if (appModeRef.current === "view" || externalShareViewRef.current) return;
-    if (cloudSyncedUserRef.current === user.id) return;
+    if (!user) {
+      setWorkspaceSettled(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!authReady || !hydrated) return;
+    if (appModeRef.current === "view" || externalShareViewRef.current) {
+      setWorkspaceSettled(true);
+      return;
+    }
+    if (!user) {
+      setWorkspaceSettled(true);
+      return;
+    }
+    if (cloudSyncedUserRef.current === user.id) {
+      setWorkspaceSettled(true);
+      return;
+    }
 
     const userId = user.id;
     const userEmail = user.email ?? "";
     let cancelled = false;
     cloudSyncedUserRef.current = userId;
+    setWorkspaceSettled(false);
 
     void (async () => {
-      const local = workspaceRef.current;
-      const cloud = await fetchCloudWorkspace(userId);
-      if (cancelled) return;
+      try {
+        const local = workspaceRef.current;
+        const cloud = await fetchCloudWorkspace(userId);
+        if (cancelled) return;
 
-      const resolution = resolveUserWorkspace(userEmail, local, cloud);
-      if (!resolution) return;
+        const resolution = resolveUserWorkspace(userEmail, local, cloud);
+        if (!resolution) return;
 
-      const { kind, workspace: resolved } = resolution;
-      const apply = applyWorkspaceRef.current;
+        const { kind, workspace: resolved } = resolution;
+        const apply = applyWorkspaceRef.current;
 
-      if (kind === "cloud") {
+        if (kind === "cloud") {
+          apply(resolved);
+          saveWorkspace(resolved);
+          return;
+        }
+
         apply(resolved);
         saveWorkspace(resolved);
-        return;
-      }
 
-      apply(resolved);
-      saveWorkspace(resolved);
+        if (kind === "local") {
+          await pushCloudWorkspace(userId, resolved);
+          return;
+        }
 
-      if (kind === "local") {
         await pushCloudWorkspace(userId, resolved);
-        return;
+      } finally {
+        if (!cancelled) setWorkspaceSettled(true);
       }
-
-      await pushCloudWorkspace(userId, resolved);
     })();
 
     return () => {
@@ -1766,6 +1789,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     folders,
     activeProjectId,
     hasActiveProject,
+    workspaceSettled,
     switchProject,
     createProject,
     deleteProject,
