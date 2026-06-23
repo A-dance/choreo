@@ -10,9 +10,7 @@ function decodeHtmlEntities(value: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
-    .replace(/&#x([0-9a-f]+);/gi, (_, hex) =>
-      String.fromCharCode(parseInt(hex, 16)),
-    )
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
     .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(Number(num)));
 }
 
@@ -22,14 +20,8 @@ function readMetaContent(
   attr: "property" | "name",
 ): string | null {
   const patterns = [
-    new RegExp(
-      `<meta[^>]+${attr}=["']${key}["'][^>]+content=["']([^"']+)["']`,
-      "i",
-    ),
-    new RegExp(
-      `<meta[^>]+content=["']([^"']+)["'][^>]+${attr}=["']${key}["']`,
-      "i",
-    ),
+    new RegExp(`<meta[^>]+${attr}=["']${key}["'][^>]+content=["']([^"']+)["']`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+${attr}=["']${key}["']`, "i"),
   ];
   for (const pattern of patterns) {
     const match = html.match(pattern);

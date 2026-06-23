@@ -376,7 +376,8 @@ const en: UiStrings = {
   renameProject: "Rename project",
   projectRenameHint: "Double-click to rename",
   deleteFolder: "Delete folder",
-  deleteFolderConfirm: (name) => `Delete folder “${name}”? Projects inside will stay in your list.`,
+  deleteFolderConfirm: (name) =>
+    `Delete folder “${name}”? Projects inside will stay in your list.`,
   expandFolder: "Expand folder",
   collapseFolder: "Collapse folder",
   toggleBookmark: "Toggle bookmark",
@@ -427,8 +428,7 @@ const en: UiStrings = {
   cannotDeleteLastProject: "Cannot delete the last project",
   deleteProjectAria: (title) => `Delete ${title}`,
   deleteConfirmTitle: "Delete this project?",
-  deleteConfirmBody: (title) =>
-    `"${title}" will be deleted. This cannot be undone.`,
+  deleteConfirmBody: (title) => `"${title}" will be deleted. This cannot be undone.`,
   cancel: "Cancel",
   delete: "Delete",
   newProjectTitle: "New project",
@@ -511,8 +511,7 @@ const en: UiStrings = {
   shareViaMail: "Email",
   shareViaMore: "More",
   shareViaCopy: "Copy Link",
-  shareSheetText: (songTitle: string) =>
-    `Formation for "${songTitle}" — view it here:`,
+  shareSheetText: (songTitle: string) => `Formation for "${songTitle}" — view it here:`,
   previewViewMode: "Preview in view mode",
   previewSelectProject: "Preview project",
   shareSelectProject: "Project to share",
@@ -593,8 +592,7 @@ const en: UiStrings = {
   helpThinking: "Thinking…",
   helpError: "Could not get an answer. Please try again.",
   helpNotConfigured: "Help is not configured yet (GEMINI_API_KEY).",
-  helpQuotaExceeded:
-    "The AI quota is temporarily exceeded. Please try again later.",
+  helpQuotaExceeded: "The AI quota is temporarily exceeded. Please try again later.",
   helpLimitReached: (price) =>
     `Daily free limit reached. Pro (¥${price}/month) gives unlimited help.`,
   helpQuotaRemaining: (remaining, limit) =>
@@ -610,8 +608,7 @@ const en: UiStrings = {
   helpComposerHint: "Enter to send · Shift+Enter for new line",
   helpNewChat: "New chat",
   upgradeTitle: "Upgrade to Pro",
-  upgradeDesc: (n) =>
-    `The free plan includes ${n} project. Create more with Pro.`,
+  upgradeDesc: (n) => `The free plan includes ${n} project. Create more with Pro.`,
   upgradePrice: (price) => `¥${price} / month`,
   upgradeNote: "Secure monthly payment via Stripe. Cancel anytime from My page.",
   upgradeGoMyPage: "View plan on My page",
@@ -646,8 +643,7 @@ const en: UiStrings = {
     "You can use Pro until then.",
   ],
   myPageUpgradeTitle: "Pro — ¥500 / month",
-  myPageUpgradeDesc:
-    "Unlimited projects. Subscribe below to upgrade.",
+  myPageUpgradeDesc: "Unlimited projects. Subscribe below to upgrade.",
   authLoginTitle: "Sign in",
   authSignUpTitle: "Create account",
   authLoginHint: "Enter your email and password.",
@@ -727,8 +723,7 @@ const en: UiStrings = {
   musicEmptyHint: "Paste a music link above to get started.",
   musicFetching: "Looking up…",
   musicLinkPlaceholder: "Paste a link (Linkfire, TuneCore, Spotify…)",
-  musicLinkInvalid:
-    "Could not read that link — paste the full URL as copied",
+  musicLinkInvalid: "Could not read that link — paste the full URL as copied",
   musicLinkAdded: "Audio link added",
   musicTrackTitle: "Title",
   musicTrackTitlePlaceholder: "Song or playlist name",
@@ -744,8 +739,7 @@ const en: UiStrings = {
   musicSourceFile: "File",
   noAudio: "No music yet",
   referenceVideosSection: "Reference videos",
-  referenceVideosDesc:
-    "Add YouTube or Vimeo links. You can add notes for each video.",
+  referenceVideosDesc: "Add YouTube or Vimeo links. You can add notes for each video.",
   addReferenceVideoLink: "Add",
   referenceVideoLinkPlaceholder: "https://www.youtube.com/watch?v=…",
   referenceVideoTitle: "Title",
@@ -780,7 +774,8 @@ const ja: UiStrings = {
   renameProject: "プロジェクト名を変更",
   projectRenameHint: "ダブルクリックで名前を変更",
   deleteFolder: "フォルダーを削除",
-  deleteFolderConfirm: (name) => `フォルダー「${name}」を削除しますか？中のプロジェクトは一覧に残ります。`,
+  deleteFolderConfirm: (name) =>
+    `フォルダー「${name}」を削除しますか？中のプロジェクトは一覧に残ります。`,
   expandFolder: "フォルダーを開く",
   collapseFolder: "フォルダーを閉じる",
   toggleBookmark: "ブックマーク",
@@ -825,14 +820,14 @@ const ja: UiStrings = {
   stageToolMarkSmall: "小",
   stageToolMarkMid: "×の大きさ",
   stageToolMarkLarge: "大",
-  stageToolSelectedHint: "ドラッグで移動 · 端をドラッグでサイズ変更 · 色で変更 · Deleteで削除",
+  stageToolSelectedHint:
+    "ドラッグで移動 · 端をドラッグでサイズ変更 · 色で変更 · Deleteで削除",
   newProject: "+ 新規プロジェクト",
   deleteProject: "プロジェクトを削除",
   cannotDeleteLastProject: "最後のプロジェクトは削除できません",
   deleteProjectAria: (title) => `${title} を削除`,
   deleteConfirmTitle: "削除しますか？",
-  deleteConfirmBody: (title) =>
-    `「${title}」を削除します。この操作は取り消せません。`,
+  deleteConfirmBody: (title) => `「${title}」を削除します。この操作は取り消せません。`,
   cancel: "キャンセル",
   delete: "削除",
   newProjectTitle: "新規プロジェクト",
@@ -991,7 +986,8 @@ const ja: UiStrings = {
   ],
   myPageDeleteAccount: "アカウントを削除",
   myPageDeleteAccountConfirmTitle: "アカウントを削除しますか？",
-  myPageDeleteAccountFailed: "アカウントを削除できませんでした。もう一度お試しください。",
+  myPageDeleteAccountFailed:
+    "アカウントを削除できませんでした。もう一度お試しください。",
   helpTitle: "ASK AI",
   helpSubtitle: "",
   helpPlaceholder: "例：ドットの大きさを変えるには？",
@@ -1025,7 +1021,8 @@ const ja: UiStrings = {
   upgradeCheckout: "申し込む",
   upgradeCheckoutBusy: "決済ページを開いています…",
   stripeCheckoutError: "決済を開始できませんでした。マイページから再度お試しください。",
-  stripeNotConfigured: "決済の設定がまだ完了していません。しばらくしてからお試しください。",
+  stripeNotConfigured:
+    "決済の設定がまだ完了していません。しばらくしてからお試しください。",
   stripeMissingPriceId:
     "STRIPE_PRO_PRICE_ID が未設定です。Stripe（テストモード）で Pro 商品（月額500円）を作成し、Price ID（price_...）を .env.local に追加して、開発サーバーを再起動してください。",
   stripeMissingSecretKey:
@@ -1053,8 +1050,7 @@ const ja: UiStrings = {
     "それまで Pro を利用できます。",
   ],
   myPageUpgradeTitle: "Pro — 月額500円",
-  myPageUpgradeDesc:
-    "プロジェクト無制限。下のボタンからProに申し込めます。",
+  myPageUpgradeDesc: "プロジェクト無制限。下のボタンからProに申し込めます。",
   authLoginTitle: "ログイン",
   authSignUpTitle: "新規登録",
   authLoginHint: "メールアドレスとパスワードを入力してください。",
@@ -1105,7 +1101,8 @@ const ja: UiStrings = {
   authCloudSynced: "クラウドからプロジェクトを読み込みました",
   authCloudUploaded: "ローカルのプロジェクトをクラウドに保存しました",
   authWelcomeTitle: "ようこそ",
-  authWelcomeSubtitle: "アカウントを作成するか、ログインして配置を編集・同期しましょう。",
+  authWelcomeSubtitle:
+    "アカウントを作成するか、ログインして配置を編集・同期しましょう。",
   authWelcomeBack: "おかえりなさい",
   authGoToMyPage: "マイページへ",
   authGoToEditor: "エディターを開く",
@@ -1133,8 +1130,7 @@ const ja: UiStrings = {
   musicEmptyHint: "上の欄にリンクを貼り付けて追加してください。",
   musicFetching: "取得中…",
   musicLinkPlaceholder: "リンクを貼り付け（Linkfire、TuneCore、Spotify など）",
-  musicLinkInvalid:
-    "リンクを読み取れません — URL 全体をそのまま貼り付けてください",
+  musicLinkInvalid: "リンクを読み取れません — URL 全体をそのまま貼り付けてください",
   musicLinkAdded: "音源リンクを追加しました",
   musicTrackTitle: "タイトル",
   musicTrackTitlePlaceholder: "曲名・プレイリスト名",
@@ -1150,8 +1146,7 @@ const ja: UiStrings = {
   musicSourceFile: "ファイル",
   noAudio: "音源なし",
   referenceVideosSection: "参考動画",
-  referenceVideosDesc:
-    "YouTube や Vimeo のリンクを追加できます。メモも残せます。",
+  referenceVideosDesc: "YouTube や Vimeo のリンクを追加できます。メモも残せます。",
   addReferenceVideoLink: "追加",
   referenceVideoLinkPlaceholder: "https://www.youtube.com/watch?v=…",
   referenceVideoTitle: "タイトル",
@@ -1163,7 +1158,8 @@ const ja: UiStrings = {
   referenceVideoSourceFile: "ファイル",
   referenceVideoSourceYoutube: "YouTube",
   referenceVideoSourceVimeo: "Vimeo",
-  videoLinkInvalid: "リンクを読み取れません — YouTube または Vimeo の URL を入力してください",
+  videoLinkInvalid:
+    "リンクを読み取れません — YouTube または Vimeo の URL を入力してください",
   videoLinkAdded: "リンクを追加しました",
   noReferenceVideos: "参考動画なし",
   removeMedia: "削除",

@@ -107,11 +107,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
   return createPortal(
     <>
       <div className="popup-overlay" onClick={onClose} />
-      <div
-        className="popup member-popup"
-        role="dialog"
-        aria-label={UI.editMembers}
-      >
+      <div className="popup member-popup" role="dialog" aria-label={UI.editMembers}>
         <div className="popup-title">
           <span>👥 {UI.editMembers}</span>
           <button type="button" className="popup-x" onClick={onClose}>
@@ -153,10 +149,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
           {state.members.map((m) => {
             const visible = isMemberVisibleOnCurrent(m.id);
             return (
-              <div
-                key={m.id}
-                className={"m-card" + (visible ? "" : " hidden-member")}
-              >
+              <div key={m.id} className={"m-card" + (visible ? "" : " hidden-member")}>
                 <div className="m-cdot" style={{ background: m.color }} />
                 <MemberNameInput
                   memberId={m.id}
@@ -168,9 +161,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                 <div className="m-card-actions">
                   <button
                     type="button"
-                    className={
-                      "vis-btn hide-btn" + (visible ? "" : " inactive")
-                    }
+                    className={"vis-btn hide-btn" + (visible ? "" : " inactive")}
                     onClick={() => visible && toggleMemberVisibility(m.id)}
                     disabled={!visible || isViewOnly}
                     title={UI.hideOnCount}
@@ -179,9 +170,7 @@ export function MemberPanel({ open, onClose }: MemberPanelProps) {
                   </button>
                   <button
                     type="button"
-                    className={
-                      "vis-btn show-btn" + (visible ? " inactive" : " on")
-                    }
+                    className={"vis-btn show-btn" + (visible ? " inactive" : " on")}
                     onClick={() => !visible && toggleMemberVisibility(m.id)}
                     disabled={visible || isViewOnly}
                     title={UI.showOnCount}

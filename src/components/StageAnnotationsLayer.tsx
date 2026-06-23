@@ -128,52 +128,51 @@ function renderPreview(preview: Preview) {
   );
 }
 
-export const StageAnnotationsLayer = forwardRef<
-  StageAnnotationsLayerHandle,
-  Props
->(function StageAnnotationsLayer({ annotations, preview, selectedId }, ref) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  useImperativeHandle(ref, () => ({ svg: svgRef.current }));
+export const StageAnnotationsLayer = forwardRef<StageAnnotationsLayerHandle, Props>(
+  function StageAnnotationsLayer({ annotations, preview, selectedId }, ref) {
+    const svgRef = useRef<SVGSVGElement>(null);
+    useImperativeHandle(ref, () => ({ svg: svgRef.current }));
 
-  const arrowAnnotations = annotations.filter((a) => a.type === "arrow");
+    const arrowAnnotations = annotations.filter((a) => a.type === "arrow");
 
-  return (
-    <svg
-      ref={svgRef}
-      className="stage-annotations"
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      aria-hidden
-    >
-      <defs>
-        {arrowAnnotations.map((ann) => (
-          <marker
-            key={ann.id}
-            id={arrowMarkerId(ann.id)}
-            markerWidth="5"
-            markerHeight="5"
-            refX="4"
-            refY="2.5"
-            orient="auto"
-          >
-            <path d="M0,0 L0,5 L5,2.5 z" fill={annColor(ann)} />
-          </marker>
-        ))}
-        {preview?.type === "arrow" ? (
-          <marker
-            id="stage-ann-head-preview"
-            markerWidth="5"
-            markerHeight="5"
-            refX="4"
-            refY="2.5"
-            orient="auto"
-          >
-            <path d="M0,0 L0,5 L5,2.5 z" fill={preview.color} />
-          </marker>
-        ) : null}
-      </defs>
-      {annotations.map((ann) => renderVisual(ann, ann.id === selectedId))}
-      {preview ? renderPreview(preview) : null}
-    </svg>
-  );
-});
+    return (
+      <svg
+        ref={svgRef}
+        className="stage-annotations"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <defs>
+          {arrowAnnotations.map((ann) => (
+            <marker
+              key={ann.id}
+              id={arrowMarkerId(ann.id)}
+              markerWidth="5"
+              markerHeight="5"
+              refX="4"
+              refY="2.5"
+              orient="auto"
+            >
+              <path d="M0,0 L0,5 L5,2.5 z" fill={annColor(ann)} />
+            </marker>
+          ))}
+          {preview?.type === "arrow" ? (
+            <marker
+              id="stage-ann-head-preview"
+              markerWidth="5"
+              markerHeight="5"
+              refX="4"
+              refY="2.5"
+              orient="auto"
+            >
+              <path d="M0,0 L0,5 L5,2.5 z" fill={preview.color} />
+            </marker>
+          ) : null}
+        </defs>
+        {annotations.map((ann) => renderVisual(ann, ann.id === selectedId))}
+        {preview ? renderPreview(preview) : null}
+      </svg>
+    );
+  },
+);

@@ -6,10 +6,7 @@ import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
-import {
-  isRecoveryHashUrl,
-  isRecoveryPending,
-} from "@/lib/authRecovery";
+import { isRecoveryHashUrl, isRecoveryPending } from "@/lib/authRecovery";
 import { getSignUpPasswordIssue } from "@/lib/passwordPolicy";
 import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
 import { getStrings } from "@/lib/uiStrings";
@@ -24,7 +21,14 @@ function EyeIcon({ open }: { open: boolean }) {
           strokeWidth="1.8"
           d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"
         />
-        <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <circle
+          cx="12"
+          cy="12"
+          r="3"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
       </svg>
     );
   }
@@ -77,7 +81,8 @@ export function ResetPasswordScreen() {
 
       const code = new URLSearchParams(window.location.search).get("code");
       if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        const { error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code);
         window.history.replaceState({}, "", "/auth/reset-password");
         if (exchangeError) {
           setInvalidLink(true);
@@ -112,13 +117,7 @@ export function ResetPasswordScreen() {
 
       setPageReady(true);
     })();
-  }, [
-    authReady,
-    isConfigured,
-    isPasswordRecovery,
-    markPasswordRecovery,
-    router,
-  ]);
+  }, [authReady, isConfigured, isPasswordRecovery, markPasswordRecovery, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

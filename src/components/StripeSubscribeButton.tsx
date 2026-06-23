@@ -16,7 +16,10 @@ interface StripeSubscribeButtonProps {
   manage?: boolean;
 }
 
-function stripeErrorMessage(error: string | undefined, UI: ReturnType<typeof getStrings>): string {
+function stripeErrorMessage(
+  error: string | undefined,
+  UI: ReturnType<typeof getStrings>,
+): string {
   if (error === "missing_price") return UI.stripeMissingPriceId;
   if (error === "missing_secret") return UI.stripeMissingSecretKey;
   if (error === "stripe_not_configured") return UI.stripeNotConfigured;

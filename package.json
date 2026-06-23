@@ -6,9 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint src/lib src/app/api tests e2e scripts vitest.config.ts playwright.config.ts eslint.config.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/ci-smoke.test.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
     "supabase:setup": "node scripts/setup-supabase.mjs",
     "supabase:setup-cli": "supabase db execute -f supabase/schema.sql",
     "demo:user": "node scripts/create-demo-user.mjs",
@@ -27,11 +31,15 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "eslint-config-prettier": "^10.1.5",
     "pg": "^8.21.0",
-    "playwright": "^1.60.0",
+    "prettier": "^3.6.2",
+    "@playwright/test": "^1.60.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

@@ -155,9 +155,7 @@ export function HelpPanel({ open, onClose }: HelpPanelProps) {
           <h2 id="help-panel-title" className="help-chat-title">
             {UI.helpTitle}
           </h2>
-          {busy ? (
-            <p className="help-chat-status">{UI.helpThinking}</p>
-          ) : null}
+          {busy ? <p className="help-chat-status">{UI.helpThinking}</p> : null}
         </div>
         <div className="help-chat-head-actions">
           {messages.length > 0 ? (

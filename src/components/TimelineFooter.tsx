@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Fragment,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { countHasData, flattenTimeline } from "@/lib/choreoUtils";
 import { MAX_COUNTS_PER_SECTION } from "@/lib/constants";
 import { useChoreo } from "@/context/ChoreoContext";
@@ -31,19 +24,12 @@ export function TimelineFooter() {
   const countsRef = useRef<HTMLDivElement>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [sectionNameDraft, setSectionNameDraft] = useState("");
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    null,
-  );
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [dragSectionId, setDragSectionId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-  const [countDeleteSlotIndex, setCountDeleteSlotIndex] = useState<
-    number | null
-  >(null);
+  const [countDeleteSlotIndex, setCountDeleteSlotIndex] = useState<number | null>(null);
 
-  const flatSlots = useMemo(
-    () => flattenTimeline(state.sections),
-    [state.sections],
-  );
+  const flatSlots = useMemo(() => flattenTimeline(state.sections), [state.sections]);
   const playbackSectionId =
     flatSlots.find((f) => f.globalIndex === state.currentCount)?.sectionId ??
     state.sections[0]?.id ??
@@ -66,9 +52,7 @@ export function TimelineFooter() {
     return () => window.removeEventListener("keydown", onKey);
   }, [countDeleteSlotIndex]);
 
-  const selectedSection = state.sections.find(
-    (s) => s.id === selectedSectionId,
-  );
+  const selectedSection = state.sections.find((s) => s.id === selectedSectionId);
   const selectedSectionIndex = selectedSection
     ? state.sections.findIndex((s) => s.id === selectedSection.id) + 1
     : 1;
@@ -95,9 +79,7 @@ export function TimelineFooter() {
 
   const handleDeleteSection = (sectionId: string, name: string) => {
     if (isViewOnly || state.sections.length <= 1) return;
-    if (
-      !window.confirm(UI.deleteSectionConfirm(name))
-    ) {
+    if (!window.confirm(UI.deleteSectionConfirm(name))) {
       return;
     }
     deleteSection(sectionId);
@@ -125,9 +107,8 @@ export function TimelineFooter() {
     const sec = state.sections.find((s) => s.id === sectionId);
     if (!sec || sec.slots.length <= 1) return;
     const global =
-      flatSlots.find(
-        (f) => f.sectionId === sectionId && f.slotIndex === slotIndex,
-      )?.globalIndex ?? 0;
+      flatSlots.find((f) => f.sectionId === sectionId && f.slotIndex === slotIndex)
+        ?.globalIndex ?? 0;
     const hasData = countHasData(state.countData[global]);
     if (hasData && !window.confirm(UI.deleteCountWithDataConfirm(label))) {
       return;
@@ -223,10 +204,7 @@ export function TimelineFooter() {
 
           if (editingSectionId === sec.id) {
             return (
-              <div
-                key={sec.id}
-                className="sec-tab-wrap selected editing"
-              >
+              <div key={sec.id} className="sec-tab-wrap selected editing">
                 <input
                   className="sec-tab-inp"
                   value={sectionNameDraft}
@@ -277,9 +255,7 @@ export function TimelineFooter() {
                   (isDropTarget ? " drop-target" : "")
                 }
                 onClick={() => handleTabClick(sec.id)}
-                onDoubleClick={(e) =>
-                  handleSectionDoubleClick(sec.id, sec.name, e)
-                }
+                onDoubleClick={(e) => handleSectionDoubleClick(sec.id, sec.name, e)}
                 onDragStart={(e) => handleDragStart(e, sec.id)}
                 onDragEnd={handleDragEnd}
                 onDragOver={(e) => {
@@ -303,11 +279,7 @@ export function TimelineFooter() {
           );
         })}
         {!isViewOnly && (
-          <button
-            type="button"
-            className="sec-tab add"
-            onClick={() => addSection()}
-          >
+          <button type="button" className="sec-tab add" onClick={() => addSection()}>
             + Add section
           </button>
         )}
@@ -330,9 +302,7 @@ export function TimelineFooter() {
               </span>
               {selectedSection.slots.map((slot, slotIdx) => {
                 const global = flatSlots.find(
-                  (f) =>
-                    f.sectionId === selectedSection.id &&
-                    f.slotIndex === slotIdx,
+                  (f) => f.sectionId === selectedSection.id && f.slotIndex === slotIdx,
                 )?.globalIndex;
                 if (!global) return null;
                 const hasD = countHasData(state.countData[global]);
@@ -347,9 +317,7 @@ export function TimelineFooter() {
                       <button
                         type="button"
                         className="ins-half-btn"
-                        onClick={() =>
-                          insertHalfAfter(selectedSection.id, slotIdx - 1)
-                        }
+                        onClick={() => insertHalfAfter(selectedSection.id, slotIdx - 1)}
                         title={UI.insertHalfCount}
                         aria-label={UI.insertHalfCount}
                       >
@@ -393,11 +361,7 @@ export function TimelineFooter() {
                           className="cnt-slot-del"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteCount(
-                              selectedSection.id,
-                              slotIdx,
-                              label,
-                            );
+                            handleDeleteCount(selectedSection.id, slotIdx, label);
                           }}
                           title={UI.deleteCount}
                           aria-label={UI.deleteCountAria(label)}
@@ -438,7 +402,6 @@ export function TimelineFooter() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

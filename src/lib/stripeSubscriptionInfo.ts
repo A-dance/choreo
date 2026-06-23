@@ -46,8 +46,7 @@ export function buildSubscriptionDetails(
     currentPeriodStart: item?.current_period_start ?? null,
     currentPeriodEnd: item?.current_period_end ?? null,
     cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
-    amountYen:
-      unitAmount != null && currency === "jpy" ? unitAmount : unitAmount,
+    amountYen: unitAmount != null && currency === "jpy" ? unitAmount : unitAmount,
   };
 }
 

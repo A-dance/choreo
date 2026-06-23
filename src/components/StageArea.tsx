@@ -205,19 +205,13 @@ export function StageArea() {
         const now = getStagePoint(cx, cy);
         const dx = now.x - annDrag.originPointer.x;
         const dy = now.y - annDrag.originPointer.y;
-        updateStageAnnotation(
-          annDrag.id,
-          translateAnnotation(annDrag.origin, dx, dy),
-        );
+        updateStageAnnotation(annDrag.id, translateAnnotation(annDrag.origin, dx, dy));
         return;
       }
 
       const pending = pendingPointerRef.current;
       if (pending && !dragRef.current) {
-        if (
-          Math.hypot(cx - pending.startX, cy - pending.startY) >
-          DRAG_THRESHOLD_PX
-        ) {
+        if (Math.hypot(cx - pending.startX, cy - pending.startY) > DRAG_THRESHOLD_PX) {
           dragRef.current = {
             id: pending.id,
             ox: pending.ox,
@@ -261,16 +255,12 @@ export function StageArea() {
       if (axis === "e" || axis === "se") {
         const newW = Math.max(80, r.startW + dx);
         const pct = Math.round((newW / r.wrapW) * 100);
-        setStageScaleW(
-          Math.max(STAGE_SCALE_MIN, Math.min(STAGE_SCALE_MAX, pct)),
-        );
+        setStageScaleW(Math.max(STAGE_SCALE_MIN, Math.min(STAGE_SCALE_MAX, pct)));
       }
       if (axis === "s" || axis === "se") {
         const newH = Math.max(80, r.startH + dy);
         const pct = Math.round((newH / r.wrapH) * 100);
-        setStageScaleH(
-          Math.max(STAGE_SCALE_MIN, Math.min(STAGE_SCALE_MAX, pct)),
-        );
+        setStageScaleH(Math.max(STAGE_SCALE_MIN, Math.min(STAGE_SCALE_MAX, pct)));
       }
     },
     [setStageScaleW, setStageScaleH],
@@ -327,10 +317,7 @@ export function StageArea() {
     };
   }, [onMove, onResizeMove, finishPointer, endResize]);
 
-  const startMemberPointer = (
-    e: React.MouseEvent | React.TouchEvent,
-    mid: number,
-  ) => {
+  const startMemberPointer = (e: React.MouseEvent | React.TouchEvent, mid: number) => {
     if (isViewOnly || isArrowMarkTool) return;
     if (state.isPlaying) stopPlayback();
     e.preventDefault();
@@ -579,10 +566,7 @@ export function StageArea() {
     removeStageAnnotation(selectedAnnotationId);
   };
 
-  const startResize = (
-    e: React.PointerEvent<HTMLDivElement>,
-    axis: ResizeAxis,
-  ) => {
+  const startResize = (e: React.PointerEvent<HTMLDivElement>, axis: ResizeAxis) => {
     if (isViewOnly) return;
     if (e.button !== 0) return;
     e.preventDefault();

@@ -13,7 +13,11 @@ function youtubeIdFromUrl(url: URL): string | null {
     const id = url.pathname.slice(1).split("/")[0];
     return id || null;
   }
-  if (host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com") {
+  if (
+    host === "youtube.com" ||
+    host === "m.youtube.com" ||
+    host === "music.youtube.com"
+  ) {
     if (url.pathname.startsWith("/watch")) {
       return url.searchParams.get("v");
     }
@@ -83,10 +87,7 @@ export function getReferenceVideoEmbedUrl(video: {
   return parsed?.embedUrl ?? null;
 }
 
-export function formatMediaDate(
-  timestamp: number,
-  language: "ja" | "en",
-): string {
+export function formatMediaDate(timestamp: number, language: "ja" | "en"): string {
   return new Intl.DateTimeFormat(language === "ja" ? "ja-JP" : "en-US", {
     year: "numeric",
     month: "short",
@@ -94,10 +95,7 @@ export function formatMediaDate(
   }).format(new Date(timestamp));
 }
 
-export function formatProjectSavedAt(
-  timestamp: number,
-  language: "ja" | "en",
-): string {
+export function formatProjectSavedAt(timestamp: number, language: "ja" | "en"): string {
   return new Intl.DateTimeFormat(language === "ja" ? "ja-JP" : "en-US", {
     year: "numeric",
     month: "short",

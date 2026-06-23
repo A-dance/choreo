@@ -27,7 +27,14 @@ function EyeIcon({ open }: { open: boolean }) {
           strokeWidth="1.8"
           d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"
         />
-        <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <circle
+          cx="12"
+          cy="12"
+          r="3"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
       </svg>
     );
   }
@@ -44,12 +51,8 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export function AuthPanel({ onAuthSuccess }: AuthPanelProps) {
-  const {
-    isConfigured,
-    signInWithPassword,
-    signUpWithPassword,
-    signInWithGoogle,
-  } = useAuth();
+  const { isConfigured, signInWithPassword, signUpWithPassword, signInWithGoogle } =
+    useAuth();
   const [mode, setMode] = useState<AuthMode>("signIn");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -76,10 +79,7 @@ export function AuthPanel({ onAuthSuccess }: AuthPanelProps) {
     setShowPassword(false);
   }
 
-  async function handleOAuth(
-    fn: () => Promise<string | null>,
-    fallbackError: string,
-  ) {
+  async function handleOAuth(fn: () => Promise<string | null>, fallbackError: string) {
     setError(null);
     setMessage(null);
     setBusy(true);
@@ -90,8 +90,7 @@ export function AuthPanel({ onAuthSuccess }: AuthPanelProps) {
       return;
     }
     if (authError) {
-      const notEnabled =
-        /not enabled|unsupported provider/i.test(authError);
+      const notEnabled = /not enabled|unsupported provider/i.test(authError);
       setError(notEnabled ? AUTH_UI.authProviderNotEnabled : fallbackError);
     }
   }
@@ -225,7 +224,9 @@ export function AuthPanel({ onAuthSuccess }: AuthPanelProps) {
               type="button"
               className="auth-password-toggle"
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? AUTH_UI.authHidePassword : AUTH_UI.authShowPassword}
+              aria-label={
+                showPassword ? AUTH_UI.authHidePassword : AUTH_UI.authShowPassword
+              }
             >
               <EyeIcon open={showPassword} />
             </button>
@@ -289,13 +290,17 @@ export function AuthPanel({ onAuthSuccess }: AuthPanelProps) {
       </div>
 
       <p className="auth-panel-switch">
-        <span>{isSignIn ? AUTH_UI.authSwitchToSignUp : AUTH_UI.authSwitchToSignIn}</span>{" "}
+        <span>
+          {isSignIn ? AUTH_UI.authSwitchToSignUp : AUTH_UI.authSwitchToSignIn}
+        </span>{" "}
         <button
           type="button"
           className="auth-panel-switch-btn"
           onClick={() => switchMode(isSignIn ? "signUp" : "signIn")}
         >
-          {isSignIn ? AUTH_UI.authSwitchToSignUpAction : AUTH_UI.authSwitchToSignInAction}
+          {isSignIn
+            ? AUTH_UI.authSwitchToSignUpAction
+            : AUTH_UI.authSwitchToSignInAction}
         </button>
       </p>
     </div>

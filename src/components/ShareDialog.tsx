@@ -75,10 +75,7 @@ function EyeIcon() {
   );
 }
 
-function projectsForFolder(
-  projects: ProjectSummary[],
-  folderKey: FolderShareKey,
-) {
+function projectsForFolder(projects: ProjectSummary[], folderKey: FolderShareKey) {
   if (folderKey === "uncategorized") {
     return projects.filter((p) => !p.folderId);
   }
@@ -136,16 +133,14 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
       : selectedProjectId;
 
   const songTitle = selectedProject?.songTitle || UI.defaultSongTitle;
-  const shareLabel =
-    shareScope === "folder" ? selectedFolderLabel : songTitle;
+  const shareLabel = shareScope === "folder" ? selectedFolderLabel : songTitle;
   const shareMessage =
     shareScope === "folder"
       ? UI.shareSheetTextFolder(selectedFolderLabel)
       : UI.shareSheetText(songTitle);
 
   const showFolderPicker = hasFolders && shareScope === "folder";
-  const showProjectPicker =
-    shareScope === "song" && projects.length > 1;
+  const showProjectPicker = shareScope === "song" && projects.length > 1;
 
   useEffect(() => {
     const active = projects.find((p) => p.id === activeProjectId);
@@ -258,9 +253,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
             <h2 id="share-dialog-title" className="dialog-title">
               {UI.shareTitle}
             </h2>
-            {!viewOnly && (
-              <p className="share-subtitle">{UI.shareSubtitle}</p>
-            )}
+            {!viewOnly && <p className="share-subtitle">{UI.shareSubtitle}</p>}
           </div>
           <button
             type="button"
@@ -286,8 +279,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                   <button
                     type="button"
                     className={
-                      "share-scope-btn" +
-                      (shareScope === "folder" ? " active" : "")
+                      "share-scope-btn" + (shareScope === "folder" ? " active" : "")
                     }
                     onClick={() => setShareScope("folder")}
                   >
@@ -296,8 +288,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                   <button
                     type="button"
                     className={
-                      "share-scope-btn" +
-                      (shareScope === "song" ? " active" : "")
+                      "share-scope-btn" + (shareScope === "song" ? " active" : "")
                     }
                     onClick={() => setShareScope("song")}
                   >
@@ -319,9 +310,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                     }
                   >
                     {hasUncategorized ? (
-                      <option value="uncategorized">
-                        {UI.uncategorizedSection}
-                      </option>
+                      <option value="uncategorized">{UI.uncategorizedSection}</option>
                     ) : null}
                     {folders.map((folder) => (
                       <option key={folder.id} value={folder.id}>
@@ -372,11 +361,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                 </button>
               </div>
 
-              <div
-                className="share-icon-row"
-                role="group"
-                aria-label={UI.shareTitle}
-              >
+              <div className="share-icon-row" role="group" aria-label={UI.shareTitle}>
                 <button
                   type="button"
                   className="share-icon-btn"

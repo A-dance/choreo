@@ -122,6 +122,7 @@ export function pickWorkspaceSource(
   if (!local) return cloud!.workspace;
   if (!cloud) return local;
   const localTs = workspaceUpdatedAt(local);
+  // updatedAt が新しい方を採用（オフライン編集との競合解決）
   return cloud.updatedAt >= localTs ? cloud.workspace : local;
 }
 
@@ -131,6 +132,10 @@ export type UserWorkspaceResolution =
   | { kind: "demo-seed"; workspace: Workspace }
   | { kind: "empty"; workspace: Workspace };
 
+/**
+ * ログイン直後に表示するワークスペースを決定する。
+ * 優先: クラウド（新しい方）→ デモアカウント種子 → ローカル → 空ワークスペース
+ */
 export function resolveUserWorkspace(
   email: string | undefined,
   local: Workspace | null,
@@ -207,10 +212,7 @@ export function cancelCloudWorkspacePush(): void {
   pendingPush = null;
 }
 
-export function scheduleCloudWorkspacePush(
-  userId: string,
-  workspace: Workspace,
-): void {
+export function scheduleCloudWorkspacePush(userId: string, workspace: Workspace): void {
   if (!isCloudSyncConfigured()) return;
   pendingPush = { userId, workspace };
   if (workspacePushTimer) clearTimeout(workspacePushTimer);

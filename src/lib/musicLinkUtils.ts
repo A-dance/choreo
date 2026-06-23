@@ -170,10 +170,7 @@ export function normalizeMusicLinkPaste(payload: MusicLinkPastePayload): string 
   return plain;
 }
 
-export function normalizeMusicLinkInput(
-  input: string,
-  html?: string,
-): string {
+export function normalizeMusicLinkInput(input: string, html?: string): string {
   return normalizeMusicLinkPaste({ plain: input, html });
 }
 
@@ -307,7 +304,11 @@ function smartLinkProviderFromHost(host: string, url?: URL): SmartLinkProvider |
     return "linkfire";
   }
   if (host.includes("tunecore")) return "tunecore";
-  if (url && host === "distrokid.com" && url.pathname.toLowerCase().includes("/hyperfollow/")) {
+  if (
+    url &&
+    host === "distrokid.com" &&
+    url.pathname.toLowerCase().includes("/hyperfollow/")
+  ) {
     return "other";
   }
   if (
@@ -367,9 +368,7 @@ function fallbackSmartLinkFromUrl(url: URL): ParsedMusicLink | null {
   };
 }
 
-export function getSmartLinkProvider(
-  externalUrl: string,
-): SmartLinkProvider | null {
+export function getSmartLinkProvider(externalUrl: string): SmartLinkProvider | null {
   try {
     const url = new URL(externalUrl);
     const host = url.hostname.replace(/^www\./, "");

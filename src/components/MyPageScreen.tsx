@@ -180,11 +180,7 @@ export function MyPageScreen() {
           </section>
 
           <p className="mypage-overview-line">
-            {UI.myPageOverviewLine(
-              projects.length,
-              totals.audio,
-              totals.videos,
-            )}
+            {UI.myPageOverviewLine(projects.length, totals.audio, totals.videos)}
           </p>
 
           <section className="mypage-section" aria-label={UI.myPageAccount}>
@@ -240,40 +236,37 @@ export function MyPageScreen() {
               className="mypage-project-list-scroll"
               onWheel={(e) => e.stopPropagation()}
             >
-            <ul className="mypage-project-list">
-              {sortedProjects.map((project) => {
-                const title =
-                  project.songTitle.trim() || UI.defaultSongTitle;
-                const isActive = project.id === activeProjectId;
-                return (
-                  <li key={project.id}>
-                    <div
-                      className={
-                        "mypage-project-row" + (isActive ? " active" : "")
-                      }
-                    >
-                      <span className="mypage-project-main">
-                        <span className="mypage-project-title">{title}</span>
-                        <span className="mypage-project-meta">
-                          {project.bpm} BPM ·{" "}
-                          {UI.mediaCounts(project.audioCount, project.videoCount)}
+              <ul className="mypage-project-list">
+                {sortedProjects.map((project) => {
+                  const title = project.songTitle.trim() || UI.defaultSongTitle;
+                  const isActive = project.id === activeProjectId;
+                  return (
+                    <li key={project.id}>
+                      <div
+                        className={"mypage-project-row" + (isActive ? " active" : "")}
+                      >
+                        <span className="mypage-project-main">
+                          <span className="mypage-project-title">{title}</span>
+                          <span className="mypage-project-meta">
+                            {project.bpm} BPM ·{" "}
+                            {UI.mediaCounts(project.audioCount, project.videoCount)}
+                          </span>
+                          <span className="mypage-project-saved">
+                            {UI.projectLastSaved(
+                              formatProjectSavedAt(project.updatedAt, language),
+                            )}
+                          </span>
                         </span>
-                        <span className="mypage-project-saved">
-                          {UI.projectLastSaved(
-                            formatProjectSavedAt(project.updatedAt, language),
-                          )}
-                        </span>
-                      </span>
-                      {isActive ? (
-                        <span className="mypage-project-badge">
-                          {UI.myPageCurrentBadge}
-                        </span>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                        {isActive ? (
+                          <span className="mypage-project-badge">
+                            {UI.myPageCurrentBadge}
+                          </span>
+                        ) : null}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </section>
 

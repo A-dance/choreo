@@ -70,10 +70,7 @@ export function formatHelpAnswer(text: string): string {
     .trim();
 }
 
-export function buildHelpSystemPrompt(
-  language: ProjectLanguage,
-  _userQuestion?: string,
-): string {
+export function buildHelpSystemPrompt(language: ProjectLanguage): string {
   const manual = getHelpKnowledge(language);
   const quickRef = buildQuickReference(language);
   const glossary = buildGlossaryHint(language);

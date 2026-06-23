@@ -26,7 +26,9 @@ const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 const demoEmail = "demo@bamiri.share";
 
 if (!url || !serviceKey) {
-  console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local");
+  console.error(
+    "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local",
+  );
   process.exit(1);
 }
 

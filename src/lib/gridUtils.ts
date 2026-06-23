@@ -36,9 +36,7 @@ export function normalizeStage(stage: Partial<StageConfig>): StageConfig {
     bamiriHalfWidth: clampBamiriHalf(
       stage.bamiriHalfWidth ?? DEFAULT_STAGE.bamiriHalfWidth,
     ),
-    bamiriDepth: clampBamiriDepth(
-      stage.bamiriDepth ?? DEFAULT_STAGE.bamiriDepth,
-    ),
+    bamiriDepth: clampBamiriDepth(stage.bamiriDepth ?? DEFAULT_STAGE.bamiriDepth),
     scaleW: clampScale(stage.scaleW ?? DEFAULT_STAGE.scaleW, DEFAULT_STAGE.scaleW),
     scaleH: clampScale(stage.scaleH ?? DEFAULT_STAGE.scaleH, DEFAULT_STAGE.scaleH),
     memberDotPx:

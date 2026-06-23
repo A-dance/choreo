@@ -114,7 +114,12 @@ import { parseVideoLink } from "@/lib/videoLinkUtils";
 import { useProfile } from "@/context/ProfileContext";
 import { BrandLogo } from "@/components/BrandLogo";
 import { canCreateProject } from "@/lib/subscription";
-import { getStrings, detectBrowserLanguage, type ProjectLanguage, type UiStrings } from "@/lib/uiStrings";
+import {
+  getStrings,
+  detectBrowserLanguage,
+  type ProjectLanguage,
+  type UiStrings,
+} from "@/lib/uiStrings";
 import type {
   AppMode,
   ChoreoState,
@@ -332,10 +337,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     });
   }, [workspace, activeProjectId, state.songTitle, state.bpm, media]);
 
-  const folders = useMemo(
-    (): ProjectFolder[] => workspace?.folders ?? [],
-    [workspace],
-  );
+  const folders = useMemo((): ProjectFolder[] => workspace?.folders ?? [], [workspace]);
 
   const hasActiveProject = useMemo(
     () => (workspace ? workspaceHasActiveProject(workspace) : false),
@@ -366,9 +368,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         targetCount: state.currentCount,
       };
     }
-    const phase = playbackPhases.find(
-      (p) => p.globalIndex === state.currentCount,
-    );
+    const phase = playbackPhases.find((p) => p.globalIndex === state.currentCount);
     if (!phase) {
       return {
         animationSec: beatIntervalSec,
@@ -379,12 +379,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       animationSec: phase.animationSec,
       targetCount: phase.posCount,
     };
-  }, [
-    state.isPlaying,
-    state.currentCount,
-    playbackPhases,
-    beatIntervalSec,
-  ]);
+  }, [state.isPlaying, state.currentCount, playbackPhases, beatIntervalSec]);
   const currentBeatSec = playbackTiming.animationSec;
   const playbackPosCount = state.isPlaying
     ? playbackTiming.targetCount
@@ -523,10 +518,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
             return;
           }
           if (bundle.workspace) {
-            const applied = applySharedWorkspaceBundle(
-              bundle.workspace,
-              viewOnly,
-            );
+            const applied = applySharedWorkspaceBundle(bundle.workspace, viewOnly);
             workspaceRef.current = applied.workspace;
             setWorkspace(applied.workspace);
             setActiveProjectId(applied.workspace.activeProjectId);
@@ -592,10 +584,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       setWorkspaceSettled(false);
       return;
     }
-    if (
-      cloudSyncedUserRef.current &&
-      cloudSyncedUserRef.current !== user.id
-    ) {
+    if (cloudSyncedUserRef.current && cloudSyncedUserRef.current !== user.id) {
       cloudSyncedUserRef.current = null;
       cancelCloudWorkspacePush();
     }
@@ -674,16 +663,12 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     if (!phases.length) return;
 
     if (playbackPhaseRef.current < 0 || playbackPhaseRef.current >= phases.length) {
-      playbackPhaseRef.current = findFirstPhaseForGlobal(
-        phases,
-        s.currentCount,
-      );
+      playbackPhaseRef.current = findFirstPhaseForGlobal(phases, s.currentCount);
     }
 
     if (playbackAnchorRef.current === null) {
       playbackAnchorRef.current =
-        performance.now() -
-        getElapsedMsBeforePhase(phases, playbackPhaseRef.current);
+        performance.now() - getElapsedMsBeforePhase(phases, playbackPhaseRef.current);
     }
 
     const phase = phases[playbackPhaseRef.current];
@@ -751,7 +736,13 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       );
     startPlaybackLoop();
     return clearPlaybackTimer;
-  }, [state.isPlaying, state.bpm, state.sections, startPlaybackLoop, clearPlaybackTimer]);
+  }, [
+    state.isPlaying,
+    state.bpm,
+    state.sections,
+    startPlaybackLoop,
+    clearPlaybackTimer,
+  ]);
 
   useEffect(() => {
     return () => clearPlaybackTimer();
@@ -765,8 +756,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       const phases = buildPlaybackPhases(s.sections, s.bpm);
       playbackPhaseRef.current = findFirstPhaseForGlobal(phases, globalIndex);
       playbackAnchorRef.current =
-        performance.now() -
-        getElapsedMsBeforePhase(phases, playbackPhaseRef.current);
+        performance.now() - getElapsedMsBeforePhase(phases, playbackPhaseRef.current);
       scheduleNextPhase();
     },
     [clearPlaybackTimer, scheduleNextPhase],
@@ -862,12 +852,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       stopPlayback();
       const saved =
         workspaceHasActiveProject(ws) && activeProjectId
-          ? patchActiveProject(
-              ws,
-              activeProjectId,
-              stateRef.current,
-              mediaRef.current,
-            )
+          ? patchActiveProject(ws, activeProjectId, stateRef.current, mediaRef.current)
           : ws;
       const { workspace: nextWs, record } = addProject(saved, {
         ...params,
@@ -882,22 +867,34 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       setMedia(normalizeProjectMedia(record.media));
       setSelectedMemberId(null);
       clearUndoHistory();
-      showToast(getStrings(profileLanguageRef.current).createdProject(record.state.songTitle));
+      showToast(
+        getStrings(profileLanguageRef.current).createdProject(record.state.songTitle),
+      );
     },
-    [activeProjectId, stopPlayback, showToast, clearUndoHistory, syncWorkspaceToCloud, plan],
+    [
+      activeProjectId,
+      stopPlayback,
+      showToast,
+      clearUndoHistory,
+      syncWorkspaceToCloud,
+      plan,
+    ],
   );
 
-  const reorderProjects = useCallback((fromIndex: number, toIndex: number) => {
-    if (appModeRef.current === "view") return;
-    const ws = workspaceRef.current;
-    if (!ws) return;
-    const nextWs = reorderWorkspaceProjects(ws, fromIndex, toIndex);
-    if (nextWs === ws) return;
-    workspaceRef.current = nextWs;
-    saveWorkspace(nextWs, userIdRef.current);
-    syncWorkspaceToCloud(nextWs);
-    setWorkspace(nextWs);
-  }, [syncWorkspaceToCloud]);
+  const reorderProjects = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (appModeRef.current === "view") return;
+      const ws = workspaceRef.current;
+      if (!ws) return;
+      const nextWs = reorderWorkspaceProjects(ws, fromIndex, toIndex);
+      if (nextWs === ws) return;
+      workspaceRef.current = nextWs;
+      saveWorkspace(nextWs, userIdRef.current);
+      syncWorkspaceToCloud(nextWs);
+      setWorkspace(nextWs);
+    },
+    [syncWorkspaceToCloud],
+  );
 
   const persistOrganizeChange = useCallback(
     (nextWs: Workspace) => {
@@ -982,12 +979,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       if (!ws) return;
       const saved =
         workspaceHasActiveProject(ws) && activeProjectId
-          ? patchActiveProject(
-              ws,
-              activeProjectId,
-              stateRef.current,
-              mediaRef.current,
-            )
+          ? patchActiveProject(ws, activeProjectId, stateRef.current, mediaRef.current)
           : ws;
       const nextWs = renameProjectTitle(saved, projectId, nextTitle);
       if (nextWs === saved) return;
@@ -1010,12 +1002,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       stopPlayback();
       const saved =
         workspaceHasActiveProject(ws) && activeProjectId
-          ? patchActiveProject(
-              ws,
-              activeProjectId,
-              stateRef.current,
-              mediaRef.current,
-            )
+          ? patchActiveProject(ws, activeProjectId, stateRef.current, mediaRef.current)
           : ws;
       const nextWs = removeProject(saved, projectId);
       if (!nextWs) return;
@@ -1030,7 +1017,9 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           const nextState = getActiveState(nextWs, nextWs.activeProjectId);
           if (nextState) {
             setState(nextState);
-            setMedia(normalizeProjectMedia(getActiveMedia(nextWs, nextWs.activeProjectId)));
+            setMedia(
+              normalizeProjectMedia(getActiveMedia(nextWs, nextWs.activeProjectId)),
+            );
           }
         } else {
           setActiveProjectId("");
@@ -1139,23 +1128,29 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     [mutateState],
   );
 
-  const setMemberCount = useCallback((n: number) => {
-    mutateState((s) => applyMemberCount(s, n));
-  }, [mutateState]);
+  const setMemberCount = useCallback(
+    (n: number) => {
+      mutateState((s) => applyMemberCount(s, n));
+    },
+    [mutateState],
+  );
 
-  const renameMember = useCallback((memberId: number, name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    mutateState((s) => ({
-      ...s,
-      members: s.members.map((m) =>
-        m.id === memberId ? { ...m, name: trimmed } : m,
-      ),
-      removedMembers: s.removedMembers.map((m) =>
-        m.id === memberId ? { ...m, name: trimmed } : m,
-      ),
-    }));
-  }, [mutateState]);
+  const renameMember = useCallback(
+    (memberId: number, name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      mutateState((s) => ({
+        ...s,
+        members: s.members.map((m) =>
+          m.id === memberId ? { ...m, name: trimmed } : m,
+        ),
+        removedMembers: s.removedMembers.map((m) =>
+          m.id === memberId ? { ...m, name: trimmed } : m,
+        ),
+      }));
+    },
+    [mutateState],
+  );
 
   const selectMember = useCallback((memberId: number | null) => {
     setSelectedMemberId(memberId);
@@ -1225,23 +1220,25 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     [mutateState],
   );
 
-  const toggleMemberVisibility = useCallback((memberId: number) => {
-    mutateState((s) => {
-      const isHidden = getHiddenMembers(
-        s.currentCount,
-        s.countData,
-      ).includes(memberId);
-      return {
-        ...s,
-        countData: setMemberHiddenAtCount(
-          s.countData,
-          s.currentCount,
+  const toggleMemberVisibility = useCallback(
+    (memberId: number) => {
+      mutateState((s) => {
+        const isHidden = getHiddenMembers(s.currentCount, s.countData).includes(
           memberId,
-          !isHidden,
-        ),
-      };
-    });
-  }, [mutateState]);
+        );
+        return {
+          ...s,
+          countData: setMemberHiddenAtCount(
+            s.countData,
+            s.currentCount,
+            memberId,
+            !isHidden,
+          ),
+        };
+      });
+    },
+    [mutateState],
+  );
 
   const isMemberVisibleOnCurrent = useCallback(
     (memberId: number) =>
@@ -1253,18 +1250,20 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     [state.isPlaying, state.currentCount, state.countData, playbackPosCount],
   );
 
-  const renameSectionName = useCallback((sectionId: string, name: string) => {
-    mutateState((s) => ({
-      ...s,
-      sections: renameSection(s.sections, sectionId, name),
-    }));
-  }, [mutateState]);
+  const renameSectionName = useCallback(
+    (sectionId: string, name: string) => {
+      mutateState((s) => ({
+        ...s,
+        sections: renameSection(s.sections, sectionId, name),
+      }));
+    },
+    [mutateState],
+  );
 
   const insertHalfAfter = useCallback(
     (sectionId: string, afterSlotIndex: number) => {
       mutateState((s) => {
-        const insertAt =
-          slotGlobalIndex(s.sections, sectionId, afterSlotIndex) + 1;
+        const insertAt = slotGlobalIndex(s.sections, sectionId, afterSlotIndex) + 1;
         let currentCount = s.currentCount;
         if (currentCount >= insertAt) currentCount += 1;
         return {
@@ -1318,7 +1317,9 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     if (!sec || sec.slots.length <= 1) return false;
     if (
       countHasData(s.countData[s.currentCount]) &&
-      !window.confirm(getStrings(profileLanguageRef.current).deleteCountConfirm(flat.label))
+      !window.confirm(
+        getStrings(profileLanguageRef.current).deleteCountConfirm(flat.label),
+      )
     ) {
       return false;
     }
@@ -1375,9 +1376,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         );
         const newFlat = flattenTimeline(sections);
         const added = newFlat.find(
-          (f) =>
-            f.sectionId === sectionId &&
-            f.slotIndex === sec.slots.length,
+          (f) => f.sectionId === sectionId && f.slotIndex === sec.slots.length,
         );
         return {
           ...s,
@@ -1400,14 +1399,14 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           ...s,
           sections,
           countData: remapCountDataBySlots(s.sections, sections, s.countData),
-          currentCount: remapCurrentCount(
-            s.sections,
-            sections,
-            s.currentCount,
-          ),
+          currentCount: remapCurrentCount(s.sections, sections, s.currentCount),
         };
       });
-      showToast(delta === -1 ? getStrings(profileLanguageRef.current).sectionMovedLeft : getStrings(profileLanguageRef.current).sectionMovedRight);
+      showToast(
+        delta === -1
+          ? getStrings(profileLanguageRef.current).sectionMovedLeft
+          : getStrings(profileLanguageRef.current).sectionMovedRight,
+      );
     },
     [stopPlayback, mutateState, showToast],
   );
@@ -1423,11 +1422,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           ...s,
           sections,
           countData: remapCountDataBySlots(s.sections, sections, s.countData),
-          currentCount: remapCurrentCount(
-            s.sections,
-            sections,
-            s.currentCount,
-          ),
+          currentCount: remapCurrentCount(s.sections, sections, s.currentCount),
         };
       });
       showToast(getStrings(profileLanguageRef.current).sectionsSwapped);
@@ -1446,11 +1441,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
           ...s,
           sections,
           countData: remapCountDataBySlots(s.sections, sections, s.countData),
-          currentCount: remapCurrentCount(
-            s.sections,
-            sections,
-            s.currentCount,
-          ),
+          currentCount: remapCurrentCount(s.sections, sections, s.currentCount),
         };
       });
       showToast(getStrings(profileLanguageRef.current).sectionReordered);
@@ -1720,9 +1711,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         ? normalizeProjectMedia(getActiveMedia(ws, projectId))
         : normalizeProjectMedia(mediaRef.current);
 
-    const result = projectId
-      ? await buildShareUrlForProject(projectId)
-      : null;
+    const result = projectId ? await buildShareUrlForProject(projectId) : null;
     if (!result) {
       showToast(lang.shareLinkTooLong);
       return;
@@ -1769,15 +1758,18 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     showToast(getStrings(profileLanguageRef.current).viewPreviewEnded);
   }, [stopPlayback, showToast]);
 
-  const setMemberDotPx = useCallback((px: number) => {
-    mutateState((s) => ({
-      ...s,
-      stage: normalizeStage({
-        ...s.stage,
-        memberDotPx: clampMemberDotPx(px),
-      }),
-    }));
-  }, [mutateState]);
+  const setMemberDotPx = useCallback(
+    (px: number) => {
+      mutateState((s) => ({
+        ...s,
+        stage: normalizeStage({
+          ...s.stage,
+          memberDotPx: clampMemberDotPx(px),
+        }),
+      }));
+    },
+    [mutateState],
+  );
 
   const resetMemberDotPx = useCallback(() => {
     mutateState((s) => ({

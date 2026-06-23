@@ -272,9 +272,7 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
           <div className="member-dropdown">
             <button
               type="button"
-              className={
-                "member-select-trigger" + (memberPanelOpen ? " open" : "")
-              }
+              className={"member-select-trigger" + (memberPanelOpen ? " open" : "")}
               onClick={() => setMemberPanelOpen((v) => !v)}
               disabled={isViewOnly}
               aria-expanded={memberPanelOpen}
@@ -346,14 +344,10 @@ export function SmartHeader({ projectsOpen, onToggleProjects }: SmartHeaderProps
               className="help-action"
             />
           </div>
-
         </div>
       </div>
 
-      <MemberPanel
-        open={memberPanelOpen}
-        onClose={() => setMemberPanelOpen(false)}
-      />
+      <MemberPanel open={memberPanelOpen} onClose={() => setMemberPanelOpen(false)} />
       {shareDialogOpen && <ShareDialog onClose={closeShareDialog} />}
       {!isViewOnly && (
         <div className="help-panel-anchor">

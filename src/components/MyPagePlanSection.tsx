@@ -24,9 +24,7 @@ export function MyPagePlanSection({
   const { session } = useAuth();
   const { language, plan, refreshPlan } = useProfile();
   const UI = getStrings(language);
-  const [details, setDetails] = useState<SubscriptionDetailsResponse | null>(
-    null,
-  );
+  const [details, setDetails] = useState<SubscriptionDetailsResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   const loadDetails = useCallback(async () => {
@@ -98,7 +96,11 @@ export function MyPagePlanSection({
           <p className="mypage-pro-manage-hint">{UI.myPageManageSubscriptionHint}</p>
 
           <div className="mypage-pro-actions">
-            <StripeSubscribeButton variant="primary" manage className="mypage-subscribe-btn" />
+            <StripeSubscribeButton
+              variant="primary"
+              manage
+              className="mypage-subscribe-btn"
+            />
           </div>
         </div>
       ) : (

@@ -25,7 +25,8 @@ function parseMessages(raw: unknown): HelpTurn[] {
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
     const role = (item as HelpTurn).role;
-    const text = typeof (item as HelpTurn).text === "string" ? (item as HelpTurn).text.trim() : "";
+    const text =
+      typeof (item as HelpTurn).text === "string" ? (item as HelpTurn).text.trim() : "";
     if (!text || (role !== "user" && role !== "assistant")) continue;
     out.push({ role, text: text.slice(0, MAX_MESSAGE_CHARS) });
   }
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
   }
 
   const language = normalizeLanguage(body.language);
-  const systemPrompt = buildHelpSystemPrompt(language, last.text);
+  const systemPrompt = buildHelpSystemPrompt(language);
   const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 

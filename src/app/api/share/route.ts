@@ -27,6 +27,7 @@ interface SharePayloadV2 {
 
 type SharePayload = SharePayloadV1 | SharePayloadV2;
 
+/** 共有タイトル: 単一フォルダ共有ならフォルダ名、それ以外はアクティブ曲名 */
 function shareTitleForWorkspace(workspace: Workspace): string {
   if (workspace.folders.length === 1) return workspace.folders[0].name;
   const active =
@@ -82,6 +83,7 @@ function collectShareFiles(
 }
 
 export async function POST(request: Request) {
+  // JSON: v2 workspace または v1 state+media / multipart: v1 + ファイル（50MB 超は skippedFiles）
   const admin = getSupabaseAdmin();
   if (!admin) {
     return apiErrorResponse(ApiError.NOT_CONFIGURED, 503);
@@ -164,14 +166,12 @@ export async function POST(request: Request) {
       continue;
     }
     const buffer = await blob.arrayBuffer();
-    const { error } = await admin.storage.from("share-media").upload(
-      `${shareId}/${mediaId}`,
-      buffer,
-      {
+    const { error } = await admin.storage
+      .from("share-media")
+      .upload(`${shareId}/${mediaId}`, buffer, {
         contentType: blob.type || "application/octet-stream",
         upsert: true,
-      },
-    );
+      });
     if (error) {
       console.error("[share] storage upload failed:", mediaId, error.message);
       skippedFiles.push(mediaId);

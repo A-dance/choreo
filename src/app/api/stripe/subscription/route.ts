@@ -15,9 +15,7 @@ export async function GET(request: Request) {
   const profile = await fetchStripeProfile(user.id);
 
   if (!isStripeServerConfigured() || !profile?.stripe_subscription_id) {
-    return NextResponse.json(
-      buildSubscriptionDetails(profilePlan, null),
-    );
+    return NextResponse.json(buildSubscriptionDetails(profilePlan, null));
   }
 
   const stripe = getStripe();
@@ -29,9 +27,7 @@ export async function GET(request: Request) {
     const subscription = await stripe.subscriptions.retrieve(
       profile.stripe_subscription_id,
     );
-    return NextResponse.json(
-      buildSubscriptionDetails(profilePlan, subscription),
-    );
+    return NextResponse.json(buildSubscriptionDetails(profilePlan, subscription));
   } catch {
     return NextResponse.json(buildSubscriptionDetails(profilePlan, null));
   }

@@ -1,8 +1,5 @@
 import type Stripe from "stripe";
-import {
-  fetchStripeProfile,
-  setProfileSubscription,
-} from "./stripeProfile";
+import { fetchStripeProfile, setProfileSubscription } from "./stripeProfile";
 import { getStripe, isStripeServerConfigured } from "./stripeServer";
 import { subscriptionPlanFromStripe } from "./stripeSubscriptionInfo";
 import { normalizePlan, type SubscriptionPlan } from "./subscription";
@@ -72,10 +69,7 @@ async function collectCustomerCandidates(
   return candidates;
 }
 
-async function isValidCustomer(
-  stripe: Stripe,
-  customerId: string,
-): Promise<boolean> {
+async function isValidCustomer(stripe: Stripe, customerId: string): Promise<boolean> {
   try {
     const customer = await stripe.customers.retrieve(customerId);
     return !("deleted" in customer && customer.deleted);

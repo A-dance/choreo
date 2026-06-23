@@ -30,7 +30,9 @@ function newFolderId(): string {
   return `folder-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function normalizeProjectRecord(item: Partial<ProjectRecord> & { id: string; state: ChoreoState }): ProjectRecord {
+function normalizeProjectRecord(
+  item: Partial<ProjectRecord> & { id: string; state: ChoreoState },
+): ProjectRecord {
   return {
     id: item.id,
     createdAt: item.createdAt ?? Date.now(),
@@ -42,7 +44,9 @@ function normalizeProjectRecord(item: Partial<ProjectRecord> & { id: string; sta
   };
 }
 
-function normalizeFolder(item: Partial<ProjectFolder> & { id: string; name: string }): ProjectFolder {
+function normalizeFolder(
+  item: Partial<ProjectFolder> & { id: string; name: string },
+): ProjectFolder {
   return {
     id: item.id,
     name: item.name.trim() || "Folder",
@@ -155,7 +159,8 @@ export function normalizeWorkspacePayload(raw: unknown): Workspace | null {
   if (!projects.length) {
     return {
       version: 2,
-      activeProjectId: typeof data.activeProjectId === "string" ? data.activeProjectId : "",
+      activeProjectId:
+        typeof data.activeProjectId === "string" ? data.activeProjectId : "",
       projects: [],
       folders,
     };
@@ -189,10 +194,7 @@ function migrateLegacyWorkspace(state: ChoreoState): Workspace {
   };
 }
 
-export function saveWorkspace(
-  workspace: Workspace,
-  userId?: string | null,
-): boolean {
+export function saveWorkspace(workspace: Workspace, userId?: string | null): boolean {
   try {
     const payload: Workspace = {
       version: 2,
@@ -231,10 +233,7 @@ export interface LoadedWorkspace {
   activeMedia: ProjectMedia;
 }
 
-export function getActiveMedia(
-  workspace: Workspace,
-  projectId: string,
-): ProjectMedia {
+export function getActiveMedia(workspace: Workspace, projectId: string): ProjectMedia {
   const record = workspace.projects.find((p) => p.id === projectId);
   return normalizeProjectMedia(record?.media);
 }
@@ -248,9 +247,7 @@ function workspacePayloadToLoaded(workspace: Workspace): LoadedWorkspace {
     };
   }
 
-  const active = workspace.projects.find(
-    (p) => p.id === workspace.activeProjectId,
-  );
+  const active = workspace.projects.find((p) => p.id === workspace.activeProjectId);
   if (active) {
     return {
       workspace,

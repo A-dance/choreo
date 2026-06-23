@@ -64,10 +64,7 @@ export async function deleteProfileAvatar(): Promise<void> {
   db.close();
 }
 
-export async function resizeImageForAvatar(
-  file: File,
-  maxPx = 256,
-): Promise<Blob> {
+export async function resizeImageForAvatar(file: File, maxPx = 256): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxPx / Math.max(bitmap.width, bitmap.height));
   const width = Math.max(1, Math.round(bitmap.width * scale));

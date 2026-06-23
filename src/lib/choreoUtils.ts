@@ -5,23 +5,25 @@ import {
   DEFAULT_MEMBER_COUNT,
   DEFAULT_STAGE,
   MAX_MEMBERS,
-  MEMBER_DOT_MAX,
-  MEMBER_DOT_MIN,
   MIN_MEMBERS,
   createDefaultSections,
 } from "./constants";
+import { detectBrowserLanguage, getStrings, normalizeLanguage } from "./uiStrings";
 import {
-  detectBrowserLanguage,
-  getStrings,
-  normalizeLanguage,
-} from "./uiStrings";
-import { gridCellCenter, gridCols, gridRows, normalizeStage, clampMemberDotPx } from "./gridUtils";
-import {
-  getTotalSlots,
-  migrateSections,
-  flattenTimeline,
-} from "./sectionUtils";
-import type { ChoreoState, CountData, FormationClipboard, Member, NewProjectParams, Position } from "./types";
+  gridCellCenter,
+  gridCols,
+  gridRows,
+  normalizeStage,
+  clampMemberDotPx,
+} from "./gridUtils";
+import { getTotalSlots, migrateSections, flattenTimeline } from "./sectionUtils";
+import type {
+  ChoreoState,
+  CountData,
+  Member,
+  NewProjectParams,
+  Position,
+} from "./types";
 import type { ProjectLanguage } from "./uiStrings";
 
 export {
@@ -80,16 +82,14 @@ export function getPositionDisplayInfo(
     };
   }
   const sectionSlots = flat.filter((f) => f.sectionId === slot.sectionId);
-  const sectionIndex =
-    sections.findIndex((s) => s.id === slot.sectionId) + 1;
+  const sectionIndex = sections.findIndex((s) => s.id === slot.sectionId) + 1;
   return {
     sectionName: slot.sectionName,
     sectionIndex: Math.max(1, sectionIndex),
     sectionCount: sections.length,
     countLabel: slot.label,
     isHalf: slot.isHalf,
-    indexInSection:
-      sectionSlots.findIndex((f) => f.globalIndex === globalIndex) + 1,
+    indexInSection: sectionSlots.findIndex((f) => f.globalIndex === globalIndex) + 1,
     slotsInSection: sectionSlots.length,
     globalIndex,
     totalSlots: Math.max(1, totalSlots),
@@ -137,11 +137,7 @@ export function autoDotSizePx(
 }
 
 /** @deprecated use resolveMemberDotPx */
-export function dotSizePx(
-  memberCount: number,
-  halfW?: number,
-  depth?: number,
-): number {
+export function dotSizePx(memberCount: number, halfW?: number, depth?: number): number {
   return autoDotSizePx(memberCount, halfW, depth);
 }
 
@@ -152,11 +148,7 @@ export function resolveMemberDotPx(
   if (stage.memberDotPx != null) {
     return clampMemberDotPx(stage.memberDotPx);
   }
-  return autoDotSizePx(
-    memberCount,
-    stage.bamiriHalfWidth,
-    stage.bamiriDepth,
-  );
+  return autoDotSizePx(memberCount, stage.bamiriHalfWidth, stage.bamiriDepth);
 }
 
 export function dotFontPx(dotPx: number): number {
@@ -641,7 +633,9 @@ interface LegacyPayload {
   };
 }
 
-function migrateCountData(raw: Record<number, LegacyCountData & { hidden?: number[] }>): Record<number, CountData> {
+function migrateCountData(
+  raw: Record<number, LegacyCountData & { hidden?: number[] }>,
+): Record<number, CountData> {
   const out: Record<number, CountData> = {};
   for (const [k, v] of Object.entries(raw)) {
     out[+k] = {

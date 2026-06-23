@@ -93,12 +93,7 @@ export async function POST(request: Request) {
   let customerId = refreshed?.stripe_customer_id ?? profile?.stripe_customer_id ?? null;
 
   if (!customerId) {
-    customerId = await resolveCheckoutCustomerId(
-      stripe,
-      user.id,
-      user.email,
-      null,
-    );
+    customerId = await resolveCheckoutCustomerId(stripe, user.id, user.email, null);
     await setProfileSubscription(user.id, refreshed?.plan === "pro" ? "pro" : "free", {
       stripeCustomerId: customerId,
     });

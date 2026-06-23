@@ -99,9 +99,7 @@ export async function deleteProjectMedia(projectId: string): Promise<void> {
     const req = tx.objectStore(STORE).getAllKeys();
     req.onsuccess = () => {
       const prefix = `${projectId}:`;
-      resolve(
-        (req.result as string[]).filter((k) => k.startsWith(prefix)),
-      );
+      resolve((req.result as string[]).filter((k) => k.startsWith(prefix)));
     };
     req.onerror = () => reject(req.error ?? new Error("IndexedDB keys failed"));
   });

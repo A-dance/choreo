@@ -91,10 +91,7 @@ export function MediaPanel({
     if (media.referenceVideos.length && !activeVideoId) {
       setActiveVideoId(media.referenceVideos[0].id);
     }
-    if (
-      activeVideoId &&
-      !media.referenceVideos.some((v) => v.id === activeVideoId)
-    ) {
+    if (activeVideoId && !media.referenceVideos.some((v) => v.id === activeVideoId)) {
       setActiveVideoId(media.referenceVideos[0]?.id ?? null);
     }
   }, [media.referenceVideos, activeVideoId]);
@@ -178,9 +175,7 @@ export function MediaPanel({
             {!videoOnly && (
               <h3 className="share-media-heading">{UI.referenceVideosSection}</h3>
             )}
-            {!viewOnly && (
-              <p className="dialog-desc">{UI.referenceVideosDesc}</p>
-            )}
+            {!viewOnly && <p className="dialog-desc">{UI.referenceVideosDesc}</p>}
             {media.referenceVideos.length === 0 ? (
               <p className="media-empty">{UI.noReferenceVideos}</p>
             ) : (
@@ -194,10 +189,7 @@ export function MediaPanel({
                       }
                       onClick={() => setActiveVideoId(v.id)}
                     >
-                      <span
-                        className={"media-card-icon mb-" + v.source}
-                        aria-hidden
-                      >
+                      <span className={"media-card-icon mb-" + v.source} aria-hidden>
                         <VideoPlayIcon />
                       </span>
                       <span className="ref-video-tab-main">
@@ -332,7 +324,6 @@ export function MediaPanel({
             )}
           </section>
         )}
-
       </div>
     </div>
   );

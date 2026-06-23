@@ -54,8 +54,7 @@ function normalizeAudioTracks(tracks: unknown): AudioTrackMeta[] {
       createdAt: typeof t.createdAt === "number" ? t.createdAt : Date.now(),
       source,
       externalUrl: t.externalUrl,
-      thumbnailUrl:
-        typeof t.thumbnailUrl === "string" ? t.thumbnailUrl : undefined,
+      thumbnailUrl: typeof t.thumbnailUrl === "string" ? t.thumbnailUrl : undefined,
     });
   }
   return result;
@@ -327,6 +326,10 @@ export function applySharedWorkspaceBundle(
 
 export type FolderShareKey = "uncategorized" | string;
 
+/**
+ * フォルダ単位共有用にワークスペースを切り出す。
+ * activeProjectId の編集中 state/media を live 値で上書きしてから共有ペイロードに載せる。
+ */
 export function buildFolderShareWorkspace(
   workspace: Workspace,
   folderKey: FolderShareKey,

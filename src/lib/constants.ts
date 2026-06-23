@@ -1,10 +1,26 @@
 import type { ProjectLanguage } from "./uiStrings";
 
 export const COLORS = [
-  "#7c5cfc", "#fc5c7d", "#5cc8fc", "#fcb45c", "#5cfc8f",
-  "#fc5cf0", "#c8fc5c", "#fc8e5c", "#5c8efc", "#fc5cba",
-  "#a78bfa", "#34d399", "#f472b6", "#fb923c", "#38bdf8",
-  "#e879f9", "#4ade80", "#facc15", "#f87171", "#60a5fa",
+  "#7c5cfc",
+  "#fc5c7d",
+  "#5cc8fc",
+  "#fcb45c",
+  "#5cfc8f",
+  "#fc5cf0",
+  "#c8fc5c",
+  "#fc8e5c",
+  "#5c8efc",
+  "#fc5cba",
+  "#a78bfa",
+  "#34d399",
+  "#f472b6",
+  "#fb923c",
+  "#38bdf8",
+  "#e879f9",
+  "#4ade80",
+  "#facc15",
+  "#f87171",
+  "#60a5fa",
 ];
 
 export const COUNTS_PER_SECTION = 8;
@@ -39,7 +55,9 @@ export const OUTRO_SECTION_NAME = OUTRO_NAMES.en;
 /** @deprecated use getDefaultSectionNames(language) */
 export const DEFAULT_SECTION_NAMES = SECTION_NAMES.en;
 
-export function createCountSlots(count = COUNTS_PER_SECTION): import("./types").CountSlot[] {
+export function createCountSlots(
+  count = COUNTS_PER_SECTION,
+): import("./types").CountSlot[] {
   return Array.from({ length: count }, (_, i) => ({
     type: "count" as const,
     num: i + 1,

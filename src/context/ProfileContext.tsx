@@ -11,11 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "@/context/AuthContext";
-import {
-  loadProfile,
-  saveProfile,
-  type UserProfile,
-} from "@/lib/profileStore";
+import { loadProfile, saveProfile, type UserProfile } from "@/lib/profileStore";
 import {
   cloudProfileToUserProfile,
   deleteCloudAvatar,
@@ -35,10 +31,7 @@ import {
   normalizeLanguage,
   type ProjectLanguage,
 } from "@/lib/uiStrings";
-import {
-  normalizePlan,
-  type SubscriptionPlan,
-} from "@/lib/subscription";
+import { normalizePlan, type SubscriptionPlan } from "@/lib/subscription";
 import { syncPlanFromStripe } from "@/lib/stripeCheckoutClient";
 import {
   getProfileAvatarColor,
@@ -201,10 +194,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     setProfile((prev) => ({ ...prev, displayName }));
   }, []);
 
-  const setEmail = useCallback((email: string) => {
-    if (user) return;
-    setProfile((prev) => ({ ...prev, email }));
-  }, [user]);
+  const setEmail = useCallback(
+    (email: string) => {
+      if (user) return;
+      setProfile((prev) => ({ ...prev, email }));
+    },
+    [user],
+  );
 
   const setLanguage = useCallback((language: ProjectLanguage) => {
     setProfile((prev) => ({
@@ -328,9 +324,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return (
-    <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
-  );
+  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }
 
 export function useProfile() {

@@ -46,11 +46,7 @@ export function NewProjectDialog({ onClose, welcome = false }: NewProjectDialogP
   };
 
   return (
-    <div
-      className="dialog-overlay"
-      onClick={onClose}
-      role="presentation"
-    >
+    <div className="dialog-overlay" onClick={onClose} role="presentation">
       <div
         className="dialog-panel"
         onClick={(e) => e.stopPropagation()}

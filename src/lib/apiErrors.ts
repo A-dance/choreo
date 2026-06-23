@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-/** API エラーコード（snake_case で統一） */
+/**
+ * Route Handler 共通のエラーレスポンス。
+ * クライアントは `{ error: string }` の snake_case コードで分岐する（docs/design/error-responses.md）。
+ */
 export const ApiError = {
   NOT_CONFIGURED: "not_configured",
   INVALID_BODY: "invalid_body",
@@ -30,6 +33,7 @@ export const ApiError = {
 
 export type ApiErrorCode = (typeof ApiError)[keyof typeof ApiError];
 
+/** HTTP ステータスと統一 JSON 形式 `{ error }` を返す */
 export function apiErrorResponse(
   error: ApiErrorCode | string,
   status: number,

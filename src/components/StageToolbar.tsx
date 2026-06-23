@@ -129,9 +129,7 @@ export function StageToolbar({
           <button
             key={color}
             type="button"
-            className={
-              "stage-tool-color-btn" + (drawColor === color ? " active" : "")
-            }
+            className={"stage-tool-color-btn" + (drawColor === color ? " active" : "")}
             style={{ ["--swatch" as string]: color }}
             onClick={() => onDrawColorChange(color)}
             disabled={disabled}

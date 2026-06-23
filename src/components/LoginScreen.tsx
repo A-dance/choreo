@@ -65,11 +65,7 @@ export function LoginScreen() {
             <div className="login-auth-inner login-auth-signed-in">
               <p className="login-signed-in-greeting">{UI.authWelcomeBack}</p>
               <p className="login-signed-in-email">{user.email}</p>
-              <button
-                type="button"
-                className="auth-submit-btn"
-                onClick={goToEditor}
-              >
+              <button type="button" className="auth-submit-btn" onClick={goToEditor}>
                 {UI.authGoToEditor}
               </button>
               <button

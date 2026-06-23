@@ -137,10 +137,7 @@ export function appendSection(
   const id = `sec-${maxId + 1}`;
   const label =
     name?.trim() || getStrings(language).sectionNameDefault(sections.length + 1);
-  return [
-    ...sections,
-    { id, name: label, slots: createCountSlots() },
-  ];
+  return [...sections, { id, name: label, slots: createCountSlots() }];
 }
 
 export function renameSection(
@@ -263,14 +260,11 @@ export function remapCurrentCount(
   if (deletedSectionId && current.sectionId === deletedSectionId) {
     const oldIdx = oldSections.findIndex((s) => s.id === deletedSectionId);
     const fallbackSection = newSections[Math.min(oldIdx, newSections.length - 1)];
-    return (
-      newFlat.find((f) => f.sectionId === fallbackSection?.id)?.globalIndex ?? 1
-    );
+    return newFlat.find((f) => f.sectionId === fallbackSection?.id)?.globalIndex ?? 1;
   }
 
   const mapped = newFlat.find(
-    (f) =>
-      f.sectionId === current.sectionId && f.slotIndex === current.slotIndex,
+    (f) => f.sectionId === current.sectionId && f.slotIndex === current.slotIndex,
   );
   return mapped?.globalIndex ?? Math.min(currentCount, newFlat.length);
 }

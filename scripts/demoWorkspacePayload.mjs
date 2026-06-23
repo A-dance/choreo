@@ -4,9 +4,7 @@ export const DEMO_REFERENCE_PROJECT_ID = "demo-reference-project";
 export const DEMO_SONG_B_ID = "demo-song-b";
 export const DEMO_SONG_OTHER_ID = "demo-song-other";
 
-const COLORS = [
-  "#7c5cfc", "#fc5c7d", "#5cc8fc", "#fcb45c", "#5cfc8f",
-];
+const COLORS = ["#7c5cfc", "#fc5c7d", "#5cc8fc", "#fcb45c", "#5cfc8f"];
 
 function defaultPos(index, total) {
   const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
@@ -52,14 +50,8 @@ function buildReferenceState() {
   const positions3 = {};
   members.forEach((member, index) => {
     positions1[member.id] = defaultPos(index, members.length);
-    positions2[member.id] = defaultPos(
-      (index + 1) % members.length,
-      members.length,
-    );
-    positions3[member.id] = defaultPos(
-      (index + 2) % members.length,
-      members.length,
-    );
+    positions2[member.id] = defaultPos((index + 1) % members.length, members.length);
+    positions3[member.id] = defaultPos((index + 2) % members.length, members.length);
   });
 
   return {

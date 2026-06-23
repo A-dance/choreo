@@ -37,11 +37,7 @@ export function StageFloor({ halfW, depth }: Props) {
       style={{ "--grid-lbl-size": `${lblSize}px` } as React.CSSProperties}
       aria-hidden
     >
-      <svg
-        className="floor-grid-svg"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-      >
+      <svg className="floor-grid-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
         {yLineMeta.map((line) => (
           <line
             key={`h${line.row}`}

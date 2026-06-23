@@ -8,10 +8,7 @@ import {
 } from "./shareUtils";
 import { normalizeChoreoState } from "./choreoUtils";
 import { getShareBaseUrl } from "./shareUrl";
-import {
-  importMediaBlob,
-  type MediaKind,
-} from "./mediaStore";
+import { importMediaBlob, type MediaKind } from "./mediaStore";
 
 export interface SharedMediaFile {
   id: string;
@@ -44,9 +41,7 @@ export function mediaHasLinkOnlyShare(media: ProjectMedia): boolean {
   const m = normalizeProjectMedia(media);
   const hasLinks =
     m.audioTracks.some((t) => t.source !== "file" && t.externalUrl) ||
-    m.referenceVideos.some(
-      (v) => v.source !== "file" && v.externalUrl,
-    );
+    m.referenceVideos.some((v) => v.source !== "file" && v.externalUrl);
   const hasFiles =
     m.audioTracks.some((t) => t.source === "file") ||
     m.referenceVideos.some((v) => v.source === "file");
@@ -151,10 +146,7 @@ export async function createRemoteShareWorkspace(
   return { ok: true, shareId: data.shareId };
 }
 
-export function shareCopiedToastMessage(
-  lang: UiStrings,
-  media: ProjectMedia,
-): string {
+export function shareCopiedToastMessage(lang: UiStrings, media: ProjectMedia): string {
   if (mediaHasUnsharedFiles(media)) {
     return lang.shareLinkCopiedFilesSkipped;
   }
@@ -165,10 +157,9 @@ export async function fetchRemoteShare(
   shareId: string,
 ): Promise<RemoteShareBundle | null> {
   try {
-    const res = await fetch(
-      `/api/share?id=${encodeURIComponent(shareId)}`,
-      { cache: "no-store" },
-    );
+    const res = await fetch(`/api/share?id=${encodeURIComponent(shareId)}`, {
+      cache: "no-store",
+    });
     if (!res.ok) return null;
     const data = (await res.json()) as {
       state?: ChoreoState;

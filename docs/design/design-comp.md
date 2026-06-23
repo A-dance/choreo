@@ -8,12 +8,12 @@ https://www.figma.com/make/isn8RQNIhoytYRJfT0Js3I/Share-Link-Screen?t=TW1owFHu1n
 
 ## 実装との対応
 
-| Figma / デザイン要素 | 実装 |
-|---------------------|------|
-| 共有ダイアログ | `src/components/ShareDialog.tsx` |
-| ログイン画面 | `src/components/AuthPanel.tsx`（`auth-panel-figma` クラス） |
-| ブランドロゴ | `src/components/BrandLogo.tsx` |
-| カラー・タイポ | `src/app/globals.css`（CSS 変数 `--accent`, `--bg*` 等） |
+| Figma / デザイン要素 | 実装                                                        |
+| -------------------- | ----------------------------------------------------------- |
+| 共有ダイアログ       | `src/components/ShareDialog.tsx`                            |
+| ログイン画面         | `src/components/AuthPanel.tsx`（`auth-panel-figma` クラス） |
+| ブランドロゴ         | `src/components/BrandLogo.tsx`                              |
+| カラー・タイポ       | `src/app/globals.css`（CSS 変数 `--accent`, `--bg*` 等）    |
 
 ## デザイン方針
 

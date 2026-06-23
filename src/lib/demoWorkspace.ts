@@ -1,7 +1,4 @@
-import {
-  createDemoReferenceState,
-  createProjectState,
-} from "./choreoUtils";
+import { createDemoReferenceState, createProjectState } from "./choreoUtils";
 import { DEMO_ACCOUNT_EMAIL } from "./passwordPolicy";
 import { createProjectRecord } from "./projectStore";
 import type { Workspace } from "./types";

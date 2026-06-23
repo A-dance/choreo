@@ -74,9 +74,7 @@ export function MusicSection({
   }, [selected, getFileUrl]);
 
   const linkCandidate = linkInput.trim();
-  const parsedLink = linkCandidate
-    ? coerceMusicLink(linkCandidate, pasteHtml)
-    : null;
+  const parsedLink = linkCandidate ? coerceMusicLink(linkCandidate, pasteHtml) : null;
 
   useEffect(() => {
     if (!linkCandidate || !parsedLink) {
@@ -91,9 +89,7 @@ export function MusicSection({
     debounceRef.current = setTimeout(() => {
       void fetchMusicMetadataClient(parsedLink.externalUrl)
         .then((data) => {
-          setPreviewTitle(
-            data?.name ? displayMusicTitle(data.name) : parsedLink.name,
-          );
+          setPreviewTitle(data?.name ? displayMusicTitle(data.name) : parsedLink.name);
           setPreviewThumb(data?.thumbnailUrl ?? null);
         })
         .catch(() => {
@@ -196,7 +192,10 @@ export function MusicSection({
                     {t.thumbnailUrl ? (
                       <img className="music-track-thumb" src={t.thumbnailUrl} alt="" />
                     ) : (
-                      <span className="music-track-thumb music-track-thumb-fallback" aria-hidden>
+                      <span
+                        className="music-track-thumb music-track-thumb-fallback"
+                        aria-hidden
+                      >
                         ♪
                       </span>
                     )}
@@ -204,7 +203,9 @@ export function MusicSection({
                       <span className={"media-badge mb-" + badgeKey(t)}>
                         {sourceLabel(t)}
                       </span>
-                      <span className="music-track-row-name">{displayMusicTitle(t.name)}</span>
+                      <span className="music-track-row-name">
+                        {displayMusicTitle(t.name)}
+                      </span>
                     </span>
                   </button>
                   <span className="media-card-actions">

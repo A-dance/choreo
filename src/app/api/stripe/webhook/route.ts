@@ -4,10 +4,7 @@ import {
   fetchProfileByStripeCustomerId,
   setProfileSubscription,
 } from "@/lib/stripeProfile";
-import {
-  getStripe,
-  getStripeWebhookSecret,
-} from "@/lib/stripeServer";
+import { getStripe, getStripeWebhookSecret } from "@/lib/stripeServer";
 
 export const runtime = "nodejs";
 
@@ -34,11 +31,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (!userId) return;
 
   const customerId =
-    typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
+    typeof session.customer === "string"
+      ? session.customer
+      : (session.customer?.id ?? null);
   const subscriptionId =
     typeof session.subscription === "string"
       ? session.subscription
-      : session.subscription?.id ?? null;
+      : (session.subscription?.id ?? null);
 
   await setProfileSubscription(userId, "pro", {
     stripeCustomerId: customerId,
@@ -58,7 +57,7 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
   const customerId =
     typeof subscription.customer === "string"
       ? subscription.customer
-      : subscription.customer?.id ?? null;
+      : (subscription.customer?.id ?? null);
 
   if (subscriptionIsPro(subscription)) {
     await setProfileSubscription(userId, "pro", {

@@ -16,10 +16,7 @@ import {
   markRecoveryPending,
 } from "@/lib/authRecovery";
 import { getAuthRedirectUrl } from "@/lib/shareUrl";
-import {
-  getSupabaseBrowser,
-  isSupabaseAuthConfigured,
-} from "@/lib/supabaseBrowser";
+import { getSupabaseBrowser, isSupabaseAuthConfigured } from "@/lib/supabaseBrowser";
 
 interface AuthContextValue {
   authReady: boolean;
@@ -104,15 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [isConfigured]);
 
-  const signInWithPassword = useCallback(
-    async (email: string, password: string) => {
-      const supabase = getSupabaseBrowser();
-      if (!supabase) return "not_configured";
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return error?.message ?? null;
-    },
-    [],
-  );
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    const supabase = getSupabaseBrowser();
+    if (!supabase) return "not_configured";
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+  }, []);
 
   const signUpWithPassword = useCallback(
     async (email: string, password: string, displayName = "") => {

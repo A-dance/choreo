@@ -8,11 +8,11 @@ Swagger UI: [Swagger Editor](https://editor.swagger.io/) に `api-spec.openapi.y
 
 ## 認証方式
 
-| 種別 | ヘッダー | 対象 API |
-|------|----------|----------|
-| なし | — | share GET/POST、help、music-metadata |
-| Bearer JWT | `Authorization: Bearer <access_token>` | account/delete、stripe/* |
-| Stripe 署名 | `stripe-signature` | stripe/webhook |
+| 種別        | ヘッダー                               | 対象 API                             |
+| ----------- | -------------------------------------- | ------------------------------------ |
+| なし        | —                                      | share GET/POST、help、music-metadata |
+| Bearer JWT  | `Authorization: Bearer <access_token>` | account/delete、stripe/\*            |
+| Stripe 署名 | `stripe-signature`                     | stripe/webhook                       |
 
 ---
 
@@ -26,16 +26,16 @@ Swagger UI: [Swagger Editor](https://editor.swagger.io/) に `api-spec.openapi.y
 
 #### パターン A — 1曲（v1）
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| state | ChoreoState | ✅ | 編集状態 |
-| media | ProjectMedia | — | メディア参照 |
+| フィールド | 型           | 必須 | 説明         |
+| ---------- | ------------ | ---- | ------------ |
+| state      | ChoreoState  | ✅   | 編集状態     |
+| media      | ProjectMedia | —    | メディア参照 |
 
 #### パターン B — フォルダー / 複数曲（v2）
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| workspace | Workspace | ✅ | `folders` + `projects` + `activeProjectId` |
+| フィールド | 型        | 必須 | 説明                                       |
+| ---------- | --------- | ---- | ------------------------------------------ |
+| workspace  | Workspace | ✅   | `folders` + `projects` + `activeProjectId` |
 
 `workspace` を送ると DB には `payload.v = 2` で保存される。
 
@@ -129,10 +129,10 @@ Gemini による操作ヘルプ。
 
 **ボディ**
 
-| フィールド | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
-| messages | `{ role, text }[]` | ✅ | 会話履歴（最大 20 ターン） |
-| language | string | — | `ja` / `en` |
+| フィールド | 型                 | 必須 | 説明                       |
+| ---------- | ------------------ | ---- | -------------------------- |
+| messages   | `{ role, text }[]` | ✅   | 会話履歴（最大 20 ターン） |
+| language   | string             | —    | `ja` / `en`                |
 
 **成功 200:** `{ "answer": "..." }`
 
@@ -250,11 +250,11 @@ Stripe Webhook 受信（サーバー間）。
 
 すべて `{ "error": "<code>" }`（**snake_case 統一**）。詳細は [error-responses.md](./error-responses.md)。
 
-| HTTP | 代表的な `error` |
-|------|------------------|
-| 400 | `invalid_body`, `missing_state`, `missing_id`, `empty_question` |
-| 401 | `unauthorized` |
-| 404 | `not_found`, `share_not_found` |
-| 500 | `server_error`, `signed_url_failed` |
-| 502 | `empty_response` |
-| 503 | `not_configured` |
+| HTTP | 代表的な `error`                                                |
+| ---- | --------------------------------------------------------------- |
+| 400  | `invalid_body`, `missing_state`, `missing_id`, `empty_question` |
+| 401  | `unauthorized`                                                  |
+| 404  | `not_found`, `share_not_found`                                  |
+| 500  | `server_error`, `signed_url_failed`                             |
+| 502  | `empty_response`                                                |
+| 503  | `not_configured`                                                |

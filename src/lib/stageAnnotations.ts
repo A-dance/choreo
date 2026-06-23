@@ -154,14 +154,7 @@ export function hitTestAnnotations(
       continue;
     }
     if (ann.type === "arrow") {
-      const lineDist = distPointToSegment(
-        p.x,
-        p.y,
-        ann.x1,
-        ann.y1,
-        ann.x2,
-        ann.y2,
-      );
+      const lineDist = distPointToSegment(p.x, p.y, ann.x1, ann.y1, ann.x2, ann.y2);
       const endDist = Math.min(
         Math.hypot(p.x - ann.x1, p.y - ann.y1),
         Math.hypot(p.x - ann.x2, p.y - ann.y2),
@@ -276,15 +269,17 @@ export function annotationCenter(ann: StageAnnotation): Position {
     return { x: ann.x, y: ann.y };
   }
   if (!ann.points.length) return { x: 50, y: 50 };
-  const sum = ann.points.reduce(
-    (acc, pt) => ({ x: acc.x + pt.x, y: acc.y + pt.y }),
-    { x: 0, y: 0 },
-  );
+  const sum = ann.points.reduce((acc, pt) => ({ x: acc.x + pt.x, y: acc.y + pt.y }), {
+    x: 0,
+    y: 0,
+  });
   return { x: sum.x / ann.points.length, y: sum.y / ann.points.length };
 }
 
 export function strokeWidthFromIndex(index: number): number {
-  return STAGE_STROKE_WIDTHS[Math.max(0, Math.min(STAGE_STROKE_WIDTHS.length - 1, index))];
+  return STAGE_STROKE_WIDTHS[
+    Math.max(0, Math.min(STAGE_STROKE_WIDTHS.length - 1, index))
+  ];
 }
 
 export function strokeIndexFromWidth(width: number): number {

@@ -1,5 +1,7 @@
 import type { ProjectFolder, ProjectSummary } from "./types";
 
+/** サイドバーの曲一覧・フォルダ検索・セクション構築（純粋関数で UT 可能） */
+
 export function projectMatchesQuery(title: string, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -34,8 +36,7 @@ export function folderMatchesSearch(
   if (!q) return true;
   if (projectMatchesQuery(folder.name, q)) return true;
   return projects.some(
-    (p) =>
-      p.folderId === folder.id && projectMatchesQuery(p.songTitle, q),
+    (p) => p.folderId === folder.id && projectMatchesQuery(p.songTitle, q),
   );
 }
 
@@ -105,9 +106,7 @@ export function buildSidebarProjectSections(
   }
 
   const uncategorized = q
-    ? projects.filter(
-        (p) => !p.folderId && projectMatchesQuery(p.songTitle, query),
-      )
+    ? projects.filter((p) => !p.folderId && projectMatchesQuery(p.songTitle, query))
     : projects.filter((p) => !p.folderId);
 
   if (uncategorized.length > 0 || !q) {

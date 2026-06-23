@@ -1,9 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 
-export async function getUserFromAuthHeader(
-  request: Request,
-): Promise<User | null> {
+export async function getUserFromAuthHeader(request: Request): Promise<User | null> {
   const authHeader = request.headers.get("Authorization");
   const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
   if (!token) return null;

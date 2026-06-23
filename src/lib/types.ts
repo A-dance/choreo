@@ -14,9 +14,7 @@ export interface Member {
 }
 
 /** フルカウント（1〜8）または半カウント（&） */
-export type CountSlot =
-  | { type: "count"; num: number }
-  | { type: "half" };
+export type CountSlot = { type: "count"; num: number } | { type: "half" };
 
 export interface Section {
   id: string;

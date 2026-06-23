@@ -2,10 +2,7 @@
 
 import { StripeSubscribeButton } from "@/components/StripeSubscribeButton";
 import { useProfile } from "@/context/ProfileContext";
-import {
-  FREE_PROJECT_LIMIT,
-  PRO_MONTHLY_PRICE_YEN,
-} from "@/lib/subscription";
+import { FREE_PROJECT_LIMIT, PRO_MONTHLY_PRICE_YEN } from "@/lib/subscription";
 import { getStrings } from "@/lib/uiStrings";
 
 interface UpgradeDialogProps {
@@ -40,9 +37,7 @@ export function UpgradeDialog({ onClose }: UpgradeDialogProps) {
 
         <div className="upgrade-plan-card">
           <p className="upgrade-plan-name">Pro</p>
-          <p className="upgrade-plan-price">
-            {UI.upgradePrice(PRO_MONTHLY_PRICE_YEN)}
-          </p>
+          <p className="upgrade-plan-price">{UI.upgradePrice(PRO_MONTHLY_PRICE_YEN)}</p>
         </div>
 
         <p className="upgrade-note">{UI.upgradeNote}</p>

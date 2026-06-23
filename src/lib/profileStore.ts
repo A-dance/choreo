@@ -26,8 +26,7 @@ export function loadProfile(): UserProfile {
     if (!raw) return defaultProfile();
     const parsed = JSON.parse(raw) as Partial<UserProfile>;
     return {
-      displayName:
-        typeof parsed.displayName === "string" ? parsed.displayName : "",
+      displayName: typeof parsed.displayName === "string" ? parsed.displayName : "",
       email: typeof parsed.email === "string" ? parsed.email : "",
       language: normalizeLanguage(parsed.language),
     };

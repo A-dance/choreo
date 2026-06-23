@@ -73,9 +73,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
   } | null>(null);
   const switchClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const canDragProject =
-    !isViewOnly &&
-    !searchQuery.trim() &&
-    (projects.length > 1 || folders.length > 0);
+    !isViewOnly && !searchQuery.trim() && (projects.length > 1 || folders.length > 0);
 
   const activeProject = projects.find((p) => p.id === activeProjectId);
   const visibleProjects = isViewOnly
@@ -96,7 +94,14 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
       bookmarks: UI.bookmarksSection,
       uncategorized: UI.uncategorizedSection,
     });
-  }, [isViewOnly, projects, folders, searchQuery, UI.bookmarksSection, UI.uncategorizedSection]);
+  }, [
+    isViewOnly,
+    projects,
+    folders,
+    searchQuery,
+    UI.bookmarksSection,
+    UI.uncategorizedSection,
+  ]);
 
   const hasSearchResults = useMemo(() => {
     return sidebarSectionsHaveResults(sections, searchQuery);
@@ -110,8 +115,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
     }> = [];
 
     const bookmarkSections = sections.filter(
-      (section) =>
-        section.kind === "bookmarks" || section.kind === "bookmarked-folder",
+      (section) => section.kind === "bookmarks" || section.kind === "bookmarked-folder",
     );
     const folderSections = sections.filter((section) => section.kind === "folder");
     const uncategorizedSections = sections.filter(
@@ -246,10 +250,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
     setDropTargetId(null);
   };
 
-  const handleDrop = (
-    e: React.DragEvent<HTMLDivElement>,
-    targetProjectId: string,
-  ) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetProjectId: string) => {
     e.preventDefault();
     const fromId = dragProjectId ?? e.dataTransfer.getData("text/plain");
     if (!fromId || fromId === targetProjectId) return;
@@ -278,10 +279,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
     setDropTargetId(null);
   };
 
-  const handleFolderDrop = (
-    e: React.DragEvent<HTMLDivElement>,
-    folderId: string,
-  ) => {
+  const handleFolderDrop = (e: React.DragEvent<HTMLDivElement>, folderId: string) => {
     e.preventDefault();
     const fromId = dragProjectId ?? e.dataTransfer.getData("text/plain");
     if (!fromId) return;
@@ -309,11 +307,8 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
   const renderProjectRow = (project: ProjectSummary, sectionKey: string) => {
     const active = project.id === activeProjectId;
     const isDragging = dragProjectId === project.id;
-    const isDropTarget =
-      dropTargetId === project.id && dragProjectId !== project.id;
-    const folderName = project.folderId
-      ? folderNameById.get(project.folderId)
-      : null;
+    const isDropTarget = dropTargetId === project.id && dragProjectId !== project.id;
+    const folderName = project.folderId ? folderNameById.get(project.folderId) : null;
 
     return (
       <div
@@ -424,8 +419,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
               <button
                 type="button"
                 className={
-                  "project-sidebar-bookmark-btn" +
-                  (project.bookmarked ? " on" : "")
+                  "project-sidebar-bookmark-btn" + (project.bookmarked ? " on" : "")
                 }
                 onClick={(e) => {
                   e.preventDefault();
@@ -464,14 +458,10 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
       section.kind === "folder" || section.kind === "bookmarked-folder";
     const collapsed = section.folder?.collapsed ?? false;
     const isFolderDropTarget =
-      isFolderSection &&
-      dragProjectId &&
-      dropTargetId === `folder:${section.key}`;
+      isFolderSection && dragProjectId && dropTargetId === `folder:${section.key}`;
     const isUncategorizedSection = section.kind === "uncategorized";
     const isUncategorizedDropTarget =
-      isUncategorizedSection &&
-      dragProjectId &&
-      dropTargetId === "uncategorized";
+      isUncategorizedSection && dragProjectId && dropTargetId === "uncategorized";
 
     return (
       <div key={section.key} className="project-sidebar-section">
@@ -556,9 +546,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
                     {section.title}
                   </button>
                 )}
-                <span className="project-section-count">
-                  {section.projects.length}
-                </span>
+                <span className="project-section-count">{section.projects.length}</span>
                 <button
                   type="button"
                   className={
@@ -566,9 +554,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
                     (section.folder.bookmarked ? " on" : "")
                   }
                   onClick={() => toggleFolderBookmark(section.folder!.id)}
-                  title={
-                    section.folder.bookmarked ? UI.bookmarkOn : UI.bookmarkOff
-                  }
+                  title={section.folder.bookmarked ? UI.bookmarkOn : UI.bookmarkOff}
                   aria-label={
                     section.folder.bookmarked ? UI.bookmarkOn : UI.bookmarkOff
                   }
@@ -602,9 +588,7 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
                   </span>
                 )}
                 <span className="project-sidebar-section-label">{section.title}</span>
-                <span className="project-section-count">
-                  {section.projects.length}
-                </span>
+                <span className="project-section-count">{section.projects.length}</span>
               </>
             )}
           </div>
@@ -634,12 +618,8 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
             }
             onDrop={isUncategorizedSection ? handleUncategorizedDrop : undefined}
           >
-            {section.projects.map((project) =>
-              renderProjectRow(project, section.key),
-            )}
-            {isUncategorizedSection &&
-            !section.projects.length &&
-            dragProjectId ? (
+            {section.projects.map((project) => renderProjectRow(project, section.key))}
+            {isUncategorizedSection && !section.projects.length && dragProjectId ? (
               <p className="project-uncategorized-hint is-dragging">
                 {UI.uncategorizedDropHint}
               </p>
@@ -650,13 +630,8 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
     );
   };
 
-  const renderSectionBlock = (
-    block: (typeof sectionBlocks)[number],
-  ) => (
-    <div
-      key={block.id}
-      className={`project-sidebar-block is-${block.kind}`}
-    >
+  const renderSectionBlock = (block: (typeof sectionBlocks)[number]) => (
+    <div key={block.id} className={`project-sidebar-block is-${block.kind}`}>
       {block.kind === "folders" ? (
         <div className="project-sidebar-block-label">
           <span className="project-sidebar-block-label-icon" aria-hidden>
@@ -743,31 +718,24 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
                 aria-label={UI.newFolder}
               >
                 <FolderPlusIcon />
-                <span className="project-new-folder-label">
-                  {UI.foldersGroupLabel}
-                </span>
+                <span className="project-new-folder-label">{UI.foldersGroupLabel}</span>
               </button>
             </div>
           </div>
         )}
 
-        <div
-          className="project-sidebar-projects"
-          onWheel={(e) => e.stopPropagation()}
-        >
+        <div className="project-sidebar-projects" onWheel={(e) => e.stopPropagation()}>
           <div className="project-sidebar-list">
             {isViewOnly && (
               <p className="project-view-only-hint">{UI.viewOnlyProjectHint}</p>
             )}
-            {isViewOnly
-              ? visibleProjects.map((project) =>
-                  renderProjectRow(project, "view"),
-                )
-              : hasSearchResults
-                ? sectionBlocks.map((block) => renderSectionBlock(block))
-                : (
-                    <p className="project-search-empty">{UI.projectSearchEmpty}</p>
-                  )}
+            {isViewOnly ? (
+              visibleProjects.map((project) => renderProjectRow(project, "view"))
+            ) : hasSearchResults ? (
+              sectionBlocks.map((block) => renderSectionBlock(block))
+            ) : (
+              <p className="project-search-empty">{UI.projectSearchEmpty}</p>
+            )}
           </div>
         </div>
 
@@ -809,13 +777,9 @@ export function ProjectSidebar({ open, onClose }: ProjectSidebarProps) {
         )}
       </aside>
 
-      {dialogOpen && (
-        <NewProjectDialog onClose={() => setDialogOpen(false)} />
-      )}
+      {dialogOpen && <NewProjectDialog onClose={() => setDialogOpen(false)} />}
 
-      {upgradeOpen && (
-        <UpgradeDialog onClose={() => setUpgradeOpen(false)} />
-      )}
+      {upgradeOpen && <UpgradeDialog onClose={() => setUpgradeOpen(false)} />}
 
       {mediaPanelOpen && (
         <MediaPanel
