@@ -73,6 +73,7 @@ import {
 } from "@/lib/projectStore";
 import {
   fetchCloudWorkspace,
+  cancelCloudWorkspacePush,
   flushCloudWorkspacePush,
   pushCloudWorkspace,
   resolveUserWorkspace,
@@ -235,8 +236,12 @@ function persistWorkspace(
   activeProjectId: string,
   state: ChoreoState,
   media?: ProjectMedia,
+  userId?: string | null,
 ): boolean {
-  return saveWorkspace(patchActiveProject(workspace, activeProjectId, state, media));
+  return saveWorkspace(
+    patchActiveProject(workspace, activeProjectId, state, media),
+    userId,
+  );
 }
 
 function cloneChoreoState(state: ChoreoState): ChoreoState {
@@ -298,7 +303,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       if (!ws || !projectId || appModeRef.current === "view") return false;
       const nextWs = patchActiveProject(ws, projectId, nextState, nextMedia);
       workspaceRef.current = nextWs;
-      const ok = saveWorkspace(nextWs);
+      const ok = saveWorkspace(nextWs, userIdRef.current);
       syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       return ok;
@@ -495,7 +500,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     }
 
     function initFromLocalStorage() {
-      applyLoadedWorkspace(loadWorkspace());
+      applyLoadedWorkspace(loadWorkspace(userIdRef.current));
     }
 
     void (async () => {
@@ -557,12 +562,17 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
   }, [applyWorkspace, clearUndoHistory, showToast]);
 
   useEffect(() => {
-    if (!user) cloudSyncedUserRef.current = null;
-  }, [user]);
-
-  useEffect(() => {
     if (!user) {
+      cloudSyncedUserRef.current = null;
       setWorkspaceSettled(false);
+      return;
+    }
+    if (
+      cloudSyncedUserRef.current &&
+      cloudSyncedUserRef.current !== user.id
+    ) {
+      cloudSyncedUserRef.current = null;
+      cancelCloudWorkspacePush();
     }
   }, [user]);
 
@@ -589,7 +599,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        const local = workspaceRef.current;
+        const local = loadWorkspace(userId).workspace;
         const cloud = await fetchCloudWorkspace(userId);
         if (cancelled) return;
 
@@ -601,12 +611,12 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
 
         if (kind === "cloud") {
           apply(resolved);
-          saveWorkspace(resolved);
+          saveWorkspace(resolved, userId);
           return;
         }
 
         apply(resolved);
-        saveWorkspace(resolved);
+        saveWorkspace(resolved, userId);
 
         if (kind === "local") {
           await pushCloudWorkspace(userId, resolved);
@@ -786,7 +796,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       if (!nextState) return;
       const nextWs = { ...saved, activeProjectId: projectId };
       workspaceRef.current = nextWs;
-      saveWorkspace(nextWs);
+      saveWorkspace(nextWs, userIdRef.current);
       syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       setActiveProjectId(projectId);
@@ -822,7 +832,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
         language: profileLanguageRef.current,
       });
       workspaceRef.current = nextWs;
-      saveWorkspace(nextWs);
+      saveWorkspace(nextWs, userIdRef.current);
       syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       setActiveProjectId(record.id);
@@ -842,7 +852,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     const nextWs = reorderWorkspaceProjects(ws, fromIndex, toIndex);
     if (nextWs === ws) return;
     workspaceRef.current = nextWs;
-    saveWorkspace(nextWs);
+    saveWorkspace(nextWs, userIdRef.current);
     syncWorkspaceToCloud(nextWs);
     setWorkspace(nextWs);
   }, [syncWorkspaceToCloud]);
@@ -851,7 +861,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
     (nextWs: Workspace) => {
       if (appModeRef.current === "view") return;
       workspaceRef.current = nextWs;
-      saveWorkspace(nextWs);
+      saveWorkspace(nextWs, userIdRef.current);
       syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
     },
@@ -940,7 +950,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       const nextWs = renameProjectTitle(saved, projectId, nextTitle);
       if (nextWs === saved) return;
       workspaceRef.current = nextWs;
-      saveWorkspace(nextWs);
+      saveWorkspace(nextWs, userIdRef.current);
       syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       if (projectId === activeProjectId) {
@@ -969,7 +979,7 @@ export function ChoreoProvider({ children }: { children: ReactNode }) {
       if (!nextWs) return;
       void deleteProjectMedia(projectId);
       workspaceRef.current = nextWs;
-      saveWorkspace(nextWs);
+      saveWorkspace(nextWs, userIdRef.current);
       syncWorkspaceToCloud(nextWs);
       setWorkspace(nextWs);
       if (activeProjectId === projectId) {

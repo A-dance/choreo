@@ -1,6 +1,8 @@
 import {
   LEGACY_STORAGE_KEY,
+  WORKSPACE_OWNER_KEY,
   WORKSPACE_STORAGE_KEY,
+  workspaceStorageKey,
 } from "./constants";
 import {
   createBlankEditorState,
@@ -187,7 +189,10 @@ function migrateLegacyWorkspace(state: ChoreoState): Workspace {
   };
 }
 
-export function saveWorkspace(workspace: Workspace): boolean {
+export function saveWorkspace(
+  workspace: Workspace,
+  userId?: string | null,
+): boolean {
   try {
     const payload: Workspace = {
       version: 2,
@@ -209,7 +214,11 @@ export function saveWorkspace(workspace: Workspace): boolean {
         bookmarked: Boolean(p.bookmarked),
       })),
     };
-    localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(payload));
+    const key = userId ? workspaceStorageKey(userId) : WORKSPACE_STORAGE_KEY;
+    localStorage.setItem(key, JSON.stringify(payload));
+    if (userId) {
+      localStorage.setItem(WORKSPACE_OWNER_KEY, userId);
+    }
     return true;
   } catch {
     return false;
@@ -230,7 +239,59 @@ export function getActiveMedia(
   return normalizeProjectMedia(record?.media);
 }
 
-export function loadWorkspace(): LoadedWorkspace {
+function workspacePayloadToLoaded(workspace: Workspace): LoadedWorkspace {
+  if (!workspace.projects.length) {
+    return {
+      workspace,
+      activeState: createBlankEditorState(),
+      activeMedia: emptyProjectMedia(),
+    };
+  }
+
+  const active = workspace.projects.find(
+    (p) => p.id === workspace.activeProjectId,
+  );
+  if (active) {
+    return {
+      workspace,
+      activeState: { ...active.state, isPlaying: false },
+      activeMedia: normalizeProjectMedia(active.media),
+    };
+  }
+
+  return {
+    workspace,
+    activeState: createBlankEditorState(),
+    activeMedia: emptyProjectMedia(),
+  };
+}
+
+function readWorkspaceFromStorage(key: string): Workspace | null {
+  const saved = localStorage.getItem(key);
+  if (!saved) return null;
+  return parseWorkspace(saved);
+}
+
+function migrateLegacyWorkspaceToUser(userId: string): Workspace | null {
+  const owner = localStorage.getItem(WORKSPACE_OWNER_KEY);
+  const legacy = readWorkspaceFromStorage(WORKSPACE_STORAGE_KEY);
+  if (!legacy) return null;
+  if (owner && owner !== userId) return null;
+  saveWorkspace(legacy, userId);
+  return legacy;
+}
+
+function loadLegacyStateWorkspace(): LoadedWorkspace | null {
+  const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (!legacy) return null;
+  const parsed = deserializeState(legacy);
+  if (!parsed) return null;
+  const state = stripPlayback(parsed);
+  const workspace = migrateLegacyWorkspace(state);
+  return { workspace, activeState: state, activeMedia: emptyProjectMedia() };
+}
+
+export function loadWorkspace(userId?: string | null): LoadedWorkspace {
   if (typeof window === "undefined") {
     const workspace = createEmptyWorkspace();
     return {
@@ -240,39 +301,37 @@ export function loadWorkspace(): LoadedWorkspace {
     };
   }
 
-  const saved = localStorage.getItem(WORKSPACE_STORAGE_KEY);
-  if (saved) {
-    const workspace = parseWorkspace(saved);
-    if (workspace) {
-      if (!workspace.projects.length) {
-        return {
-          workspace,
-          activeState: createBlankEditorState(),
-          activeMedia: emptyProjectMedia(),
-        };
-      }
-      const active = workspace.projects.find(
-        (p) => p.id === workspace.activeProjectId,
-      );
-      if (active) {
-        return {
-          workspace,
-          activeState: { ...active.state, isPlaying: false },
-          activeMedia: normalizeProjectMedia(active.media),
-        };
-      }
+  if (userId) {
+    const userWorkspace = readWorkspaceFromStorage(workspaceStorageKey(userId));
+    if (userWorkspace) {
+      return workspacePayloadToLoaded(userWorkspace);
     }
+
+    const migrated = migrateLegacyWorkspaceToUser(userId);
+    if (migrated) {
+      return workspacePayloadToLoaded(migrated);
+    }
+
+    const legacyLoaded = loadLegacyStateWorkspace();
+    if (legacyLoaded) {
+      saveWorkspace(legacyLoaded.workspace, userId);
+      return legacyLoaded;
+    }
+
+    const state = createBlankEditorState();
+    const workspace = createEmptyWorkspace();
+    return { workspace, activeState: state, activeMedia: emptyProjectMedia() };
   }
 
-  const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-  if (legacy) {
-    const parsed = deserializeState(legacy);
-    if (parsed) {
-      const state = stripPlayback(parsed);
-      const workspace = migrateLegacyWorkspace(state);
-      saveWorkspace(workspace);
-      return { workspace, activeState: state, activeMedia: emptyProjectMedia() };
-    }
+  const shared = readWorkspaceFromStorage(WORKSPACE_STORAGE_KEY);
+  if (shared) {
+    return workspacePayloadToLoaded(shared);
+  }
+
+  const legacyLoaded = loadLegacyStateWorkspace();
+  if (legacyLoaded) {
+    saveWorkspace(legacyLoaded.workspace);
+    return legacyLoaded;
   }
 
   const state = createBlankEditorState();

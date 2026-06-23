@@ -66,9 +66,14 @@ export const MIN_MEMBERS = 1;
 export const MAX_MEMBERS = 500;
 export const LEGACY_STORAGE_KEY = "choreo-v2-state";
 export const WORKSPACE_STORAGE_KEY = "choreo-v3-workspace";
+export const WORKSPACE_OWNER_KEY = "choreo-workspace-owner-id";
 export const PROFILE_STORAGE_KEY = "choreo-profile";
 /** @deprecated use WORKSPACE_STORAGE_KEY */
 export const STORAGE_KEY = LEGACY_STORAGE_KEY;
+
+export function workspaceStorageKey(userId: string): string {
+  return `${WORKSPACE_STORAGE_KEY}:${userId}`;
+}
 
 export const MIN_COUNTS_PER_SECTION = 1;
 export const MAX_COUNTS_PER_SECTION = 64;
