@@ -2,6 +2,9 @@
   "name": "choreo",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -17,7 +20,8 @@
     "supabase:setup-cli": "supabase db execute -f supabase/schema.sql",
     "demo:user": "node scripts/create-demo-user.mjs",
     "demo:workspace": "node scripts/seed-demo-workspace.mjs",
-    "demo:setup": "node scripts/create-demo-user.mjs && node scripts/seed-demo-workspace.mjs"
+    "demo:setup": "node scripts/create-demo-user.mjs && node scripts/seed-demo-workspace.mjs",
+    "docs:capture": "node scripts/capture-readme-assets.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.0",
@@ -35,6 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "eslint-config-prettier": "^10.1.5",
+    "ffmpeg-static": "^5.2.0",
     "pg": "^8.21.0",
     "prettier": "^3.6.2",
     "@playwright/test": "^1.60.0",

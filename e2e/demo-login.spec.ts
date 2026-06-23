@@ -29,7 +29,7 @@ test.describe("demo login", () => {
 
     await page.goto("/login");
     await page.getByRole("textbox", { name: /email/i }).fill(DEMO_EMAIL);
-    await page.getByLabel(/password|パスワード/i).fill(DEMO_PASSWORD);
+    await page.locator('input[type="password"]').first().fill(DEMO_PASSWORD);
     await page.getByRole("button", { name: /sign in/i }).click();
 
     await page.waitForURL((url) => !url.pathname.includes("/login"), {

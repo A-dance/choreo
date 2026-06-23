@@ -11,10 +11,35 @@
 **CI:** [GitHub Actions](https://github.com/A-dance/choreo/actions)（lint・format・typecheck・UT・e2e・build）  
 **API ドキュメント:** [`docs/design/api-spec.md`](docs/design/api-spec.md)（curl 例・OpenAPI・Postman）
 
-## 起動
+## スクリーンショット
+
+| ログイン画面                                      | エディター（デモアカウント）                         |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| ![ログイン画面](docs/images/screenshot-login.png) | ![エディター画面](docs/images/screenshot-editor.png) |
+
+## デモ動画（GIF）
+
+BPM 再生でカウントが進み、フォーメーションが切り替わる様子（本番デモ・デモアカウントで撮影）。
+
+![BPM 再生デモ](docs/images/demo-playback.gif)
+
+> 画像の再取得: `npm run docs:capture`（本番 URL から取得。デモワークスペースは自動復元）
+
+## 前提条件
+
+| ツール      | バージョン                                              |
+| ----------- | ------------------------------------------------------- |
+| **Node.js** | **20 以上**（CI と `package.json` の `engines` と同じ） |
+| **npm**     | 9 以上（`npm ci` / `npm install`）                      |
+| ブラウザ    | Chromium / Safari 最新（モバイル・PC）                  |
+
+任意: [Supabase](https://supabase.com/) プロジェクト（認証・同期・共有）、[Stripe](https://stripe.com/)（課金テスト）、[Google AI](https://ai.google.dev/) API キー（ASK AI）
+
+## ローカルセットアップ
 
 ```bash
 cd choreo
+cp .env.example .env.local   # 値を編集
 npm install
 npm run dev
 ```
@@ -22,14 +47,44 @@ npm run dev
 ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
 
 ```bash
-npm run build   # 本番ビルド
-npm run start   # 本番サーバー
-npm test        # 単体・API テスト（Vitest）
+npm run build        # 本番ビルド
+npm run start        # 本番サーバー（ローカル）
+npm test             # 単体・API テスト（Vitest）
 npm run test:coverage
-npm run test:e2e   # E2E（要 build 済み）。デモログイン試験は E2E_DEMO_LOGIN=1 + .env.local
+npm run test:e2e     # E2E（要 build 済み）。デモログインは E2E_DEMO_LOGIN=1 + .env.local
 ```
 
-環境変数の一覧は [`.env.example`](.env.example) を参照し、ローカルでは `.env.local` にコピーして設定します。
+環境変数の一覧は [`.env.example`](.env.example) を参照してください。
+
+### Supabase 初回セットアップ（任意）
+
+```bash
+npm run supabase:setup    # schema.sql を SUPABASE_DB_URL へ適用
+npm run demo:setup        # デモユーザー + ワークスペース投入
+```
+
+## 本番デプロイ（Vercel）
+
+本番は **Vercel** に Git 連携デプロイしています（AWS ECS / Lambda / Fargate は未使用）。
+
+1. [Vercel](https://vercel.com/) で GitHub リポジトリ `A-dance/choreo` を Import
+2. **Root Directory:** `choreo`（モノレポの場合はサブディレクトリを指定）
+3. **Framework Preset:** Next.js（ビルド: `npm run build`、出力: デフォルト）
+4. **Environment Variables** に [`.env.example`](.env.example) の本番用の値を設定
+   - 必須: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`
+   - 機能ごと: `GEMINI_API_KEY`, `STRIPE_*`（課金を使う場合）
+5. `main` へ push で Production デプロイ（プレビューは PR ごと）
+
+Stripe Webhook は `https://<your-domain>/api/stripe/webhook` を Stripe Dashboard に登録します。詳細は [`docs/design/api-spec.md`](docs/design/api-spec.md) を参照。
+
+## AWS デプロイについて
+
+| 項目                         | 本プロジェクト                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| ECS / Fargate / Lambda / RDS | **未採用**                                                                                        |
+| 代替構成                     | **Vercel**（フロント + API Routes）+ **Supabase**（Auth / DB / Storage）+ **Stripe** + **Gemini** |
+
+根拠: [`docs/design/architecture.md`](docs/design/architecture.md) の「デプロイ構成（AWS 代替）」、[`docs/design/README.md`](docs/design/README.md) の N/A 一覧。
 
 ## デモアカウント
 
@@ -50,6 +105,27 @@ npm run demo:setup
 ```
 
 （`demo:user` でアカウント作成、`demo:workspace` でワークスペース投入）
+
+## 外部 API・サービス
+
+| サービス                           | 用途                                                    | 設定（環境変数）                                                    |
+| ---------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Supabase**                       | 認証・プロフィール・ワークスペース JSON・共有ストレージ | `NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY`               |
+| **Stripe**                         | Pro サブスクリプション（Checkout / Portal / Webhook）   | `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_WEBHOOK_SECRET` |
+| **Google Gemini**                  | ASK AI（`POST /api/help`）                              | `GEMINI_API_KEY`, `GEMINI_MODEL`                                    |
+| Spotify / Apple Music / YouTube 等 | 音源リンクのメタデータ取得（`GET /api/music-metadata`） | クライアントから URL を渡すのみ（API キー不要）                     |
+
+REST エンドポイント一覧・curl 例: [`docs/design/api-spec.md`](docs/design/api-spec.md)
+
+## 将来実装予定
+
+現バージョンでは **要件定義のスコープ外**（共同編集・PDF 出力等）は [`CHOREO_要件定義書.md`](../CHOREO_要件定義書.md) §1.4 を参照。
+
+運用・品質まわりで検討中の拡張（[`docs/design/logging.md`](docs/design/logging.md) より）:
+
+- 構造化ログ（`{ level, route, error, userId }`）
+- Sentry 等のエラートラッキング
+- リクエスト ID（`X-Request-Id`）の付与
 
 ## 画面構成
 
