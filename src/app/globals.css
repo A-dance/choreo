@@ -5964,6 +5964,7 @@ input[type="range"]::-webkit-slider-thumb {
   justify-content: center;
   gap: 40px;
   width: 100%;
+  max-width: 840px;
   margin: 0 auto;
   padding: 32px 24px max(48px, calc(24px + env(safe-area-inset-bottom)));
   box-sizing: border-box;
@@ -5972,7 +5973,7 @@ input[type="range"]::-webkit-slider-thumb {
 .login-hero {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 20px;
   flex: 0 0 auto;
   width: min(360px, 100%);
@@ -5983,17 +5984,17 @@ input[type="range"]::-webkit-slider-thumb {
 .login-hero-copy {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   width: 100%;
-  text-align: left;
+  text-align: center;
 }
 
 .login-hero-headline {
   margin: 0;
   font-size: clamp(17px, 4.6vw, 24px);
   font-weight: 800;
-  line-height: 1.35;
+  line-height: 1.2;
   letter-spacing: 0.01em;
   color: var(--text);
   white-space: nowrap;
@@ -6012,11 +6013,11 @@ input[type="range"]::-webkit-slider-thumb {
 @media (min-width: 1080px) {
   .login-layout {
     flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    gap: clamp(72px, 9vw, 112px);
-    max-width: none;
-    padding: 32px clamp(48px, 8vw, 112px) max(48px, calc(24px + env(safe-area-inset-bottom)));
+    align-items: flex-start;
+    justify-content: center;
+    gap: clamp(56px, 7vw, 88px);
+    max-width: min(840px, calc(100% - 48px));
+    padding: 32px 24px max(48px, calc(24px + env(safe-area-inset-bottom)));
   }
 
   .login-hero {
