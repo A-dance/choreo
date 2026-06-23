@@ -25,6 +25,14 @@ export function UpgradeDialog({ onClose }: UpgradeDialogProps) {
         aria-modal="true"
         aria-labelledby="upgrade-title"
       >
+        <button
+          type="button"
+          className="dialog-close-btn"
+          onClick={onClose}
+          aria-label={UI.close}
+        >
+          ×
+        </button>
         <h2 id="upgrade-title" className="dialog-title">
           {UI.upgradeTitle}
         </h2>
@@ -40,6 +48,9 @@ export function UpgradeDialog({ onClose }: UpgradeDialogProps) {
         <p className="upgrade-note">{UI.upgradeNote}</p>
 
         <div className="dialog-actions upgrade-dialog-actions">
+          <button type="button" className="dialog-btn secondary" onClick={onClose}>
+            {UI.close}
+          </button>
           <StripeSubscribeButton variant="primary" />
         </div>
       </div>
