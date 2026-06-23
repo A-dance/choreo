@@ -5963,10 +5963,9 @@ input[type="range"]::-webkit-slider-thumb {
   align-items: center;
   justify-content: center;
   gap: 40px;
-  max-width: 920px;
   width: 100%;
   margin: 0 auto;
-  padding: 32px 40px max(48px, calc(24px + env(safe-area-inset-bottom)));
+  padding: 32px 24px max(48px, calc(24px + env(safe-area-inset-bottom)));
   box-sizing: border-box;
 }
 
@@ -5975,7 +5974,8 @@ input[type="range"]::-webkit-slider-thumb {
   flex-direction: column;
   align-items: flex-start;
   gap: 20px;
-  width: 100%;
+  flex: 0 0 auto;
+  width: min(360px, 100%);
   max-width: 360px;
   padding: 0;
 }
@@ -5984,73 +5984,55 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  width: max-content;
-  max-width: 100%;
+  gap: 10px;
+  width: 100%;
   text-align: left;
 }
 
 .login-hero-headline {
   margin: 0;
-  width: max-content;
-  max-width: 100%;
-  font-size: clamp(18px, 2.2vw, 24px);
+  font-size: clamp(17px, 4.6vw, 24px);
   font-weight: 800;
-  line-height: 1.4;
-  letter-spacing: 0.02em;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
   color: var(--text);
   white-space: nowrap;
 }
 
 .login-hero-desc {
   margin: 0;
-  width: max-content;
-  max-width: 100%;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.5;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: rgba(167, 139, 250, 0.95);
   white-space: nowrap;
 }
 
 @media (min-width: 1080px) {
   .login-layout {
-    display: grid;
-    grid-template-columns: minmax(280px, 360px) minmax(300px, 340px);
-    grid-template-rows: auto auto;
-    gap: 20px clamp(64px, 8vw, 96px);
-    align-items: start;
-    align-content: center;
-    width: fit-content;
-    max-width: min(920px, calc(100% - 48px));
-    margin-left: clamp(32px, 6vw, 72px);
-    margin-right: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: clamp(72px, 9vw, 112px);
+    max-width: none;
+    padding: 32px clamp(48px, 8vw, 112px) max(48px, calc(24px + env(safe-area-inset-bottom)));
   }
 
   .login-hero {
-    display: contents;
+    flex: 0 0 360px;
+    width: 360px;
+    max-width: 360px;
   }
 
-  .login-hero-copy {
-    grid-column: 1;
-    grid-row: 1;
-    justify-self: start;
-  }
-
-  .login-stage-preview {
-    grid-column: 1;
-    grid-row: 2;
-    justify-self: start;
+  .login-hero-headline {
+    font-size: 24px;
   }
 
   .login-auth {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: center;
-    width: 100%;
+    flex: 0 0 340px;
+    width: 340px;
     max-width: 340px;
-    justify-self: stretch;
   }
 }
 
