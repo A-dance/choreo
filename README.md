@@ -7,7 +7,7 @@
 **操作マニュアル:** [`docs/manual.ja.md`](docs/manual.ja.md) / [`docs/manual.en.md`](docs/manual.en.md)  
 **設計書:** [`docs/design/README.md`](docs/design/README.md)（アーキテクチャ・ER・API・Figma 等）
 
-**本番デモ:** [https://choreo-ten.vercel.app](https://choreo-ten.vercel.app)  
+**本番 URL（Vercel）:** [https://choreo-ten.vercel.app](https://choreo-ten.vercel.app)  
 **CI:** [GitHub Actions](https://github.com/A-dance/choreo/actions)（lint・format・typecheck・UT・e2e・build）  
 **API ドキュメント:** [`docs/design/api-spec.md`](docs/design/api-spec.md)（curl 例・OpenAPI・Postman）
 
@@ -67,15 +67,20 @@ npm run demo:setup        # デモユーザー + ワークスペース投入
 
 本番は **Vercel** に Git 連携デプロイしています（AWS ECS / Lambda / Fargate は未使用）。
 
+| 項目 | 値 |
+| ---- | --- |
+| **本番 URL** | https://choreo-ten.vercel.app |
+| **`NEXT_PUBLIC_APP_URL`（本番）** | `https://choreo-ten.vercel.app`（末尾スラッシュなし） |
+
 1. [Vercel](https://vercel.com/) で GitHub リポジトリ `A-dance/choreo` を Import
 2. **Root Directory:** `choreo`（モノレポの場合はサブディレクトリを指定）
 3. **Framework Preset:** Next.js（ビルド: `npm run build`、出力: デフォルト）
 4. **Environment Variables** に [`.env.example`](.env.example) の本番用の値を設定
-   - 必須: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`
+   - 必須: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`（本番は上表の URL）
    - 機能ごと: `GEMINI_API_KEY`, `STRIPE_*`（課金を使う場合）
 5. `main` へ push で Production デプロイ（プレビューは PR ごと）
 
-Stripe Webhook は `https://<your-domain>/api/stripe/webhook` を Stripe Dashboard に登録します。詳細は [`docs/design/api-spec.md`](docs/design/api-spec.md) を参照。
+Stripe Webhook は `https://choreo-ten.vercel.app/api/stripe/webhook` を Stripe Dashboard に登録します（ドメイン変更時は URL を合わせて更新）。詳細は [`docs/design/api-spec.md`](docs/design/api-spec.md) を参照。
 
 ## AWS デプロイについて
 
