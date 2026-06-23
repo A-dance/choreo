@@ -25,6 +25,7 @@ const url = env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 const email = env.NEXT_PUBLIC_DEMO_EMAIL?.trim() ?? "demo@bamiri.share";
 const password = env.NEXT_PUBLIC_DEMO_PASSWORD?.trim() ?? "Demo1234";
+const plan = env.DEMO_PLAN?.trim() === "free" ? "free" : "pro";
 
 if (!url || !serviceKey) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local");
@@ -94,7 +95,7 @@ const profileRes = await fetch(`${url}/rest/v1/profiles`, {
     id: userId,
     display_name: "デモユーザー",
     language: "ja",
-    plan: "free",
+    plan,
     updated_at: new Date().toISOString(),
   }),
 });
@@ -105,4 +106,4 @@ if (!profileRes.ok) {
   process.exit(1);
 }
 
-console.log(`Demo user ready: ${email} (${userId})`);
+console.log(`Demo user ready: ${email} (${userId}) plan=${plan}`);
