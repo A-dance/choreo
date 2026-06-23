@@ -41,7 +41,10 @@ const listRes = await fetch(
   { headers },
 );
 const list = await listRes.json();
-const user = list?.users?.[0];
+const users = Array.isArray(list?.users) ? list.users : [];
+const user = users.find(
+  (u) => u.email?.trim().toLowerCase() === demoEmail.toLowerCase(),
+);
 if (!user?.id) {
   console.error(`Demo user not found: ${demoEmail}. Run npm run demo:user first.`);
   process.exit(1);
@@ -49,7 +52,7 @@ if (!user?.id) {
 
 const workspace = buildDemoReferenceWorkspace();
 
-const upsertRes = await fetch(`${url}/rest/v1/user_workspaces`, {
+const upsertRes = await fetch(`${url}/rest/v1/user_workspaces?on_conflict=user_id`, {
   method: "POST",
   headers: {
     ...headers,

@@ -42,7 +42,10 @@ const listRes = await fetch(
   { headers },
 );
 const list = await listRes.json();
-const existing = list?.users?.[0];
+const users = Array.isArray(list?.users) ? list.users : [];
+const existing = users.find(
+  (u) => u.email?.trim().toLowerCase() === email.toLowerCase(),
+);
 
 const body = {
   email,
@@ -75,4 +78,31 @@ if (!res.ok) {
   process.exit(1);
 }
 
-console.log(`Demo user ready: ${email}`);
+const userId = data.id ?? existing?.id;
+if (!userId) {
+  console.error("Failed: no user id in response");
+  process.exit(1);
+}
+
+const profileRes = await fetch(`${url}/rest/v1/profiles`, {
+  method: "POST",
+  headers: {
+    ...headers,
+    Prefer: "resolution=merge-duplicates",
+  },
+  body: JSON.stringify({
+    id: userId,
+    display_name: "デモユーザー",
+    language: "ja",
+    plan: "free",
+    updated_at: new Date().toISOString(),
+  }),
+});
+
+if (!profileRes.ok) {
+  const profileErr = await profileRes.text();
+  console.error("Failed to upsert profile:", profileErr);
+  process.exit(1);
+}
+
+console.log(`Demo user ready: ${email} (${userId})`);

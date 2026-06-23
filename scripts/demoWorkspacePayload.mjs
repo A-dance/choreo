@@ -1,4 +1,9 @@
-const DEMO_REFERENCE_PROJECT_ID = "demo-reference-project";
+/** Mirrors src/lib/demoWorkspace.ts + createDemoReferenceState (ja). */
+export const DEMO_REFERENCE_PROJECT_ID = "demo-reference-project";
+
+const COLORS = [
+  "#7c5cfc", "#fc5c7d", "#5cc8fc", "#fcb45c", "#5cfc8f",
+];
 
 function defaultPos(index, total) {
   const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
@@ -8,18 +13,35 @@ function defaultPos(index, total) {
   };
 }
 
+function createCountSlots(count) {
+  return Array.from({ length: count }, (_, i) => ({
+    type: "count",
+    num: i + 1,
+  }));
+}
+
+function createDefaultSectionsJa(countsPerSection = 8) {
+  const names = ["イントロ", "Aメロ", "サビ", "アウトロ"];
+  return names.map((name, i) => ({
+    id: `sec-${i + 1}`,
+    name,
+    slots: name === "アウトロ" ? [{ type: "count", num: 1 }] : createCountSlots(countsPerSection),
+  }));
+}
+
 function buildMembers(count) {
-  const colors = ["#7c5cfc", "#fc5c7d", "#3ddc84", "#ffd166", "#5cc9fc", "#ff9f43", "#a29bfe", "#55efc4"];
   return Array.from({ length: count }, (_, i) => ({
     id: i + 1,
-    name: `M${i + 1}`,
-    color: colors[i % colors.length],
+    name: String(i + 1),
+    color: COLORS[i % COLORS.length],
   }));
 }
 
 export function buildDemoReferenceWorkspace() {
   const now = Date.now();
-  const members = buildMembers(8);
+  const members = buildMembers(5);
+  const sections = createDefaultSectionsJa(8);
+
   const positions1 = {};
   const positions2 = {};
   const positions3 = {};
@@ -28,19 +50,6 @@ export function buildDemoReferenceWorkspace() {
     positions2[member.id] = defaultPos((index + 1) % members.length, members.length);
     positions3[member.id] = defaultPos((index + 2) % members.length, members.length);
   });
-
-  const sections = [
-    {
-      id: "sec-intro",
-      name: "Intro",
-      slots: Array.from({ length: 8 }, (_, i) => ({ type: "count", num: i + 1 })),
-    },
-    {
-      id: "sec-a",
-      name: "A",
-      slots: Array.from({ length: 8 }, (_, i) => ({ type: "count", num: i + 1 })),
-    },
-  ];
 
   return {
     version: 2,
@@ -66,12 +75,12 @@ export function buildDemoReferenceWorkspace() {
           },
           stage: {
             bamiriHalfWidth: 4,
-            bamiriDepth: 3,
-            scaleW: 1,
-            scaleH: 1,
+            bamiriDepth: 5,
+            scaleW: 85,
+            scaleH: 88,
             memberDotPx: null,
           },
-          nextId: 9,
+          nextId: 6,
           isPlaying: false,
         },
         media: {
@@ -79,6 +88,8 @@ export function buildDemoReferenceWorkspace() {
           referenceVideos: [],
           musicLink: null,
         },
+        folderId: null,
+        bookmarked: false,
       },
     ],
   };

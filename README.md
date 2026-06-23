@@ -7,6 +7,9 @@
 **操作マニュアル:** [`docs/manual.ja.md`](docs/manual.ja.md) / [`docs/manual.en.md`](docs/manual.en.md)  
 **設計書:** [`docs/design/README.md`](docs/design/README.md)（アーキテクチャ・ER・API・Figma 等）
 
+**本番デモ:** [https://choreo-ten.vercel.app](https://choreo-ten.vercel.app)  
+**CI:** [GitHub Actions](https://github.com/A-dance/choreo/actions)（push / PR で typecheck・test・build）
+
 ## 起動
 
 ```bash
@@ -21,6 +24,25 @@ npm run dev
 npm run build   # 本番ビルド
 npm run start   # 本番サーバー
 ```
+
+## デモアカウント
+
+評価・動作確認用の固定アカウントです（ログイン画面に専用ボタンはありません）。
+
+| 項目 | 値 |
+|------|-----|
+| メール | `demo@bamiri.share` |
+| パスワード | `Demo1234` |
+
+`/login` から上記でログインすると、クラウドに保存された参考プロジェクト「サンプル（参考）」が読み込まれます。
+
+Supabase の環境変数（`.env.local`）が設定済みのとき、デモユーザーとデータを再作成するには:
+
+```bash
+npm run demo:setup
+```
+
+（`demo:user` でアカウント作成、`demo:workspace` でワークスペース投入）
 
 ## 画面構成
 
