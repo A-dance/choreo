@@ -273,7 +273,6 @@ export type UiStrings = {
   loginHeroTagline: string;
   loginHeroHeadline: string;
   loginHeroDesc: string;
-  loginHeroFeatures: string[];
   authSection: string;
   authSignIn: string;
   authSignUp: string;
@@ -664,12 +663,7 @@ const en: UiStrings = {
   loginHeroTagline: "FOR DANCERS & CHOREOGRAPHERS",
   loginHeroHeadline: "Formations, digitally.",
   loginHeroDesc:
-    "Place dancers on stage by count. Preview formations with BPM playback.",
-  loginHeroFeatures: [
-    "Drag & drop placement",
-    "BPM-synced playback",
-    "Share view-only links",
-  ],
+    "Place dancers on stage by count, then preview moves with BPM playback.",
   authSection: "Sign in",
   authSignIn: "Sign in",
   authSignUp: "Create account",
@@ -1069,12 +1063,7 @@ const ja: UiStrings = {
   loginHeroTagline: "FOR DANCERS & CHOREOGRAPHERS",
   loginHeroHeadline: "フォーメーションを、デジタルに。",
   loginHeroDesc:
-    "カウントごとにステージへ配置。BPM再生で動きを確認できます。",
-  loginHeroFeatures: [
-    "ドラッグで配置",
-    "BPM同期再生",
-    "共有リンク",
-  ],
+    "カウントごとにステージへ配置し、BPM再生で動きを確認できます。",
   authSection: "ログイン",
   authSignIn: "ログイン",
   authSignUp: "新規登録",

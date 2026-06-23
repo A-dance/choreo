@@ -46,7 +46,6 @@ export function LoginScreen() {
     <div className="login-page">
       <header className="login-page-header">
         <BrandLogo size="login" className="login-page-logo" />
-        <p className="login-page-tagline">{UI.loginHeroTagline}</p>
       </header>
 
       <div className="login-layout">
