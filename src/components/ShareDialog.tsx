@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChoreo } from "@/context/ChoreoContext";
 import type { ProjectSummary } from "@/lib/types";
+import type { UiStrings } from "@/lib/uiStrings";
 
 interface ShareDialogProps {
   onClose: () => void;
@@ -84,6 +85,23 @@ function projectsForFolder(
   return projects.filter((p) => p.folderId === folderKey);
 }
 
+function folderPickerLabel(
+  folderKey: FolderFilterKey,
+  projects: ProjectSummary[],
+  folders: { id: string; name: string }[],
+  UI: UiStrings,
+): string {
+  const inFolder = projectsForFolder(projects, folderKey);
+  const songTitles = inFolder.map((p) => p.songTitle);
+  const baseName =
+    folderKey === "all"
+      ? UI.shareAllProjects
+      : folderKey === "uncategorized"
+        ? UI.uncategorizedSection
+        : folders.find((f) => f.id === folderKey)?.name ?? "";
+  return UI.shareFolderOption(baseName, songTitles);
+}
+
 export function ShareDialog({ onClose }: ShareDialogProps) {
   const {
     strings: UI,
@@ -121,7 +139,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
     projectsInFolder[0];
 
   const songTitle = selectedProject?.songTitle || UI.defaultSongTitle;
-  const showProjectPicker = projectsInFolder.length > 1;
+  const showProjectPicker = projectsInFolder.length > 0;
 
   useEffect(() => {
     const active = projects.find((p) => p.id === activeProjectId);
@@ -224,9 +242,7 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
               {UI.shareTitle}
             </h2>
             {!viewOnly && (
-              <p className="share-subtitle">
-                {songTitle} · {UI.shareSubtitle}
-              </p>
+              <p className="share-subtitle">{UI.shareSubtitle}</p>
             )}
           </div>
           <button
@@ -254,15 +270,22 @@ export function ShareDialog({ onClose }: ShareDialogProps) {
                     value={selectedFolderKey}
                     onChange={(e) => setSelectedFolderKey(e.target.value)}
                   >
-                    <option value="all">{UI.shareAllProjects}</option>
+                    <option value="all">
+                      {folderPickerLabel("all", projects, folders, UI)}
+                    </option>
                     {projects.some((p) => !p.folderId) ? (
                       <option value="uncategorized">
-                        {UI.uncategorizedSection}
+                        {folderPickerLabel(
+                          "uncategorized",
+                          projects,
+                          folders,
+                          UI,
+                        )}
                       </option>
                     ) : null}
                     {folders.map((folder) => (
                       <option key={folder.id} value={folder.id}>
-                        {folder.name}
+                        {folderPickerLabel(folder.id, projects, folders, UI)}
                       </option>
                     ))}
                   </select>

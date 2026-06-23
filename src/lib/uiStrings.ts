@@ -149,6 +149,7 @@ export type UiStrings = {
   shareSelectProject: string;
   shareSelectFolder: string;
   shareAllProjects: string;
+  shareFolderOption: (folderName: string, songTitles: string[]) => string;
   viewPreviewStarted: string;
   viewPreviewEnded: string;
   shareLinkCopied: string;
@@ -515,6 +516,10 @@ const en: UiStrings = {
   shareSelectProject: "Project to share",
   shareSelectFolder: "Folder",
   shareAllProjects: "All songs",
+  shareFolderOption: (folderName, songTitles) =>
+    songTitles.length
+      ? `${folderName} (${songTitles.join(", ")})`
+      : folderName,
   viewPreviewStarted: "View mode — editing disabled",
   viewPreviewEnded: "Back to edit mode",
   shareLinkCopied: "Link copied",
@@ -915,6 +920,10 @@ const ja: UiStrings = {
   shareSelectProject: "共有する曲",
   shareSelectFolder: "フォルダー",
   shareAllProjects: "すべての曲",
+  shareFolderOption: (folderName, songTitles) =>
+    songTitles.length
+      ? `${folderName}（${songTitles.join("、")}）`
+      : folderName,
   viewPreviewStarted: "閲覧モード — 編集できません",
   viewPreviewEnded: "編集モードに戻りました",
   shareLinkCopied: "リンクをコピーしました",
