@@ -8,7 +8,8 @@
 **設計書:** [`docs/design/README.md`](docs/design/README.md)（アーキテクチャ・ER・API・Figma 等）
 
 **本番デモ:** [https://choreo-ten.vercel.app](https://choreo-ten.vercel.app)  
-**CI:** [GitHub Actions](https://github.com/A-dance/choreo/actions)（push / PR で typecheck・test・build）
+**CI:** [GitHub Actions](https://github.com/A-dance/choreo/actions)（push / PR で typecheck・test・build）  
+**API ドキュメント:** [`docs/design/api-spec.md`](docs/design/api-spec.md)（curl 例・OpenAPI・Postman）
 
 ## 起動
 

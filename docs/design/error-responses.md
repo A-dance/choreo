@@ -6,7 +6,7 @@
 
 ```json
 {
-  "error": "<識別子またはメッセージ>"
+  "error": "<code>"
 }
 ```
 
@@ -14,6 +14,9 @@
 |------|-----|
 | Content-Type | `application/json` |
 | ボディキー | `error`（string） |
+| コード規則 | **snake_case**（`invalid_body` など） |
+
+定数一覧の実装: `src/lib/apiErrors.ts`
 
 ## HTTP ステータスと意味
 
@@ -33,28 +36,29 @@
 | error | HTTP | 発生 API |
 |-------|------|----------|
 | `not_configured` | 503 | share, help, account/delete |
-| `invalid body` | 400 | share（JSON/multipart パース失敗） |
-| `invalid_body` | 400 | help |
+| `invalid_body` | 400 | share, help, share/upload-url |
 | `unauthorized` | 401 | account/delete, stripe/* |
+| `server_error` | 500 | share（DB 失敗時） |
 
 ### `/api/share`
 
 | error | HTTP |
 |-------|------|
-| `missing state` | 400 |
-| `missing manifest` | 400 |
-| `invalid manifest` | 400 |
-| `missing id` | 400 |
-| `not found` | 404 |
-| `<db message>` | 500 |
+| `missing_state` | 400 |
+| `invalid_workspace` | 400 |
+| `missing_manifest` | 400 |
+| `invalid_manifest` | 400 |
+| `missing_id` | 400 |
+| `not_found` | 404 |
+| `invalid_payload` | 500 |
 
 ### `/api/share/upload-url`
 
 | error | HTTP |
 |-------|------|
-| `missing shareId or mediaId` | 400 |
-| `share not found` | 404 |
-| `<storage message>` | 500 |
+| `missing_share_id_or_media_id` | 400 |
+| `share_not_found` | 404 |
+| `signed_url_failed` | 500 |
 
 ### `/api/help`
 
@@ -69,8 +73,8 @@
 
 | error | HTTP |
 |-------|------|
-| `missing url` | 400 |
-| `invalid url` | 400 |
+| `missing_url` | 400 |
+| `invalid_url` | 400 |
 
 ### `/api/stripe/*`
 
@@ -83,15 +87,6 @@
 | `webhook_not_configured` | 503 |
 | `missing_signature` | 400 |
 | `invalid_signature` | 400 |
-
-## 既知の不統一（将来統一候補）
-
-| 現状 | 推奨統一形 |
-|------|-----------|
-| `invalid body`（スペース） | `invalid_body` |
-| DB/Stripe の生メッセージ | 固定コード + ログに詳細 |
-
-クライアントは `error` 文字列の**完全一致**ではなく、HTTP ステータスを主に判定すること。
 
 ## クライアント実装例
 

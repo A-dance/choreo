@@ -1,0 +1,73 @@
+{
+  "info": {
+    "name": "bamiri — SHARE API",
+    "description": "Import into Postman. Set variable `baseUrl` (e.g. https://choreo-ten.vercel.app). Auth endpoints need `accessToken` from Supabase session.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://choreo-ten.vercel.app" },
+    { "key": "shareId", "value": "" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Share — GET",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/share?id={{shareId}}"
+      }
+    },
+    {
+      "name": "Share — POST (single song)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"state\": {\n    \"songTitle\": \"Demo\",\n    \"language\": \"ja\",\n    \"sections\": [],\n    \"members\": [],\n    \"removedMembers\": [],\n    \"bpm\": 120,\n    \"currentCount\": 1,\n    \"countData\": {},\n    \"stage\": {\n      \"bamiriHalfWidth\": 4,\n      \"bamiriDepth\": 5,\n      \"scaleW\": 85,\n      \"scaleH\": 88,\n      \"memberDotPx\": null\n    },\n    \"nextId\": 1,\n    \"isPlaying\": false\n  },\n  \"media\": {\n    \"audioTracks\": [],\n    \"referenceVideos\": []\n  }\n}"
+        },
+        "url": "{{baseUrl}}/api/share"
+      }
+    },
+    {
+      "name": "Help — POST",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"language\": \"ja\",\n  \"messages\": [\n    { \"role\": \"user\", \"text\": \"カウントを進めるには？\" }\n  ]\n}"
+        },
+        "url": "{{baseUrl}}/api/help"
+      }
+    },
+    {
+      "name": "Music metadata — GET",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/music-metadata?url=https%3A%2F%2Fopen.spotify.com%2Ftrack%2Fexample",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "music-metadata"],
+          "query": [
+            {
+              "key": "url",
+              "value": "https://open.spotify.com/track/example"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Stripe subscription — GET",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "url": "{{baseUrl}}/api/stripe/subscription"
+      }
+    }
+  ]
+}

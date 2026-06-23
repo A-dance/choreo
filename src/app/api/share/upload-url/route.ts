@@ -1,23 +1,24 @@
 import { NextResponse } from "next/server";
+import { ApiError, apiErrorResponse } from "@/lib/apiErrors";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function POST(request: Request) {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return NextResponse.json({ error: "not_configured" }, { status: 503 });
+    return apiErrorResponse(ApiError.NOT_CONFIGURED, 503);
   }
 
   let body: { shareId?: string; mediaId?: string };
   try {
     body = (await request.json()) as typeof body;
   } catch {
-    return NextResponse.json({ error: "invalid body" }, { status: 400 });
+    return apiErrorResponse(ApiError.INVALID_BODY, 400);
   }
 
   const shareId = body.shareId?.trim();
   const mediaId = body.mediaId?.trim();
   if (!shareId || !mediaId) {
-    return NextResponse.json({ error: "missing shareId or mediaId" }, { status: 400 });
+    return apiErrorResponse(ApiError.MISSING_SHARE_ID_OR_MEDIA_ID, 400);
   }
 
   const { data: share, error: shareError } = await admin
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     .eq("id", shareId)
     .maybeSingle();
   if (shareError || !share) {
-    return NextResponse.json({ error: "share not found" }, { status: 404 });
+    return apiErrorResponse(ApiError.SHARE_NOT_FOUND, 404);
   }
 
   const path = `${shareId}/${mediaId}`;
@@ -35,10 +36,7 @@ export async function POST(request: Request) {
     .createSignedUploadUrl(path, { upsert: true });
   if (error || !data) {
     console.error("[share] signed upload url failed:", path, error?.message);
-    return NextResponse.json(
-      { error: error?.message ?? "signed url failed" },
-      { status: 500 },
-    );
+    return apiErrorResponse(ApiError.SIGNED_URL_FAILED, 500);
   }
 
   return NextResponse.json({

@@ -46,7 +46,7 @@
 
 ## 制約・前提
 
-- ブラウザ: モダン Chromium / Safari（PC 編集推奨）
+- ブラウザ: モダン Chromium / Safari（**モバイル・PC 両対応**、`src/app/responsive.css`）
 - リアルタイム共同編集: 非対応
 - オフライン: localStorage のみ（未ログイン時）
 

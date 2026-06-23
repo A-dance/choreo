@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: bamiri — SHARE API
   description: Next.js Route Handlers for share, help, billing, and account management.
-  version: 2.1.0
+  version: 2.2.0
 servers:
   - url: /
     description: Same origin as the web app
@@ -343,16 +343,61 @@ components:
           type: string
 
     ShareCreateRequest:
+      oneOf:
+        - type: object
+          required:
+            - state
+          properties:
+            state:
+              type: object
+              description: ChoreoState JSON (single-song share, payload v1)
+            media:
+              type: object
+              description: ProjectMedia JSON
+        - type: object
+          required:
+            - workspace
+          properties:
+            workspace:
+              $ref: "#/components/schemas/ShareWorkspace"
+
+    ShareWorkspace:
       type: object
       required:
-        - state
+        - version
+        - activeProjectId
+        - projects
       properties:
-        state:
-          type: object
-          description: ChoreoState JSON
-        media:
-          type: object
-          description: ProjectMedia JSON
+        version:
+          type: integer
+          enum: [2]
+        activeProjectId:
+          type: string
+        folders:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              createdAt:
+                type: integer
+        projects:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              folderId:
+                type: string
+                nullable: true
+              state:
+                type: object
+              media:
+                type: object
 
     ShareCreateResponse:
       type: object
@@ -370,10 +415,15 @@ components:
     ShareGetResponse:
       type: object
       properties:
+        workspace:
+          $ref: "#/components/schemas/ShareWorkspace"
+          description: Present for folder / multi-song shares (payload v2)
         state:
           type: object
+          description: Active project state (always present)
         media:
           type: object
+          description: Active project media (always present)
         files:
           type: array
           items:

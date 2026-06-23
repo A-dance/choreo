@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ApiError, apiErrorResponse } from "@/lib/apiErrors";
 import { buildHelpSystemPrompt, formatHelpAnswer } from "@/lib/helpKnowledge";
 import { normalizeLanguage } from "@/lib/uiStrings";
 
@@ -41,25 +42,25 @@ function toGeminiContents(messages: HelpTurn[]) {
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    return NextResponse.json({ error: "not_configured" }, { status: 503 });
+    return apiErrorResponse(ApiError.NOT_CONFIGURED, 503);
   }
 
   let body: { messages?: unknown; language?: string };
   try {
     body = (await request.json()) as { messages?: unknown; language?: string };
   } catch {
-    return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+    return apiErrorResponse(ApiError.INVALID_BODY, 400);
   }
 
   const messages = parseMessages(body.messages);
   const last = messages[messages.length - 1];
   if (!last || last.role !== "user") {
-    return NextResponse.json({ error: "empty_question" }, { status: 400 });
+    return apiErrorResponse(ApiError.EMPTY_QUESTION, 400);
   }
 
   const totalChars = messages.reduce((n, m) => n + m.text.length, 0);
   if (totalChars > MAX_TOTAL_CHARS) {
-    return NextResponse.json({ error: "conversation_too_long" }, { status: 400 });
+    return apiErrorResponse(ApiError.CONVERSATION_TOO_LONG, 400);
   }
 
   const language = normalizeLanguage(body.language);
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
       .trim() ?? "";
 
   if (!answer) {
-    return NextResponse.json({ error: "empty_response" }, { status: 502 });
+    return apiErrorResponse(ApiError.EMPTY_RESPONSE, 502);
   }
 
   return NextResponse.json({ answer: formatHelpAnswer(answer) });

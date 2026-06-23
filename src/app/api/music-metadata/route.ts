@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ApiError, apiErrorResponse } from "@/lib/apiErrors";
 import { fetchMusicMetadata } from "@/lib/musicMetadata";
 import { cleanMusicTitle } from "@/lib/openGraphMetadata";
 import { parseMusicLink, normalizeMusicLinkInput } from "@/lib/musicLinkUtils";
@@ -8,14 +9,14 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url")?.trim();
   if (!url) {
-    return NextResponse.json({ error: "missing url" }, { status: 400 });
+    return apiErrorResponse(ApiError.MISSING_URL, 400);
   }
 
   const raw = url;
   const normalized = normalizeMusicLinkInput(raw);
   const parsed = parseMusicLink(normalized);
   if (!parsed) {
-    return NextResponse.json({ error: "invalid url" }, { status: 400 });
+    return apiErrorResponse(ApiError.INVALID_URL, 400);
   }
 
   const meta = await fetchMusicMetadata(

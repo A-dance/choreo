@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizeChoreoState } from "@/lib/choreoUtils";
+import { ApiError, apiErrorResponse } from "@/lib/apiErrors";
 import {
   getShareMediaPublicUrl,
   getSupabaseAdmin,
@@ -83,7 +84,7 @@ function collectShareFiles(
 export async function POST(request: Request) {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return NextResponse.json({ error: "not_configured" }, { status: 503 });
+    return apiErrorResponse(ApiError.NOT_CONFIGURED, 503);
   }
 
   const contentType = request.headers.get("content-type") ?? "";
@@ -100,13 +101,13 @@ export async function POST(request: Request) {
     try {
       body = (await request.json()) as typeof body;
     } catch {
-      return NextResponse.json({ error: "invalid body" }, { status: 400 });
+      return apiErrorResponse(ApiError.INVALID_BODY, 400);
     }
 
     if (body.workspace) {
       const workspace = normalizeShareWorkspace(body.workspace);
       if (!workspace) {
-        return NextResponse.json({ error: "invalid workspace" }, { status: 400 });
+        return apiErrorResponse(ApiError.INVALID_WORKSPACE, 400);
       }
       payload = { v: 2, workspace };
       songTitle = shareTitleForWorkspace(workspace);
@@ -116,19 +117,19 @@ export async function POST(request: Request) {
       payload = { v: 1, state, media };
       songTitle = state.songTitle;
     } else {
-      return NextResponse.json({ error: "missing state" }, { status: 400 });
+      return apiErrorResponse(ApiError.MISSING_STATE, 400);
     }
   } else {
     let formData: FormData;
     try {
       formData = await request.formData();
     } catch {
-      return NextResponse.json({ error: "invalid body" }, { status: 400 });
+      return apiErrorResponse(ApiError.INVALID_BODY, 400);
     }
 
     const manifestRaw = formData.get("manifest");
     if (typeof manifestRaw !== "string") {
-      return NextResponse.json({ error: "missing manifest" }, { status: 400 });
+      return apiErrorResponse(ApiError.MISSING_MANIFEST, 400);
     }
 
     let manifest: { state: ChoreoState; media: ProjectMedia };
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
         media: ProjectMedia;
       };
     } catch {
-      return NextResponse.json({ error: "invalid manifest" }, { status: 400 });
+      return apiErrorResponse(ApiError.INVALID_MANIFEST, 400);
     }
 
     const state = normalizeChoreoState({ ...manifest.state, isPlaying: false });
@@ -186,7 +187,7 @@ export async function POST(request: Request) {
   });
   if (dbError) {
     console.error("[share] db insert failed:", dbError.message);
-    return NextResponse.json({ error: dbError.message }, { status: 500 });
+    return apiErrorResponse(ApiError.SERVER_ERROR, 500);
   }
 
   return NextResponse.json({
@@ -197,17 +198,17 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   if (!isShareBackendConfigured()) {
-    return NextResponse.json({ error: "not_configured" }, { status: 503 });
+    return apiErrorResponse(ApiError.NOT_CONFIGURED, 503);
   }
 
   const id = new URL(request.url).searchParams.get("id")?.trim();
   if (!id) {
-    return NextResponse.json({ error: "missing id" }, { status: 400 });
+    return apiErrorResponse(ApiError.MISSING_ID, 400);
   }
 
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return NextResponse.json({ error: "not_configured" }, { status: 503 });
+    return apiErrorResponse(ApiError.NOT_CONFIGURED, 503);
   }
 
   const { data, error } = await admin
@@ -217,14 +218,14 @@ export async function GET(request: Request) {
     .maybeSingle();
 
   if (error || !data?.payload) {
-    return NextResponse.json({ error: "not found" }, { status: 404 });
+    return apiErrorResponse(ApiError.NOT_FOUND, 404);
   }
 
   const payload = data.payload as SharePayload;
   if (payload.v === 2) {
     const workspace = normalizeShareWorkspace(payload.workspace);
     if (!workspace) {
-      return NextResponse.json({ error: "invalid payload" }, { status: 500 });
+      return apiErrorResponse(ApiError.INVALID_PAYLOAD, 500);
     }
     const active =
       workspace.projects.find((p) => p.id === workspace.activeProjectId) ??

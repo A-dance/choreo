@@ -10,8 +10,9 @@
 | [er-diagram.md](./er-diagram.md) | ER 図 |
 | [sequence-diagrams.md](./sequence-diagrams.md) | シーケンス図（共有・課金・ASK AI） |
 | [table-definitions.md](./table-definitions.md) | テーブル定義書 |
-| [api-spec.md](./api-spec.md) | REST API 一覧 |
-| [api-spec.openapi.yaml](./api-spec.openapi.yaml) | OpenAPI 3.0 仕様 |
+| [api-spec.md](./api-spec.md) | REST API 一覧・curl 例 |
+| [api-spec.openapi.yaml](./api-spec.openapi.yaml) | OpenAPI 3.0 仕様（Swagger Editor で試験可） |
+| [postman-collection.json](./postman-collection.json) | Postman コレクション |
 | [error-responses.md](./error-responses.md) | エラーレスポンス形式 |
 | [logging.md](./logging.md) | ログ設計 |
 | [design-comp.md](./design-comp.md) | デザインカンプ（Figma） |
