@@ -5961,12 +5961,12 @@ input[type="range"]::-webkit-slider-thumb {
   flex: 1 1 auto;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 40px;
   width: 100%;
   max-width: 840px;
   margin: 0 auto;
-  padding: 32px 24px max(48px, calc(24px + env(safe-area-inset-bottom)));
+  padding: clamp(48px, 9vh, 72px) 24px max(48px, calc(24px + env(safe-area-inset-bottom)));
   box-sizing: border-box;
 }
 
@@ -6017,7 +6017,7 @@ input[type="range"]::-webkit-slider-thumb {
     justify-content: center;
     gap: clamp(56px, 7vw, 88px);
     max-width: min(840px, calc(100% - 48px));
-    padding: 32px 24px max(48px, calc(24px + env(safe-area-inset-bottom)));
+    padding: clamp(40px, 8vh, 64px) 24px max(40px, calc(24px + env(safe-area-inset-bottom)));
   }
 
   .login-hero {
@@ -7022,7 +7022,7 @@ input[type="range"]::-webkit-slider-thumb {
 
   .login-layout {
     gap: 40px;
-    padding: 24px 24px max(40px, calc(24px + env(safe-area-inset-bottom)));
+    padding: clamp(40px, 8vh, 56px) 24px max(40px, calc(24px + env(safe-area-inset-bottom)));
   }
 
   .login-hero {
