@@ -8,13 +8,13 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/context/AuthContext";
 import { useProfile } from "@/context/ProfileContext";
 import { getSupabaseAuthSetupIssue } from "@/lib/supabaseBrowser";
-import { getStrings } from "@/lib/uiStrings";
+import { getStrings, detectBrowserLanguage } from "@/lib/uiStrings";
 
 export function LoginScreen() {
   const router = useRouter();
   const { user, authReady, isConfigured, isPasswordRecovery } = useAuth();
   const { language, hydrated } = useProfile();
-  const UI = getStrings(language);
+  const UI = getStrings(hydrated ? language : detectBrowserLanguage());
   const setupIssue = getSupabaseAuthSetupIssue();
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function LoginScreen() {
     router.push("/");
   }
 
-  if (!hydrated || (authReady && user && !isPasswordRecovery)) {
+  if (!authReady || (user && !isPasswordRecovery)) {
     return (
       <div className="choreo-loading">
         <div className="choreo-loading-inner">

@@ -73,7 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let cancelled = false;
+    const authTimeout = window.setTimeout(() => {
+      if (!cancelled) setAuthReady(true);
+    }, 5000);
+
     void supabase.auth.getSession().then(({ data }) => {
+      window.clearTimeout(authTimeout);
       if (!cancelled) {
         setSession(data.session);
         setAuthReady(true);
@@ -82,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
+        window.clearTimeout(authTimeout);
         if (event === "PASSWORD_RECOVERY") {
           markRecoveryPending();
           setIsPasswordRecovery(true);
@@ -93,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(authTimeout);
       subscription.subscription.unsubscribe();
     };
   }, [isConfigured]);

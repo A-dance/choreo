@@ -1,42 +1,55 @@
 "use client";
 
-import { useProfile } from "@/context/ProfileContext";
-import { getStrings } from "@/lib/uiStrings";
+import { StageFloor } from "@/components/StageFloor";
+import { COLORS } from "@/lib/constants";
 
-const DOTS = [
-  { id: "AO", color: "#a855f7", x: 28, y: 22 },
-  { id: "SO", color: "#22d3ee", x: 50, y: 18 },
-  { id: "KE", color: "#4ade80", x: 72, y: 28 },
-  { id: "RI", color: "#f472b6", x: 38, y: 48 },
-  { id: "HA", color: "#fb923c", x: 58, y: 52 },
-  { id: "YU", color: "#60a5fa", x: 72, y: 62 },
-] as const;
+const MEMBER_COUNT = 5;
+const DOT_PX = 26;
+
+function memberPosition(index: number, total: number) {
+  const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
+  return {
+    x: 50 + Math.cos(angle) * 28,
+    y: 50 + Math.sin(angle) * 18,
+  };
+}
+
+const PREVIEW_MEMBERS = Array.from({ length: MEMBER_COUNT }, (_, index) => {
+  const id = index + 1;
+  const pos = memberPosition(index, MEMBER_COUNT);
+  return {
+    id,
+    name: String(id),
+    color: COLORS[index % COLORS.length],
+    x: pos.x,
+    y: pos.y,
+  };
+});
 
 export function LoginStagePreview() {
-  const { language } = useProfile();
-  const UI = getStrings(language);
-
   return (
-    <div className="login-stage-wrap">
-      <p className="login-stage-label login-stage-label-top">UPSTAGE</p>
-      <div className="login-stage-grid" aria-hidden>
-        {DOTS.map((dot) => (
-          <span
-            key={dot.id}
-            className="login-stage-dot"
+    <div className="login-stage-preview" aria-hidden>
+      <div className="login-stage-con">
+        <StageFloor halfW={4} depth={5} />
+        <div className="s-lbl back">B A C K</div>
+        <div className="s-lbl front">A U D I E N C E</div>
+        {PREVIEW_MEMBERS.map((member) => (
+          <div
+            key={member.id}
+            className="m-dot login-stage-dot"
             style={{
-              left: `${dot.x}%`,
-              top: `${dot.y}%`,
-              background: dot.color,
-              boxShadow: `0 0 18px ${dot.color}88`,
+              ["--dot-color" as string]: member.color,
+              left: `${member.x}%`,
+              top: `${member.y}%`,
+              width: DOT_PX,
+              height: DOT_PX,
+              fontSize: 11,
             }}
           >
-            {dot.id}
-          </span>
+            {member.name}
+          </div>
         ))}
       </div>
-      <p className="login-stage-label login-stage-label-bottom">AUDIENCE</p>
-      <p className="login-stage-hint">{UI.loginStageHint}</p>
     </div>
   );
 }

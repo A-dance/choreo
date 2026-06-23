@@ -112,13 +112,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
           setProfile(cleared);
           setPlan("free");
           saveProfile(cleared);
+          setHydrated(true);
           try {
             const blob = await loadProfileAvatar();
             if (!cancelled) applyAvatarBlob(blob);
           } catch {
             if (!cancelled) applyAvatarBlob(null);
-          } finally {
-            if (!cancelled) setHydrated(true);
           }
         }
         return;

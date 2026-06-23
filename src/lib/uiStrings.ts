@@ -274,7 +274,6 @@ export type UiStrings = {
   loginHeroHeadline: string;
   loginHeroDesc: string;
   loginHeroFeatures: string[];
-  loginStageHint: string;
   authSection: string;
   authSignIn: string;
   authSignUp: string;
@@ -665,14 +664,12 @@ const en: UiStrings = {
   loginHeroTagline: "FOR DANCERS & CHOREOGRAPHERS",
   loginHeroHeadline: "Formations, digitally.",
   loginHeroDesc:
-    "Create formations intuitively with BPM sync and drag & drop. A tool for choreographers to share with your team in real time.",
+    "Place dancers on stage by count. Preview formations with BPM playback.",
   loginHeroFeatures: [
-    "BPM-synced timeline",
-    "Real-time sharing",
-    "Section management",
-    "6+ dancers",
+    "Drag & drop placement",
+    "BPM-synced playback",
+    "Share view-only links",
   ],
-  loginStageHint: "↑ Drag & drop to edit formations",
   authSection: "Sign in",
   authSignIn: "Sign in",
   authSignUp: "Create account",
@@ -1072,14 +1069,12 @@ const ja: UiStrings = {
   loginHeroTagline: "FOR DANCERS & CHOREOGRAPHERS",
   loginHeroHeadline: "フォーメーションを、デジタルに。",
   loginHeroDesc:
-    "BPM同期・ドラッグ＆ドロップで直感的にフォーメーションを作成。チームとリアルタイムで共有できる振付師のためのツール。",
+    "カウントごとにステージへ配置。BPM再生で動きを確認できます。",
   loginHeroFeatures: [
-    "BPM同期タイムライン",
-    "リアルタイム共有",
-    "セクション管理",
-    "6名以上対応",
+    "ドラッグで配置",
+    "BPM同期再生",
+    "共有リンク",
   ],
-  loginStageHint: "↑ フォーメーションをドラッグ＆ドロップで編集",
   authSection: "ログイン",
   authSignIn: "ログイン",
   authSignUp: "新規登録",
