@@ -12,8 +12,9 @@
   --gold: #ffd166;
   --text: #e8ebf8;
   --text2: #68708e;
-  --header-icon: #c8d0ea;
-  --header-icon-label: #a8b4ce;
+  --header-icon: #f2f5ff;
+  --header-icon-label: #eef1fa;
+  --header-icon-hover: #ffffff;
   --border: #222840;
   --stage: #10131f;
 }
@@ -76,7 +77,7 @@ body {
 .project-menu-btn:hover,
 .project-menu-btn.open {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--header-icon-hover);
   background: rgba(124, 92, 252, 0.1);
 }
 
@@ -1968,31 +1969,37 @@ select {
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg3);
-  color: var(--text);
+  color: var(--header-icon);
 }
 
 .hdr-action-btn.help-action:hover:not(:disabled) {
   border-color: var(--accent);
   background: rgba(124, 92, 252, 0.08);
-  color: var(--text);
+  color: var(--header-icon-hover);
 }
 
 .hdr-action-btn.help-action.active {
   border-color: var(--accent);
   background: rgba(124, 92, 252, 0.12);
   box-shadow: 0 0 0 2px rgba(124, 92, 252, 0.18);
-  color: var(--text);
+  color: var(--header-icon-hover);
 }
 
 .hdr-action-btn.help-action .hdr-action-label {
+  font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--accent);
 }
 
 .hdr-action-btn.help-action .hdr-action-icon {
-  color: var(--accent);
+  color: var(--header-icon);
+}
+
+.hdr-action-btn.help-action:hover:not(:disabled) .hdr-action-icon,
+.hdr-action-btn.help-action.active .hdr-action-icon {
+  color: var(--header-icon-hover);
 }
 
 .hdr-action-btn {
@@ -2014,21 +2021,25 @@ select {
 }
 
 .hdr-action-btn:hover:not(:disabled) {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--header-icon-hover);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .hdr-action-btn:hover:not(:disabled) .hdr-action-label {
-  color: var(--header-icon-label);
+  color: var(--header-icon-hover);
 }
 
 .hdr-action-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.38;
   cursor: not-allowed;
 }
 
 .hdr-action-btn.active {
-  color: var(--text);
+  color: var(--header-icon-hover);
+}
+
+.hdr-action-btn.active .hdr-action-label {
+  color: var(--header-icon-hover);
 }
 
 .hdr-action-icon {
@@ -2043,18 +2054,21 @@ select {
 .hdr-action-icon svg {
   width: 17px;
   height: 17px;
+  filter: drop-shadow(0 0 0.45px rgba(255, 255, 255, 0.45));
 }
 
 .hdr-action-label {
+  font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
   line-height: 1;
   white-space: nowrap;
   height: 11px;
   display: flex;
   align-items: flex-end;
   color: var(--header-icon-label);
+  -webkit-font-smoothing: antialiased;
 }
 
 .save-btn {
@@ -2172,7 +2186,7 @@ select {
   align-items: center;
   gap: 5px;
   padding: 2px 8px 2px 7px;
-  min-height: 41px;
+  min-height: 44px;
   box-sizing: border-box;
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -2194,8 +2208,10 @@ select {
 }
 
 .member-select-lbl {
+  font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
   font-size: 10px;
   font-weight: 800;
+  letter-spacing: 0.04em;
   color: var(--accent);
 }
 
@@ -2210,7 +2226,7 @@ select {
 .member-select-chevron {
   font-size: 11px;
   line-height: 1;
-  color: var(--text2);
+  color: var(--header-icon-label);
   transition:
     transform 0.2s ease,
     color 0.2s ease;
