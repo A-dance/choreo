@@ -1707,7 +1707,7 @@ select {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: var(--text);
+  color: var(--header-icon-label);
   line-height: 11px;
   white-space: nowrap;
   -webkit-font-smoothing: antialiased;
@@ -1736,8 +1736,8 @@ select {
   font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text);
+  letter-spacing: 0.05em;
+  color: var(--header-icon-label);
   line-height: 1;
   min-width: 10px;
   -webkit-font-smoothing: antialiased;
@@ -1781,7 +1781,8 @@ select {
   border-radius: 6px;
   padding: 2px 7px;
   font-size: 10px;
-  color: var(--text2);
+  font-weight: 700;
+  color: var(--text);
   flex-shrink: 0;
 }
 
@@ -1790,20 +1791,21 @@ select {
 }
 
 .ctrl-unit {
-  font-size: 9px;
-  color: var(--text2);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .bpm-inp {
   background: none;
   border: none;
   color: var(--text);
-  font-size: 11px;
+  font-size: 12px;
   width: 42px;
   min-width: 42px;
   outline: none;
   text-align: center;
-  font-weight: 600;
+  font-weight: 800;
   -moz-appearance: textfield;
 }
 
@@ -3273,9 +3275,10 @@ select {
 }
 
 .stage-toolbar-heading {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--header-icon-label);
 }
 
 .stage-toolbar-head-actions {
@@ -3296,8 +3299,9 @@ select {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text);
+  color: var(--header-icon);
   font-size: 16px;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
 }
@@ -3317,8 +3321,8 @@ select {
   font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text);
+  letter-spacing: 0.05em;
+  color: var(--header-icon-label);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -3343,7 +3347,7 @@ select {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text);
+  color: var(--header-icon);
   cursor: pointer;
 }
 
