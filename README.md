@@ -11,7 +11,32 @@
 **CI:** [GitHub Actions](https://github.com/A-dance/choreo/actions)（lint・format・typecheck・UT・e2e・build）  
 **API ドキュメント:** [`docs/design/api-spec.md`](docs/design/api-spec.md)（curl 例・OpenAPI・Postman）
 
+## ドキュメント整備状況（評価チェックリスト）
+
+| 項目 | 状態 | 参照先 |
+| ---- | ---- | ------ |
+| Markdown 記法で記述 | ✅ | 本 README、`docs/manual.*.md`、`docs/design/` |
+| デモ URL | ✅ | [choreo-ten.vercel.app](https://choreo-ten.vercel.app)（下記「本番デプロイ」） |
+| デモアカウント認証情報 | ✅ | 下記「デモアカウント」 |
+| 要件定義の内容 | ✅ | [`../CHOREO_要件定義書.md`](../CHOREO_要件定義書.md)（v2.1） |
+| 機能一覧 | ✅ | 下記「主な機能」 |
+| フレームワーク・ライブラリ | ✅ | 下記「技術スタック」、`package.json` |
+| 外部 API の情報 | ✅ | 下記「外部 API・サービス」 |
+| 環境構築方法 | ✅ | 下記「前提条件」「ローカルセットアップ」 |
+| 実装予定の機能 | ✅ | 下記「将来実装予定」、要件定義 §1.4 |
+| アプリ動作 GIF | ✅ | 下記「デモ動画」（`npm run docs:capture` で本番から再取得可） |
+| 画面キャプチャ | ✅ | 下記「スクリーンショット」（同上） |
+| 前提条件（ツール・バージョン） | ✅ | 下記「前提条件」 |
+| プロジェクト概要 | ✅ | 本ページ冒頭 |
+| 環境変数の説明 | ✅ | [`.env.example`](.env.example)、下記「環境変数」 |
+| 主要エンドポイントと機能 | ✅ | 下記「主要 API エンドポイント」、`docs/design/api-spec.md` |
+| セットアップ（ローカル・本番） | ✅ | 下記「ローカルセットアップ」「本番デプロイ（Vercel）」 |
+
+> **画像の更新:** `npm run docs:capture` で本番 URL からログイン画面・エディター・再生 GIF を再取得します（デモワークスペースは `.env.local` がある場合に自動復元）。
+
 ## スクリーンショット
+
+本番（`https://choreo-ten.vercel.app`）・デモアカウントで取得した最新キャプチャです。
 
 | ログイン画面                                      | エディター（デモアカウント）                         |
 | ------------------------------------------------- | ---------------------------------------------------- |
@@ -22,8 +47,6 @@
 BPM 再生でカウントが進み、フォーメーションが切り替わる様子（本番デモ・デモアカウントで撮影）。
 
 ![BPM 再生デモ](docs/images/demo-playback.gif)
-
-> 画像の再取得: `npm run docs:capture`（本番 URL から取得。デモワークスペースは自動復元）
 
 ## 前提条件
 
@@ -55,6 +78,22 @@ npm run test:e2e     # E2E（要 build 済み）。デモログインは E2E_DEM
 ```
 
 環境変数の一覧は [`.env.example`](.env.example) を参照してください。
+
+### 環境変数（主要）
+
+| 変数 | 必須 | 用途 |
+| ---- | ---- | ---- |
+| `NEXT_PUBLIC_SUPABASE_URL` | 本番・同期時 | Supabase プロジェクト URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 本番・同期時 | クライアント用 anon キー |
+| `SUPABASE_SERVICE_ROLE_KEY` | 本番・同期時 | サーバー API（共有・課金・削除） |
+| `NEXT_PUBLIC_APP_URL` | 本番 | アプリの公開 URL（末尾スラッシュなし） |
+| `GEMINI_API_KEY` | ASK AI 利用時 | `POST /api/help` |
+| `GEMINI_MODEL` | 任意 | 既定 `gemini-2.5-flash` |
+| `STRIPE_SECRET_KEY` | 課金時 | Checkout / Portal / Webhook |
+| `STRIPE_PRO_PRICE_ID` | 課金時 | Pro プラン Price ID |
+| `STRIPE_WEBHOOK_SECRET` | 課金時 | Webhook 署名検証 |
+| `SUPABASE_DB_URL` | 任意 | `npm run supabase:setup` 用 |
+| `E2E_DEMO_LOGIN` | 任意 | E2E でデモログイン試験（`1`） |
 
 ### Supabase 初回セットアップ（任意）
 
@@ -122,6 +161,22 @@ npm run demo:setup
 
 REST エンドポイント一覧・curl 例: [`docs/design/api-spec.md`](docs/design/api-spec.md)
 
+## 主要 API エンドポイント
+
+| メソッド | パス | 機能 |
+| -------- | ---- | ---- |
+| `POST` | `/api/share` | 共有スナップショット作成（1 曲 or フォルダー単位） |
+| `GET` | `/api/share?id=` | 共有データ取得（閲覧専用） |
+| `POST` | `/api/share/upload-url` | 共有用メディアのアップロード URL |
+| `POST` | `/api/help` | ASK AI（Gemini）質問応答 |
+| `GET` | `/api/music-metadata?url=` | 音源 URL のメタデータ取得 |
+| `POST` | `/api/account/delete` | アカウント削除（Bearer JWT） |
+| `POST` | `/api/stripe/checkout` | Pro 申込 Checkout セッション |
+| `POST` | `/api/stripe/portal` | Stripe 顧客ポータル |
+| `GET` | `/api/stripe/subscription` | サブスクリプション状態 |
+| `POST` | `/api/stripe/sync` | 課金状態の同期 |
+| `POST` | `/api/stripe/webhook` | Stripe Webhook |
+
 ## 将来実装予定
 
 現バージョンでは **要件定義のスコープ外**（共同編集・PDF 出力等）は [`CHOREO_要件定義書.md`](../CHOREO_要件定義書.md) §1.4 を参照。
@@ -135,75 +190,116 @@ REST エンドポイント一覧・curl 例: [`docs/design/api-spec.md`](docs/de
 ## 画面構成
 
 ```
-┌ SmartHeader ─────────────────────────────────────────┐
-│ 曲名 / BPM / ばみり / 人数 / 保存 / コピー / 再生   │
-├ StageArea ───────────────────────────────────────────┤
-│  ステージ（メンバー配置・D&D・選択）                  │
-├ TimelineFooter ──────────────────────────────────────┤
-│  Now · 位置表示 / セクション・カウントタイムライン   │
-└──────────────────────────────────────────────────────┘
+┌ SmartHeader ────────────────────────────────────────────────┐
+│ ≡ / 曲名 / BPM・Grid・Dots / 人数 / Play・Copy・Paste・Undo │
+│ Share / ASK AI                                              │
+├ StageArea ──────────────────────────────────────────────────┤
+│  ステージ（メンバー配置・D&D）  右上: Tool（描画ツール）     │
+├ TimelineFooter ─────────────────────────────────────────────┤
+│  セクションタブ / カウント行（選択時に赤い × で削除）        │
+└─────────────────────────────────────────────────────────────┘
+  サイドバー（≡）: PROJECTS・検索・新規・フォルダー・音源・動画
 ```
 
-| 領域 | コンポーネント   | 役割                                            |
-| ---- | ---------------- | ----------------------------------------------- |
-| 上部 | `SmartHeader`    | 曲名・BPM・ばみり・人数・保存・配置コピペ・再生 |
-| 中央 | `StageArea`      | ステージ・メンバー丸ポチ・ドラッグ配置          |
-| 下部 | `TimelineFooter` | 現在位置（Now）・セクション／カウント操作       |
-| 共通 | `MemberPanel`    | メンバー名・表示/非表示・削除・復元             |
-| 共通 | `ChoreoContext`  | 状態管理・再生ループ・localStorage 永続化       |
+| 領域       | コンポーネント      | 役割 |
+| ---------- | ------------------- | ---- |
+| 上部       | `SmartHeader`       | 曲名・BPM/Grid/Dots・人数・再生・コピペ・共有・ASK AI |
+| 中央       | `StageArea`         | ステージ・メンバー配置・描画ツール（Tool） |
+| 下部       | `TimelineFooter`    | セクションタブ・カウント操作 |
+| サイドバー | `ProjectSidebar`    | プロジェクト・フォルダー・検索・音源・参考動画 |
+| 共通       | `MemberPanel`       | メンバー名・表示/非表示・削除 |
+| 共通       | `HelpPanel`         | ASK AI チャット |
+| 状態       | `ChoreoContext`     | 編集状態・再生・localStorage / クラウド同期 |
 
 ## 主な機能
 
+### 認証・アカウント
+
+- メール / Google ログイン、新規登録、パスワード再設定
+- **マイページ** … 表示名・アバター・言語・プラン・Stripe Portal
+- ログイン時 **クラウド同期**（無料・Pro 共通）
+
+### プロジェクト・フォルダー（サイドバー）
+
+- **PROJECTS** 見出し、**検索…**、**+ 新規プロジェクト**、**フォルダー** ボタン
+- ブックマーク / フォルダー / その他 のブロック表示
+- ドラッグで並べ替え・フォルダー移動
+- プロジェクト名のダブルクリックでリネーム
+
 ### フォーメーション編集
 
-- メンバーをドラッグ＆ドロップで配置（% 座標）
+- メンバーをドラッグ＆ドロップで配置（方眼スナップ）
 - カウント切替時に滑らかにアニメーション
-- 配置の **コピー / ペースト**（⌘C / ⌘V）
+- **Copy** / **Paste** / **Undo**（⌘C / ⌘V / ⌘Z）
+
+### ヘッダーツール
+
+- **BPM**（40〜240）、**Grid** 横/縦（ばみり）、**Dots** サイズ（14〜64 px）
+- ラベル・数値は **Play** ボタンと同系の明るい表示
 
 ### タイムライン
 
-- セクション（イントロ / Aメロ / サビ / アウトロ 等）を横スクロールで管理
-- 各セクション **8 カウント**（アウトロは 1 カウント）
-- カウント間に **＆（半カウント）** を挿入可能（拍は増やさず後半で移動）
-- **+ Add section** でセクション追加
-- セクション名はダブルクリックで編集
+- セクション（イントロ / Aメロ / サビ 等）のタブ・並べ替え
+- セクション名は **ダブルクリック** で編集
+- **選択中のセクション**に赤い **×** → 確認後にセクション削除（2 件以上・再生中は非表示）
+- カウントの **クリック** で移動・選択
+- **選択中のカウント**に赤い **×** → **必ず確認**して削除（再生中は非表示）
+- **+** で半カウント（&）挿入、**+ Add count** / **+ Add section**
 
 ### BPM 再生
 
-- BPM に合わせてカウントを自動進行
-- **一定テンポ**（1 拍 = 60/BPM 秒）。＆ がある場合のみ移動タイミングが前半/後半に分かれる
-- 再生中にカウントをクリックすると **その位置から再開**
+- **Play** または **Space** で再生 / 一時停止
+- BPM に合わせてカウント自動進行
+- 再生中にカウントクリックでその位置から再開
+
+### ステージ描画（Tool）
+
+- ステージ右上 **Tool** … 矢印・×マーク・ペン（カウントごとに保存）
+- アイコンは最初から明るく表示、ホバーで背景が色づく（Play と同様）
+- 閲覧専用モードでは非表示
 
 ### メンバー管理
 
-- 人数の変更・名前編集
-- **非表示** … 編集中の位置だけステージに出さない
-- **削除** … リストから外す（削除済みから **表示** で復元）
-- ステージ上で丸ポチをクリックして選択 → Delete / Backspace で削除
+- **人数** パネルで人数・名前・表示/非表示・リストから削除
 
-### ステージ
+### 共有（Share）
 
-- **ばみり**（横・縦）で方眼グリッドを調整
-- ステージ枠をドラッグして **横幅・高さ** を独立調整
-- 床に 0 番・1 番… の番号付き方眼を表示
+- 1 曲またはフォルダー単位の共有リンク
+- 閲覧専用プレビュー
+
+### ASK AI
+
+- ヘッダー **ASK AI** … 操作マニュアルに基づくチャット（Gemini）
+- 閲覧専用モードでは利用不可
+
+### メディア
+
+- サイドバー **音源** … Smart link（Spotify 等・ファイル便 URL も登録可）
+- **参考動画** … YouTube / Vimeo
+
+### 課金（Pro）
+
+- 無料: プロジェクト 1 件 / Pro: 無制限（Stripe）
 
 ### 保存
 
-- 編集内容は **localStorage** に自動保存（キー: `choreo-v2-state`）
-- **保存** ボタン / ⌘S で明示保存
+- 編集内容は **自動保存**（localStorage + ログイン時クラウド）
 
 ## キーボードショートカット
 
-| 操作                | キー                   |
-| ------------------- | ---------------------- |
-| 前のカウント        | `←` / `[`              |
-| 次のカウント        | `→` / `]`              |
-| 再生 / 停止         | `Space`                |
-| 保存                | `⌘S` / `Ctrl+S`        |
-| 配置コピー          | `⌘C` / `Ctrl+C`        |
-| 配置ペースト        | `⌘V` / `Ctrl+V`        |
-| 選択解除 / 再生停止 | `Esc`                  |
-| 選択メンバーを削除  | `Delete` / `Backspace` |
+詳細は [`docs/manual.ja.md`](docs/manual.ja.md) §11 を参照。
+
+| 操作                     | キー                          |
+| ------------------------ | ----------------------------- |
+| 前のカウント             | `←` / `[`                     |
+| 次のカウント             | `→` / `]`                     |
+| 再生 / 停止              | `Space`                       |
+| 配置コピー               | `⌘C` / `Ctrl+C`               |
+| 配置ペースト             | `⌘V` / `Ctrl+V`               |
+| 元に戻す（Undo）         | `⌘Z` / `Ctrl+Z`               |
+| メンバー選択時: 非表示   | `Delete` / `Backspace`        |
+| 未選択時: 現在カウント削除 | `Delete` / `Backspace`（データあり時は確認） |
+| 選択解除 / 再生停止      | `Esc`                         |
 
 ## プロジェクト構成
 
@@ -251,12 +347,19 @@ ChoreoState {
 
 ## 技術スタック
 
-- **Next.js 16**（App Router）/ **React 19** / **TypeScript**
-- 状態: ChoreoContext + localStorage / IndexedDB
-- **Supabase**（認証・クラウド同期・共有）
-- **Stripe**（Pro サブスクリプション）
-- **Google Gemini**（ASK AI）
-- スタイル: カスタム CSS（`globals.css`）
+| 区分 | 採用技術 |
+| ---- | -------- |
+| フレームワーク | **Next.js 16**（App Router）、**React 19**、**TypeScript 5** |
+| スタイル | Tailwind CSS 4 + カスタム CSS（`globals.css`） |
+| 認証・DB | **Supabase**（Auth / PostgreSQL / Storage） |
+| 課金 | **Stripe**（Checkout / Customer Portal / Webhook） |
+| AI | **Google Gemini**（`@google/generative-ai` 相当、`POST /api/help`） |
+| 状態 | `ChoreoContext`、localStorage、IndexedDB（メディア） |
+| テスト | **Vitest**（単体・API）、**Playwright**（e2e） |
+| CI | GitHub Actions |
+| ホスティング | **Vercel**（本番） |
+
+主要依存: `next`, `react`, `@supabase/supabase-js`, `stripe` — 詳細は [`package.json`](package.json)
 
 ## レガシー
 

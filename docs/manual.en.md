@@ -30,10 +30,10 @@ Edits **auto-save**. Cloud sync when logged in.
 | Area     | Contents                                                                                                                              |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | Top-left | Project menu (≡) → sidebar                                                                                                            |
-| Header   | Song title, BPM / grid / dots / members, Play, Copy, Paste, Undo, **Share**, **ASK AI**                                               |
+| Header   | Song title, **BPM / grid / dots** tool panel, members, Play, Copy, Paste, Undo, **Share**, **ASK AI** (bright labels like Play)      |
 | Center   | Stage (BACK / AUDIENCE labels). **Tool** button top-right (drawing tools)                                                             |
 | Bottom   | Timeline (section tabs + counts)                                                                                                      |
-| Sidebar  | Search, **+ New project**, **Folder**, project list (Bookmarks / Folders / Other), **Music** / **Reference videos**, My page (avatar) |
+| Sidebar  | **PROJECTS** heading, **Search…**, **+ New project**, **Folder** (bright text/borders), project list, **Music** / **Reference videos**, My page (avatar) |
 
 Zero projects shows **No projects** + **+ New project** in the center.
 
@@ -83,7 +83,9 @@ Grouped at the top of the sidebar:
 | ----------------- | -------------------------------------------------------------------------------- |
 | **Search…**       | Filter by project or folder name. Matching a folder shows all projects inside it |
 | **+ New project** | Create dialog (title, BPM, members, counts per section)                          |
-| **Folder**        | Add a new folder (default name: “New folder”)                                    |
+| **Folder**        | Add a new folder (default name: “New folder”). Button label is **Folder**; tooltip: “New folder” |
+
+The **PROJECTS** heading, search field, and action buttons use brighter text and borders for readability.
 
 Drag reorder is disabled while searching.
 
@@ -144,15 +146,19 @@ The list is split into blocks (with dividers):
 
 ### 5.1 Song title — editable in header
 
-### 5.2 BPM — 40–240
+### 5.2 BPM · grid · dots (tool panel)
 
-### 5.3 Grid — **W** / **D**, each 1–20; 0 = center
+Labels and values for **BPM**, **Grid (W / D)**, and **Dots** beside the song title use the same color and size as the header **Play** button.
 
-### 5.4 Dot size — **Dots** field, 14–64 px (Enter or blur)
+#### BPM — 40–240 (Enter or blur)
 
-### 5.5 Members — **Members** button → member panel (§7)
+#### Grid — **W** / **D**, each 1–20; 0 = center (updates live)
 
-### 5.6 Action buttons (English labels)
+#### Dot size — **Dots** field, 14–64 px (Enter or blur)
+
+### 5.3 Members — **Members** button → member panel (§7)
+
+### 5.4 Action buttons (English labels)
 
 - **Play**, **Copy**, **Paste**, **Undo**
 - **Share** … share dialog (left of ASK AI)
@@ -177,6 +183,12 @@ The list is split into blocks (with dividers):
 ### 6.2 Stage drawing tools (arrow · × · pen)
 
 Use the **Tool** button (pen icon + “Tool” label) at the top-right of the stage to add arrows, × marks, and pen strokes on the **current count**. Drawings are stored per count and change when you switch counts.
+
+#### Look & feel
+
+- **Tool** and toolbar icons are bright from the start (same tone as **Play**)
+- On hover, only the **background** tints (like **Play**); icon color stays bright
+- Active tool: purple background highlight
 
 #### Open / close
 
@@ -236,7 +248,10 @@ Open: header **Members** button. Title: **👥 Edit members**. Shows **Editing p
 
 - Click → select + jump to section start
 - Drag → reorder
-- Double-click → rename; × deletes (2+ sections, with confirm)
+- Double-click → **rename only** (no delete button)
+- When a section is **selected**, a red **×** appears near the top-right of the tab (only if there are 2+ sections)
+- Click **×** → **confirmation dialog** → deletes the whole section
+- **×** is hidden **during playback**
 
 ### 8.2 Add section
 
@@ -245,9 +260,13 @@ Open: header **Members** button. Title: **👥 Edit members**. Shows **Editing p
 
 ### 8.3 Counts
 
-- Click navigate; double-click → × delete (confirm if data)
-- Dot indicator when formation exists; **S1**, **S2** labels
-- Horizontal scroll on count row
+- Click → navigate (selects that count)
+- When the count is **selected** (white highlight), a red **×** appears to the upper right (only if the section has 2+ slots)
+- Click **×** → **always confirms** (extra warning if formation data exists) → delete
+- **×** is hidden **during playback**
+- Dot indicator when formation exists; **S1**, **S2** labels; horizontal scroll on the row
+
+**Delete** / **Backspace** also deletes the current count when no member is selected (confirms only if formation data exists). The **×** button always confirms.
 
 ### 8.4 Add count
 
@@ -288,7 +307,7 @@ Current count formation only.
 | ⌘C / Ctrl+C        | Copy formation                                              |
 | ⌘V / Ctrl+V        | Paste formation                                             |
 | ⌘Z / Ctrl+Z        | Undo                                                        |
-| Escape             | Deselect, close ×, close panels, stop playback              |
+| Escape             | Deselect member, close panels, stop playback (deselect drawing) |
 
 Some shortcuts are disabled while typing in a field.
 
