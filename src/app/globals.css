@@ -12,8 +12,8 @@
   --gold: #ffd166;
   --text: #e8ebf8;
   --text2: #68708e;
-  --header-icon: #b8c2dc;
-  --header-icon-label: #96a2be;
+  --header-icon: #c8d0ea;
+  --header-icon-label: #a8b4ce;
   --border: #222840;
   --stage: #10131f;
 }
@@ -60,8 +60,8 @@ body {
 
 .project-menu-btn {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -82,13 +82,13 @@ body {
 
 .project-menu-icon {
   display: block;
-  width: 14px;
-  height: 2px;
+  width: 16px;
+  height: 2.5px;
   background: currentColor;
   border-radius: 1px;
   box-shadow:
-    0 -5px 0 currentColor,
-    0 5px 0 currentColor;
+    0 -6px 0 currentColor,
+    0 6px 0 currentColor;
 }
 
 .project-drawer-backdrop {
@@ -1614,7 +1614,7 @@ select {
 }
 
 .hdr-row {
-  min-height: 44px;
+  min-height: 46px;
   min-width: 0;
   width: 100%;
   max-width: 100%;
@@ -1955,16 +1955,16 @@ select {
 
 .hdr-action-divider {
   width: 1px;
-  height: 28px;
+  height: 30px;
   background: var(--border);
   margin: 0 4px;
   flex-shrink: 0;
-  margin-bottom: 9px;
+  margin-bottom: 10px;
 }
 
 .hdr-action-btn.help-action {
-  min-width: 40px;
-  padding: 2px 7px;
+  min-width: 44px;
+  padding: 2px 8px;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--bg3);
@@ -1985,7 +1985,7 @@ select {
 }
 
 .hdr-action-btn.help-action .hdr-action-label {
-  font-size: 8.5px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: var(--accent);
@@ -2000,10 +2000,10 @@ select {
   grid-template-rows: 1fr auto;
   align-items: end;
   justify-items: center;
-  gap: 2px;
-  height: 41px;
-  min-width: 36px;
-  padding: 2px 5px;
+  gap: 3px;
+  height: 44px;
+  min-width: 40px;
+  padding: 2px 6px;
   box-sizing: border-box;
   background: transparent;
   border: none;
@@ -2035,23 +2035,23 @@ select {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  width: 17px;
+  width: 20px;
   min-height: 0;
   align-self: end;
 }
 
 .hdr-action-icon svg {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
 }
 
 .hdr-action-label {
-  font-size: 8.5px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1;
   white-space: nowrap;
-  height: 9px;
+  height: 11px;
   display: flex;
   align-items: flex-end;
   color: var(--header-icon-label);
