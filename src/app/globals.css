@@ -12,8 +12,8 @@
   --gold: #ffd166;
   --text: #e8ebf8;
   --text2: #68708e;
-  --header-icon: #f2f5ff;
-  --header-icon-label: #eef1fa;
+  --header-icon: var(--text);
+  --header-icon-label: var(--text);
   --header-icon-hover: #ffffff;
   --border: #222840;
   --stage: #10131f;
@@ -2054,7 +2054,6 @@ select {
 .hdr-action-icon svg {
   width: 17px;
   height: 17px;
-  filter: drop-shadow(0 0 0.45px rgba(255, 255, 255, 0.45));
 }
 
 .hdr-action-label {
@@ -2226,7 +2225,7 @@ select {
 .member-select-chevron {
   font-size: 11px;
   line-height: 1;
-  color: var(--header-icon-label);
+  color: var(--text);
   transition:
     transform 0.2s ease,
     color 0.2s ease;
