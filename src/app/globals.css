@@ -15,6 +15,7 @@
   --header-icon: var(--text);
   --header-icon-label: var(--text);
   --header-icon-hover: #ffffff;
+  --stage-tool-icon: #ffffff;
   --border: #222840;
   --stage: #10131f;
 }
@@ -3195,22 +3196,22 @@ select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  width: 36px;
-  height: 36px;
-  padding: 3px 0 2px;
-  border: 1px solid var(--border);
+  gap: 2px;
+  width: 40px;
+  height: 40px;
+  padding: 4px 0 3px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
-  background: rgba(19, 24, 40, 0.94);
-  color: var(--text2);
+  background: rgba(19, 24, 40, 0.96);
+  color: var(--stage-tool-icon);
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .stage-draw-toggle-label {
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
   color: inherit;
   line-height: 1;
   user-select: none;
@@ -3218,20 +3219,24 @@ select {
 }
 
 .stage-draw-toggle-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   display: block;
 }
 
 .stage-draw-toggle:hover:not(:disabled) {
-  color: var(--text);
-  border-color: rgba(124, 92, 252, 0.45);
+  color: #ffffff;
+  border-color: rgba(124, 92, 252, 0.55);
+  background: rgba(124, 92, 252, 0.14);
 }
 
 .stage-draw-toggle.open {
-  color: var(--accent);
-  border-color: rgba(124, 92, 252, 0.55);
-  background: rgba(124, 92, 252, 0.12);
+  color: #ffffff;
+  border-color: rgba(124, 92, 252, 0.65);
+  background: rgba(124, 92, 252, 0.22);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(124, 92, 252, 0.35);
 }
 
 .stage-draw-toggle:disabled {
@@ -3287,28 +3292,40 @@ select {
   gap: 4px;
 }
 
+.stage-toolbar-delete-btn.undo-btn {
+  color: #ffe08a;
+  border-color: rgba(255, 209, 102, 0.65);
+  background: rgba(255, 209, 102, 0.22);
+}
+
+.stage-toolbar-delete-btn.undo-btn:hover:not(:disabled) {
+  color: #fff3c4;
+  border-color: var(--gold);
+  background: rgba(255, 209, 102, 0.34);
+}
+
 .stage-toolbar-delete-btn svg {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
 }
 
 .stage-tool-close-icon {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--header-icon);
-  font-size: 16px;
+  color: var(--stage-tool-icon);
+  font-size: 18px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
 }
 
 .stage-tool-close-icon:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--header-icon-hover);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .stage-toolbar-section {
@@ -3341,31 +3358,31 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--header-icon);
+  color: var(--stage-tool-icon);
   cursor: pointer;
 }
 
 .stage-tool-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
   display: block;
 }
 
 .stage-tool-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--header-icon-hover);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
 .stage-tool-btn.active {
-  background: rgba(124, 92, 252, 0.18);
-  color: var(--accent);
-  box-shadow: inset 0 0 0 1px rgba(124, 92, 252, 0.35);
+  background: rgba(124, 92, 252, 0.28);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(196, 181, 255, 0.55);
 }
 
 .stage-tool-btn:disabled {
