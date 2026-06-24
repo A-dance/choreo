@@ -1310,38 +1310,40 @@ body {
   border: none;
   border-radius: 0;
   background: transparent;
-  color: var(--text2);
+  color: var(--ac2);
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  margin: 0 0 6px;
-  transition: color 0.15s ease;
+  align-self: flex-start;
+  opacity: 0.82;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .sec-tab-section-del {
-  margin-left: -4px;
+  margin: 5px 0 0 -4px;
 }
 
 .sec-tab-wrap.editing .sec-tab-section-del {
-  margin-bottom: 2px;
+  margin-top: 7px;
 }
 
 .cnt-slot-del {
-  margin-left: 1px;
-  margin-bottom: 0;
-  align-self: center;
+  margin: 3px 0 0 1px;
 }
 
 .sec-tab-section-del:hover,
 .cnt-slot-del:hover {
-  color: var(--text);
+  color: #ff7b96;
+  opacity: 1;
 }
 
 .cnt-wrap {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1px;
   flex-shrink: 0;
 }
