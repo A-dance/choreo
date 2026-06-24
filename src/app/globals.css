@@ -12,6 +12,8 @@
   --gold: #ffd166;
   --text: #e8ebf8;
   --text2: #68708e;
+  --header-icon: #b8c2dc;
+  --header-icon-label: #96a2be;
   --border: #222840;
   --stage: #10131f;
 }
@@ -66,7 +68,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg3);
-  color: var(--text2);
+  color: var(--header-icon);
   cursor: pointer;
   padding: 0;
 }
@@ -2006,14 +2008,18 @@ select {
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: var(--text2);
+  color: var(--header-icon);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .hdr-action-btn:hover:not(:disabled) {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hdr-action-btn:hover:not(:disabled) .hdr-action-label {
+  color: var(--header-icon-label);
 }
 
 .hdr-action-btn:disabled {
@@ -2029,25 +2035,26 @@ select {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  width: 16px;
+  width: 17px;
   min-height: 0;
   align-self: end;
 }
 
 .hdr-action-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 .hdr-action-label {
   font-size: 8.5px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 1;
   white-space: nowrap;
   height: 9px;
   display: flex;
   align-items: flex-end;
+  color: var(--header-icon-label);
 }
 
 .save-btn {
