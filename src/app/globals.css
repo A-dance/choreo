@@ -1691,8 +1691,8 @@ select {
 
 .tool-section {
   display: grid;
-  grid-template-rows: 10px 22px;
-  gap: 4px;
+  grid-template-rows: 11px 22px;
+  gap: 3px;
   padding: 0 10px;
   min-width: 0;
   align-content: center;
@@ -1703,12 +1703,14 @@ select {
 }
 
 .tool-section-title {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--text2);
-  line-height: 10px;
+  font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  line-height: 11px;
   white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
 }
 
 .tool-section-controls {
@@ -1731,11 +1733,14 @@ select {
 }
 
 .tool-inline-lbl {
-  font-size: 9px;
+  font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
+  font-size: 10px;
   font-weight: 700;
-  color: var(--text2);
+  letter-spacing: 0.04em;
+  color: var(--text);
   line-height: 1;
   min-width: 10px;
+  -webkit-font-smoothing: antialiased;
 }
 
 .tool-inp {
@@ -1745,6 +1750,7 @@ select {
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text);
+  font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
   font-size: 12px;
   font-weight: 800;
   text-align: center;
@@ -3290,15 +3296,15 @@ select {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text2);
+  color: var(--text);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
 
 .stage-tool-close-icon:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--header-icon-hover);
 }
 
 .stage-toolbar-section {
@@ -3308,9 +3314,12 @@ select {
 }
 
 .stage-toolbar-label {
+  font-family: var(--font-latin), "Helvetica Neue", Arial, sans-serif;
   font-size: 10px;
   font-weight: 700;
-  color: var(--text2);
+  letter-spacing: 0.04em;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 .stage-toolbar-hint {
@@ -3339,14 +3348,14 @@ select {
 }
 
 .stage-tool-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   display: block;
 }
 
 .stage-tool-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--header-icon-hover);
 }
 
 .stage-tool-btn.active {
