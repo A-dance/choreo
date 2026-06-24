@@ -4,7 +4,6 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { countHasData, flattenTimeline } from "@/lib/choreoUtils";
 import { MAX_COUNTS_PER_SECTION } from "@/lib/constants";
 import { useChoreo } from "@/context/ChoreoContext";
-import type { UiStrings } from "@/lib/uiStrings";
 
 export function TimelineFooter() {
   const {
@@ -27,9 +26,9 @@ export function TimelineFooter() {
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [dragSectionId, setDragSectionId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-  const [countDeleteSlotIndex, setCountDeleteSlotIndex] = useState<number | null>(null);
 
   const flatSlots = useMemo(() => flattenTimeline(state.sections), [state.sections]);
+  const canDeleteSection = !isViewOnly && state.sections.length > 1;
   const playbackSectionId =
     flatSlots.find((f) => f.globalIndex === state.currentCount)?.sectionId ??
     state.sections[0]?.id ??
@@ -38,19 +37,6 @@ export function TimelineFooter() {
   useEffect(() => {
     if (playbackSectionId) setSelectedSectionId(playbackSectionId);
   }, [playbackSectionId]);
-
-  useEffect(() => {
-    setCountDeleteSlotIndex(null);
-  }, [selectedSectionId]);
-
-  useEffect(() => {
-    if (countDeleteSlotIndex === null) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setCountDeleteSlotIndex(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [countDeleteSlotIndex]);
 
   const selectedSection = state.sections.find((s) => s.id === selectedSectionId);
   const selectedSectionIndex = selectedSection
@@ -110,11 +96,32 @@ export function TimelineFooter() {
       flatSlots.find((f) => f.sectionId === sectionId && f.slotIndex === slotIndex)
         ?.globalIndex ?? 0;
     const hasData = countHasData(state.countData[global]);
-    if (hasData && !window.confirm(UI.deleteCountWithDataConfirm(label))) {
+    const confirmMessage = hasData
+      ? UI.deleteCountWithDataConfirm(label)
+      : UI.deleteCountConfirm(label);
+    if (!window.confirm(confirmMessage)) {
       return;
     }
     removeCountAt(sectionId, slotIndex);
-    setCountDeleteSlotIndex(null);
+  };
+
+  const renderSectionDeleteButton = (sectionId: string, name: string) => {
+    if (!canDeleteSection) return null;
+    return (
+      <button
+        type="button"
+        className="sec-tab-section-del"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDeleteSection(sectionId, name);
+        }}
+        title={UI.deleteSection}
+        aria-label={UI.deleteSectionAria(name)}
+      >
+        ×
+      </button>
+    );
   };
 
   const handleTabClick = (sectionId: string) => {
@@ -204,7 +211,13 @@ export function TimelineFooter() {
 
           if (editingSectionId === sec.id) {
             return (
-              <div key={sec.id} className="sec-tab-wrap selected editing">
+              <div
+                key={sec.id}
+                className={
+                  "sec-tab-wrap selected editing" +
+                  (canDeleteSection ? " has-section-del" : "")
+                }
+              >
                 <input
                   className="sec-tab-inp"
                   value={sectionNameDraft}
@@ -217,21 +230,7 @@ export function TimelineFooter() {
                   }}
                   aria-label={UI.sectionName}
                 />
-                {state.sections.length > 1 && (
-                  <button
-                    type="button"
-                    className="sec-tab-section-del"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteSection(sec.id, sec.name);
-                    }}
-                    title={UI.deleteSection}
-                    aria-label={UI.deleteSectionAria(sec.name)}
-                  >
-                    ×
-                  </button>
-                )}
+                {renderSectionDeleteButton(sec.id, sec.name)}
               </div>
             );
           }
@@ -239,7 +238,11 @@ export function TimelineFooter() {
           return (
             <div
               key={sec.id}
-              className={"sec-tab-wrap" + (isSelected ? " selected" : "")}
+              className={
+                "sec-tab-wrap" +
+                (isSelected ? " selected" : "") +
+                (canDeleteSection ? " has-section-del" : "")
+              }
             >
               <button
                 type="button"
@@ -275,6 +278,7 @@ export function TimelineFooter() {
                 )}
                 {sec.name}
               </button>
+              {renderSectionDeleteButton(sec.id, sec.name)}
             </div>
           );
         })}
@@ -309,8 +313,6 @@ export function TimelineFooter() {
                 const isHalf = slot.type === "half";
                 const label = isHalf ? "&" : String(slot.num);
                 const isActive = global === state.currentCount;
-                const showDelete =
-                  countDeleteSlotIndex === slotIdx && canDeleteCountInSection;
                 return (
                   <Fragment key={`${selectedSection.id}-${slotIdx}`}>
                     {slotIdx > 0 && !isViewOnly && (
@@ -328,7 +330,7 @@ export function TimelineFooter() {
                       className={
                         "cnt-wrap" +
                         (isActive ? " selected" : "") +
-                        (showDelete ? " delete-open" : "")
+                        (!isViewOnly && canDeleteCountInSection ? " has-count-del" : "")
                       }
                     >
                       <button
@@ -340,22 +342,12 @@ export function TimelineFooter() {
                           (hasD ? " has-d" : "") +
                           (isHalf ? " half" : "")
                         }
-                        onClick={() => {
-                          navigateTo(global);
-                          setCountDeleteSlotIndex(null);
-                        }}
-                        onDoubleClick={(e) => {
-                          e.preventDefault();
-                          if (isViewOnly || !canDeleteCountInSection) return;
-                          setCountDeleteSlotIndex((prev) =>
-                            prev === slotIdx ? null : slotIdx,
-                          );
-                        }}
+                        onClick={() => navigateTo(global)}
                         title={UI.countDeleteHint}
                       >
                         {label}
                       </button>
-                      {showDelete && (
+                      {!isViewOnly && canDeleteCountInSection && (
                         <button
                           type="button"
                           className="cnt-slot-del"

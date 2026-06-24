@@ -315,6 +315,13 @@ body {
     min-height: 32px;
   }
 
+  .sec-tab-section-del,
+  .cnt-slot-del {
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+  }
+
   .member-dot {
     touch-action: none;
   }

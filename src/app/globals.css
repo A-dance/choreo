@@ -1292,6 +1292,14 @@ body {
   position: relative;
 }
 
+.sec-tab-wrap.has-section-del .sec-tab {
+  padding-right: 18px;
+}
+
+.sec-tab-wrap.has-section-del .sec-tab-inp {
+  padding-right: 22px;
+}
+
 .sec-tab-wrap.selected {
   padding-right: 2px;
 }
@@ -1302,27 +1310,51 @@ body {
 
 .sec-tab-section-del,
 .cnt-slot-del {
-  width: 20px;
-  height: 20px;
+  position: absolute;
+  z-index: 3;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(252, 92, 125, 0.45);
+  border: 1px solid rgba(252, 92, 125, 0.28);
   border-radius: 50%;
-  background: rgba(252, 92, 125, 0.12);
-  color: var(--ac2);
-  font-size: 15px;
-  font-weight: 400;
+  background: rgba(12, 15, 26, 0.82);
+  color: rgba(252, 92, 125, 0.62);
+  font-size: 11px;
+  font-weight: 600;
   line-height: 0;
   cursor: pointer;
   padding: 0;
+  opacity: 0.62;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sec-tab-section-del {
+  top: 2px;
+  right: 0;
+}
+
+.cnt-slot-del {
+  top: -4px;
+  right: -4px;
+}
+
+.sec-tab-wrap:hover .sec-tab-section-del,
+.cnt-wrap:hover .cnt-slot-del {
+  opacity: 0.88;
 }
 
 .sec-tab-section-del:hover,
 .cnt-slot-del:hover {
-  background: rgba(252, 92, 125, 0.25);
-  border-color: var(--ac2);
+  opacity: 1;
+  background: rgba(252, 92, 125, 0.24);
+  border-color: rgba(252, 92, 125, 0.65);
   color: #fff;
 }
 
@@ -1331,6 +1363,7 @@ body {
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .sec-tab {

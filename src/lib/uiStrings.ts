@@ -444,13 +444,13 @@ const en: UiStrings = {
   sections: "Sections",
   sectionName: "Section name",
   sectionTabHint:
-    "Click to select · drag to reorder · double-click to rename and show delete",
+    "Click to select · drag to reorder · double-click to rename · × deletes section",
   deleteSection: "Delete section",
   deleteSectionAria: (name) => `Delete section ${name}`,
   deleteSectionConfirm: (name) =>
     `Delete the entire section "${name}"?\n(This is not the same as deleting a single count.)`,
   insertHalfCount: "Insert & (half-count)",
-  countDeleteHint: "Double-click to show delete · Delete key also works",
+  countDeleteHint: "Click × to delete (confirmation required)",
   deleteCount: "Delete count",
   deleteCountAria: (label) => `Delete count ${label}`,
   deleteCountConfirm: (label) => `Delete count "${label}"?`,
@@ -843,13 +843,13 @@ const ja: UiStrings = {
   sections: "セクション",
   sectionName: "セクション名",
   sectionTabHint:
-    "クリックで選択 · ドラッグで並べ替え · ダブルクリックで名前変更と×表示",
+    "クリックで選択 · ドラッグで並べ替え · ダブルクリックで名前変更 · ×でセクション削除",
   deleteSection: "セクションを削除",
   deleteSectionAria: (name) => `セクション「${name}」を削除`,
   deleteSectionConfirm: (name) =>
     `セクション「${name}」を丸ごと削除します。\n（カウントの削除ではありません）`,
   insertHalfCount: "＆を挿入（半カウント）",
-  countDeleteHint: "ダブルクリックで削除ボタン表示 · Delete キーでも削除",
+  countDeleteHint: "×を押すと削除（確認ダイアログあり）",
   deleteCount: "カウントを削除",
   deleteCountAria: (label) => `カウント「${label}」を削除`,
   deleteCountConfirm: (label) => `カウント「${label}」を削除しますか？`,
