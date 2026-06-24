@@ -13,26 +13,123 @@
 
 ## ドキュメント整備状況（評価チェックリスト）
 
-| 項目 | 状態 | 参照先 |
-| ---- | ---- | ------ |
-| Markdown 記法で記述 | ✅ | 本 README、`docs/manual.*.md`、`docs/design/` |
-| デモ URL | ✅ | [choreo-ten.vercel.app](https://choreo-ten.vercel.app)（下記「本番デプロイ」） |
-| デモアカウント認証情報 | ✅ | 下記「デモアカウント」 |
-| 要件定義の内容 | ✅ | [`../CHOREO_要件定義書.md`](../CHOREO_要件定義書.md)（v2.1） |
-| 機能一覧 | ✅ | 下記「主な機能」 |
-| フレームワーク・ライブラリ | ✅ | 下記「技術スタック」、`package.json` |
-| 外部 API の情報 | ✅ | 下記「外部 API・サービス」 |
-| 環境構築方法 | ✅ | 下記「前提条件」「ローカルセットアップ」 |
-| 実装予定の機能 | ✅ | 下記「将来実装予定」、要件定義 §1.4 |
-| アプリ動作 GIF | ✅ | 下記「デモ動画」（`npm run docs:capture` で本番から再取得可） |
-| 画面キャプチャ | ✅ | 下記「スクリーンショット」（同上） |
-| 前提条件（ツール・バージョン） | ✅ | 下記「前提条件」 |
-| プロジェクト概要 | ✅ | 本ページ冒頭 |
-| 環境変数の説明 | ✅ | [`.env.example`](.env.example)、下記「環境変数」 |
-| 主要エンドポイントと機能 | ✅ | 下記「主要 API エンドポイント」、`docs/design/api-spec.md` |
-| セットアップ（ローカル・本番） | ✅ | 下記「ローカルセットアップ」「本番デプロイ（Vercel）」 |
+| 項目                           | 状態 | 参照先                                                                         |
+| ------------------------------ | ---- | ------------------------------------------------------------------------------ |
+| Markdown 記法で記述            | ✅   | 本 README、`docs/manual.*.md`、`docs/design/`                                  |
+| デモ URL                       | ✅   | [choreo-ten.vercel.app](https://choreo-ten.vercel.app)（下記「本番デプロイ」） |
+| デモアカウント認証情報         | ✅   | 下記「デモアカウント」                                                         |
+| 要件定義の内容                 | ✅   | [`../CHOREO_要件定義書.md`](../CHOREO_要件定義書.md)（v2.1）                   |
+| 機能一覧                       | ✅   | 下記「主な機能」                                                               |
+| フレームワーク・ライブラリ     | ✅   | 下記「技術スタック」、`package.json`                                           |
+| 外部 API の情報                | ✅   | 下記「外部 API・サービス」                                                     |
+| 環境構築方法                   | ✅   | 下記「前提条件」「ローカルセットアップ」                                       |
+| 実装予定の機能                 | ✅   | 下記「将来実装予定」、要件定義 §1.4                                            |
+| アプリ動作 GIF                 | ✅   | 下記「デモ動画」（`npm run docs:capture` で本番から再取得可）                  |
+| 画面キャプチャ                 | ✅   | 下記「スクリーンショット」（同上）                                             |
+| 前提条件（ツール・バージョン） | ✅   | 下記「前提条件」                                                               |
+| プロジェクト概要               | ✅   | 本ページ冒頭                                                                   |
+| 環境変数の説明                 | ✅   | [`.env.example`](.env.example)、下記「環境変数」                               |
+| 主要エンドポイントと機能       | ✅   | 下記「主要 API エンドポイント」、`docs/design/api-spec.md`                     |
+| セットアップ（ローカル・本番） | ✅   | 下記「ローカルセットアップ」「本番デプロイ（Vercel）」                         |
 
 > **画像の更新:** `npm run docs:capture` で本番 URL からログイン画面・エディター・再生 GIF を再取得します（デモワークスペースは `.env.local` がある場合に自動復元）。
+
+## 評価チェックリスト（機能・動作）
+
+### CRUD・認証
+
+| 項目                         | 状態 | 根拠                                                                                                                                          |
+| ---------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 全画面がエラーなく表示できる | ✅   | `/` `/login` `/mypage` `/auth/callback` `/auth/reset-password`、`?shareId=` 閲覧。本番 [choreo-ten.vercel.app](https://choreo-ten.vercel.app) |
+| 登録（CRUD の C）            | ✅   | `AuthPanel` → `signUpWithPassword`、プロジェクト新規作成 `createProject`                                                                      |
+| 表示（CRUD の R）            | ✅   | ワークスペース読込、エディター、共有閲覧 `GET /api/share`                                                                                     |
+| 更新（CRUD の U）            | ✅   | 配置・曲名・セクション・フォルダー・プロフィール・クラウド同期（`ChoreoContext`）                                                             |
+| 削除（CRUD の D）            | ✅   | プロジェクト／セクション／カウント削除、`POST /api/account/delete`                                                                            |
+| サインアップ                 | ✅   | メール＋パスワード新規登録、`getSignUpPasswordIssue` で強度チェック                                                                           |
+| ログイン                     | ✅   | `signInWithPassword`、下記「デモアカウント」                                                                                                  |
+| ログアウト                   | ✅   | `AuthContext.signOut`（マイページ等）                                                                                                         |
+| DB が想定通り構築            | ✅   | [`supabase/schema.sql`](supabase/schema.sql)（`profiles` `user_workspaces` `shares` + RLS）                                                   |
+| ソーシャル認証               | ✅/△ | Google OAuth 実装（`signInWithGoogle`）。**Supabase で Google プロバイダ有効化が前提**                                                        |
+
+### 一覧系 UI（検索・フィルター・ソート・ページネーション）
+
+> **ページネーションについて:** 本アプリは管理画面型の一覧ページではなく、サイドバーにプロジェクトを全件表示する構成です。件数は Free 1 件 / Pro 無制限と少なく、**ページ分割 UI は要件外のため N/A（未実装・不要）** とします。
+
+| 項目             | 状態    | 根拠                                                                                                         |
+| ---------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| ページネーション | **N/A** | 上記のとおり。サイドバー全件表示（`ProjectSidebar`）                                                         |
+| 検索             | ✅      | サイドバー曲名検索（`filterProjectsByQuery`）                                                                |
+| フィルター       | △       | 検索絞り込み＋ブックマーク／フォルダー分類。**複数条件フィルター UI はなし**                                 |
+| ソート           | △       | **ドラッグ並べ替え**（セクション `reorderSections`、プロジェクト `reorderProjects`）。列ヘッダーソートはなし |
+
+### UX（メッセージ・バリデーション）
+
+| 項目                   | 状態 | 根拠                                                           |
+| ---------------------- | ---- | -------------------------------------------------------------- |
+| 操作失敗時のメッセージ | ✅   | 認証 `role="alert"`、ASK AI エラー、共有読込失敗トースト等     |
+| 操作成功時のメッセージ | ✅   | `Toast`（コピー／ペースト／削除／Undo 等）、共有「コピー済み」 |
+| バリデーション         | ✅   | パスワード 8 文字・大小文字、確認一致、API 側（`apiErrors`）   |
+
+### デモ・本番・CI/CD
+
+| 項目                       | 状態 | 根拠                                                                                                   |
+| -------------------------- | ---- | ------------------------------------------------------------------------------------------------------ |
+| デモ URL の画面が正常表示  | ✅   | [choreo-ten.vercel.app](https://choreo-ten.vercel.app)                                                 |
+| 全機能確認用デモアカウント | ✅   | 下記「デモアカウント」（Pro）                                                                          |
+| デモ用データ               | ✅   | `npm run demo:setup`（サンプル曲・フォルダー）                                                         |
+| 自動テストが CI で実行     | ✅   | [`.github/workflows/ci.yml`](.github/workflows/ci.yml)（lint / format / typecheck / UT / build / e2e） |
+| 主要機能のデモ確認         | ✅   | 本ページ GIF・スクショ、デモアカウント、[`docs/design/api-spec.md`](docs/design/api-spec.md)           |
+| デプロイパイプライン       | ✅   | GitHub Actions + Vercel（`main` push で本番）                                                          |
+| 本番 URL 稼働              | ✅   | https://choreo-ten.vercel.app                                                                          |
+
+> **E2E 補足:** CI では smoke（ログイン画面・未認証リダイレクト・API 検証）を常時実行。デモログイン試験は `E2E_DEMO_LOGIN=1` + 実 Supabase 設定時のみ（`e2e/demo-login.spec.ts`）。
+
+## 評価チェックリスト（コード品質）
+
+| 項目                           | 状態 | 根拠                                                                                                  |
+| ------------------------------ | ---- | ----------------------------------------------------------------------------------------------------- |
+| 命名が正確                     | ✅   | `ApiError` 定数、`getStripe()` 等、コンポーネント名の一貫性                                           |
+| 型エラーなし                   | ✅   | `npm run typecheck`（`strict: true`）                                                                 |
+| 型が正確に定義                 | ✅   | `src/lib/types.ts`、`ApiErrorCode`、Route の interface                                                |
+| 環境依存値は環境変数           | ✅   | [`.env.example`](.env.example)、`stripeServer.ts` 等（秘密鍵はサーバー側のみ）                        |
+| コメント                       | ✅   | 主要 `lib/`・`apiErrors.ts`、設計書。全ファイル網羅ではない                                           |
+| 整形                           | ✅   | Prettier（`npm run format` / `format:check`）、CI で検証                                              |
+| 不要パッケージなし             | ✅   | 本番依存は Next / React / Supabase / Stripe のみ                                                      |
+| 不要な記述なし                 | ✅   | 大きなデッドコードなし                                                                                |
+| CI/CD                          | ✅   | 上記 GitHub Actions                                                                                   |
+| 早期リターン                   | ✅   | `/api/help`、`/api/stripe/webhook` 等                                                                 |
+| 非同期の例外処理               | ✅   | `try/catch` + `apiErrorResponse`                                                                      |
+| DRY                            | ✅   | `src/lib/` 共通ロジック、`apiErrors` でエラー形式統一                                                 |
+| 単体テスト                     | ✅   | Vitest（`tests/`、11 ファイル / 49 テスト）                                                           |
+| インポートに `@/` エイリアス   | ✅   | `tsconfig.json` `paths`、`@/*` を標準使用                                                             |
+| Server Actions                 | ❌   | 未使用（Route Handler + `fetch` 方式）                                                                |
+| Route Handler                  | ✅   | `src/app/api/**/route.ts`（10 本）                                                                    |
+| クライアントコンポーネント最小 | ✅/△ | 編集 UI 主体のため `"use client"` 多数。`page.tsx` はサーバーコンポーネント                           |
+| ログ出力                       | △    | share 等で `console.error`。[`docs/design/logging.md`](docs/design/logging.md)                        |
+| e2e テスト                     | ✅   | Playwright（`e2e/smoke.spec.ts` 等）                                                                  |
+| ディレクトリ構成               | ✅   | `app/` `components/` `lib/` `context/` — [`docs/design/architecture.md`](docs/design/architecture.md) |
+
+## 評価チェックリスト（設計書・プロダクト）
+
+| 項目                       | 状態 | 参照                                                                                                                                              |
+| -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 簡易アプリ仕様設計シート   | ✅   | [`docs/design/app-spec.md`](docs/design/app-spec.md)                                                                                              |
+| ER 図                      | ✅   | [`docs/design/er-diagram.md`](docs/design/er-diagram.md)                                                                                          |
+| FE/BE 分離設計             | ✅   | [`docs/design/architecture.md`](docs/design/architecture.md)                                                                                      |
+| デザインカンプ             | ✅   | [Figma](https://www.figma.com/make/isn8RQNIhoytYRJfT0Js3I/Share-Link-Screen?t=TW1owFHu1nhlskH4-1)、[`design-comp.md`](docs/design/design-comp.md) |
+| シーケンス図               | ✅   | [`docs/design/sequence-diagrams.md`](docs/design/sequence-diagrams.md)                                                                            |
+| テーブル定義書             | ✅   | [`docs/design/table-definitions.md`](docs/design/table-definitions.md)                                                                            |
+| ログ設計                   | ✅   | [`docs/design/logging.md`](docs/design/logging.md)                                                                                                |
+| OpenAPI 準拠 API 仕様      | ✅   | [`api-spec.openapi.yaml`](docs/design/api-spec.openapi.yaml)、[`api-spec.md`](docs/design/api-spec.md)                                            |
+| 明確な目的                 | ✅   | 要件定義 §1.1                                                                                                                                     |
+| 独自性（クローンではない） | ✅   | 要件定義 §1.3（ばみり・半カウント・BPM・ASK AI 等）                                                                                               |
+| LLM API 呼び出し           | ✅   | `POST /api/help` → Gemini                                                                                                                         |
+| 問題解決                   | ✅   | 要件定義 §1.2                                                                                                                                     |
+| マネタイズ                 | ✅   | Stripe Pro（月 500 円）、要件定義 §4.9                                                                                                            |
+| システム要件・制約         | ✅   | 要件定義 §2、§5、[`.env.example`](.env.example)                                                                                                   |
+| 非機能要件                 | ✅   | 要件定義 §6（性能・可用性・セキュリティ）                                                                                                         |
+
+詳細な対応表は [`../CHOREO_要件定義書.md`](../CHOREO_要件定義書.md) §10 も参照。
 
 ## スクリーンショット
 
@@ -81,19 +178,19 @@ npm run test:e2e     # E2E（要 build 済み）。デモログインは E2E_DEM
 
 ### 環境変数（主要）
 
-| 変数 | 必須 | 用途 |
-| ---- | ---- | ---- |
-| `NEXT_PUBLIC_SUPABASE_URL` | 本番・同期時 | Supabase プロジェクト URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 本番・同期時 | クライアント用 anon キー |
-| `SUPABASE_SERVICE_ROLE_KEY` | 本番・同期時 | サーバー API（共有・課金・削除） |
-| `NEXT_PUBLIC_APP_URL` | 本番 | アプリの公開 URL（末尾スラッシュなし） |
-| `GEMINI_API_KEY` | ASK AI 利用時 | `POST /api/help` |
-| `GEMINI_MODEL` | 任意 | 既定 `gemini-2.5-flash` |
-| `STRIPE_SECRET_KEY` | 課金時 | Checkout / Portal / Webhook |
-| `STRIPE_PRO_PRICE_ID` | 課金時 | Pro プラン Price ID |
-| `STRIPE_WEBHOOK_SECRET` | 課金時 | Webhook 署名検証 |
-| `SUPABASE_DB_URL` | 任意 | `npm run supabase:setup` 用 |
-| `E2E_DEMO_LOGIN` | 任意 | E2E でデモログイン試験（`1`） |
+| 変数                            | 必須          | 用途                                   |
+| ------------------------------- | ------------- | -------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | 本番・同期時  | Supabase プロジェクト URL              |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 本番・同期時  | クライアント用 anon キー               |
+| `SUPABASE_SERVICE_ROLE_KEY`     | 本番・同期時  | サーバー API（共有・課金・削除）       |
+| `NEXT_PUBLIC_APP_URL`           | 本番          | アプリの公開 URL（末尾スラッシュなし） |
+| `GEMINI_API_KEY`                | ASK AI 利用時 | `POST /api/help`                       |
+| `GEMINI_MODEL`                  | 任意          | 既定 `gemini-2.5-flash`                |
+| `STRIPE_SECRET_KEY`             | 課金時        | Checkout / Portal / Webhook            |
+| `STRIPE_PRO_PRICE_ID`           | 課金時        | Pro プラン Price ID                    |
+| `STRIPE_WEBHOOK_SECRET`         | 課金時        | Webhook 署名検証                       |
+| `SUPABASE_DB_URL`               | 任意          | `npm run supabase:setup` 用            |
+| `E2E_DEMO_LOGIN`                | 任意          | E2E でデモログイン試験（`1`）          |
 
 ### Supabase 初回セットアップ（任意）
 
@@ -106,9 +203,9 @@ npm run demo:setup        # デモユーザー + ワークスペース投入
 
 本番は **Vercel** に Git 連携デプロイしています（AWS ECS / Lambda / Fargate は未使用）。
 
-| 項目 | 値 |
-| ---- | --- |
-| **本番 URL** | https://choreo-ten.vercel.app |
+| 項目                              | 値                                                    |
+| --------------------------------- | ----------------------------------------------------- |
+| **本番 URL**                      | https://choreo-ten.vercel.app                         |
 | **`NEXT_PUBLIC_APP_URL`（本番）** | `https://choreo-ten.vercel.app`（末尾スラッシュなし） |
 
 1. [Vercel](https://vercel.com/) で GitHub リポジトリ `A-dance/choreo` を Import
@@ -163,19 +260,19 @@ REST エンドポイント一覧・curl 例: [`docs/design/api-spec.md`](docs/de
 
 ## 主要 API エンドポイント
 
-| メソッド | パス | 機能 |
-| -------- | ---- | ---- |
-| `POST` | `/api/share` | 共有スナップショット作成（1 曲 or フォルダー単位） |
-| `GET` | `/api/share?id=` | 共有データ取得（閲覧専用） |
-| `POST` | `/api/share/upload-url` | 共有用メディアのアップロード URL |
-| `POST` | `/api/help` | ASK AI（Gemini）質問応答 |
-| `GET` | `/api/music-metadata?url=` | 音源 URL のメタデータ取得 |
-| `POST` | `/api/account/delete` | アカウント削除（Bearer JWT） |
-| `POST` | `/api/stripe/checkout` | Pro 申込 Checkout セッション |
-| `POST` | `/api/stripe/portal` | Stripe 顧客ポータル |
-| `GET` | `/api/stripe/subscription` | サブスクリプション状態 |
-| `POST` | `/api/stripe/sync` | 課金状態の同期 |
-| `POST` | `/api/stripe/webhook` | Stripe Webhook |
+| メソッド | パス                       | 機能                                               |
+| -------- | -------------------------- | -------------------------------------------------- |
+| `POST`   | `/api/share`               | 共有スナップショット作成（1 曲 or フォルダー単位） |
+| `GET`    | `/api/share?id=`           | 共有データ取得（閲覧専用）                         |
+| `POST`   | `/api/share/upload-url`    | 共有用メディアのアップロード URL                   |
+| `POST`   | `/api/help`                | ASK AI（Gemini）質問応答                           |
+| `GET`    | `/api/music-metadata?url=` | 音源 URL のメタデータ取得                          |
+| `POST`   | `/api/account/delete`      | アカウント削除（Bearer JWT）                       |
+| `POST`   | `/api/stripe/checkout`     | Pro 申込 Checkout セッション                       |
+| `POST`   | `/api/stripe/portal`       | Stripe 顧客ポータル                                |
+| `GET`    | `/api/stripe/subscription` | サブスクリプション状態                             |
+| `POST`   | `/api/stripe/sync`         | 課金状態の同期                                     |
+| `POST`   | `/api/stripe/webhook`      | Stripe Webhook                                     |
 
 ## 将来実装予定
 
@@ -201,15 +298,15 @@ REST エンドポイント一覧・curl 例: [`docs/design/api-spec.md`](docs/de
   サイドバー（≡）: PROJECTS・検索・新規・フォルダー・音源・動画
 ```
 
-| 領域       | コンポーネント      | 役割 |
-| ---------- | ------------------- | ---- |
-| 上部       | `SmartHeader`       | 曲名・BPM/Grid/Dots・人数・再生・コピペ・共有・ASK AI |
-| 中央       | `StageArea`         | ステージ・メンバー配置・描画ツール（Tool） |
-| 下部       | `TimelineFooter`    | セクションタブ・カウント操作 |
-| サイドバー | `ProjectSidebar`    | プロジェクト・フォルダー・検索・音源・参考動画 |
-| 共通       | `MemberPanel`       | メンバー名・表示/非表示・削除 |
-| 共通       | `HelpPanel`         | ASK AI チャット |
-| 状態       | `ChoreoContext`     | 編集状態・再生・localStorage / クラウド同期 |
+| 領域       | コンポーネント   | 役割                                                  |
+| ---------- | ---------------- | ----------------------------------------------------- |
+| 上部       | `SmartHeader`    | 曲名・BPM/Grid/Dots・人数・再生・コピペ・共有・ASK AI |
+| 中央       | `StageArea`      | ステージ・メンバー配置・描画ツール（Tool）            |
+| 下部       | `TimelineFooter` | セクションタブ・カウント操作                          |
+| サイドバー | `ProjectSidebar` | プロジェクト・フォルダー・検索・音源・参考動画        |
+| 共通       | `MemberPanel`    | メンバー名・表示/非表示・削除                         |
+| 共通       | `HelpPanel`      | ASK AI チャット                                       |
+| 状態       | `ChoreoContext`  | 編集状態・再生・localStorage / クラウド同期           |
 
 ## 主な機能
 
@@ -289,17 +386,17 @@ REST エンドポイント一覧・curl 例: [`docs/design/api-spec.md`](docs/de
 
 詳細は [`docs/manual.ja.md`](docs/manual.ja.md) §11 を参照。
 
-| 操作                     | キー                          |
-| ------------------------ | ----------------------------- |
-| 前のカウント             | `←` / `[`                     |
-| 次のカウント             | `→` / `]`                     |
-| 再生 / 停止              | `Space`                       |
-| 配置コピー               | `⌘C` / `Ctrl+C`               |
-| 配置ペースト             | `⌘V` / `Ctrl+V`               |
-| 元に戻す（Undo）         | `⌘Z` / `Ctrl+Z`               |
-| メンバー選択時: 非表示   | `Delete` / `Backspace`        |
+| 操作                       | キー                                         |
+| -------------------------- | -------------------------------------------- |
+| 前のカウント               | `←` / `[`                                    |
+| 次のカウント               | `→` / `]`                                    |
+| 再生 / 停止                | `Space`                                      |
+| 配置コピー                 | `⌘C` / `Ctrl+C`                              |
+| 配置ペースト               | `⌘V` / `Ctrl+V`                              |
+| 元に戻す（Undo）           | `⌘Z` / `Ctrl+Z`                              |
+| メンバー選択時: 非表示     | `Delete` / `Backspace`                       |
 | 未選択時: 現在カウント削除 | `Delete` / `Backspace`（データあり時は確認） |
-| 選択解除 / 再生停止      | `Esc`                         |
+| 選択解除 / 再生停止        | `Esc`                                        |
 
 ## プロジェクト構成
 
@@ -347,17 +444,17 @@ ChoreoState {
 
 ## 技術スタック
 
-| 区分 | 採用技術 |
-| ---- | -------- |
-| フレームワーク | **Next.js 16**（App Router）、**React 19**、**TypeScript 5** |
-| スタイル | Tailwind CSS 4 + カスタム CSS（`globals.css`） |
-| 認証・DB | **Supabase**（Auth / PostgreSQL / Storage） |
-| 課金 | **Stripe**（Checkout / Customer Portal / Webhook） |
-| AI | **Google Gemini**（`@google/generative-ai` 相当、`POST /api/help`） |
-| 状態 | `ChoreoContext`、localStorage、IndexedDB（メディア） |
-| テスト | **Vitest**（単体・API）、**Playwright**（e2e） |
-| CI | GitHub Actions |
-| ホスティング | **Vercel**（本番） |
+| 区分           | 採用技術                                                            |
+| -------------- | ------------------------------------------------------------------- |
+| フレームワーク | **Next.js 16**（App Router）、**React 19**、**TypeScript 5**        |
+| スタイル       | Tailwind CSS 4 + カスタム CSS（`globals.css`）                      |
+| 認証・DB       | **Supabase**（Auth / PostgreSQL / Storage）                         |
+| 課金           | **Stripe**（Checkout / Customer Portal / Webhook）                  |
+| AI             | **Google Gemini**（`@google/generative-ai` 相当、`POST /api/help`） |
+| 状態           | `ChoreoContext`、localStorage、IndexedDB（メディア）                |
+| テスト         | **Vitest**（単体・API）、**Playwright**（e2e）                      |
+| CI             | GitHub Actions                                                      |
+| ホスティング   | **Vercel**（本番）                                                  |
 
 主要依存: `next`, `react`, `@supabase/supabase-js`, `stripe` — 詳細は [`package.json`](package.json)
 

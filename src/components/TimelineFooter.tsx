@@ -105,7 +105,11 @@ export function TimelineFooter() {
     removeCountAt(sectionId, slotIndex);
   };
 
-  const renderSectionDeleteButton = (sectionId: string, name: string, show: boolean) => {
+  const renderSectionDeleteButton = (
+    sectionId: string,
+    name: string,
+    show: boolean,
+  ) => {
     if (!canDeleteSection || !show || state.isPlaying) return null;
     return (
       <button
@@ -211,10 +215,7 @@ export function TimelineFooter() {
 
           if (editingSectionId === sec.id) {
             return (
-              <div
-                key={sec.id}
-                className="sec-tab-wrap selected editing"
-              >
+              <div key={sec.id} className="sec-tab-wrap selected editing">
                 <input
                   className="sec-tab-inp"
                   value={sectionNameDraft}
@@ -334,20 +335,23 @@ export function TimelineFooter() {
                       >
                         {label}
                       </button>
-                      {!isViewOnly && canDeleteCountInSection && isActive && !state.isPlaying && (
-                        <button
-                          type="button"
-                          className="cnt-slot-del"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCount(selectedSection.id, slotIdx, label);
-                          }}
-                          title={UI.deleteCount}
-                          aria-label={UI.deleteCountAria(label)}
-                        >
-                          ×
-                        </button>
-                      )}
+                      {!isViewOnly &&
+                        canDeleteCountInSection &&
+                        isActive &&
+                        !state.isPlaying && (
+                          <button
+                            type="button"
+                            className="cnt-slot-del"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCount(selectedSection.id, slotIdx, label);
+                            }}
+                            title={UI.deleteCount}
+                            aria-label={UI.deleteCountAria(label)}
+                          >
+                            ×
+                          </button>
+                        )}
                     </div>
                   </Fragment>
                 );

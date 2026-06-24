@@ -27,12 +27,12 @@ Edits **auto-save**. Cloud sync when logged in.
 
 ## 2. Layout
 
-| Area     | Contents                                                                                                                              |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Top-left | Project menu (≡) → sidebar                                                                                                            |
-| Header   | Song title, **BPM / grid / dots** tool panel, members, Play, Copy, Paste, Undo, **Share**, **ASK AI** (bright labels like Play)      |
-| Center   | Stage (BACK / AUDIENCE labels). **Tool** button top-right (drawing tools)                                                             |
-| Bottom   | Timeline (section tabs + counts)                                                                                                      |
+| Area     | Contents                                                                                                                                                 |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Top-left | Project menu (≡) → sidebar                                                                                                                               |
+| Header   | Song title, **BPM / grid / dots** tool panel, members, Play, Copy, Paste, Undo, **Share**, **ASK AI** (bright labels like Play)                          |
+| Center   | Stage (BACK / AUDIENCE labels). **Tool** button top-right (drawing tools)                                                                                |
+| Bottom   | Timeline (section tabs + counts)                                                                                                                         |
 | Sidebar  | **PROJECTS** heading, **Search…**, **+ New project**, **Folder** (bright text/borders), project list, **Music** / **Reference videos**, My page (avatar) |
 
 Zero projects shows **No projects** + **+ New project** in the center.
@@ -79,10 +79,10 @@ Zero projects shows **No projects** + **+ New project** in the center.
 
 Grouped at the top of the sidebar:
 
-| Item              | Action                                                                           |
-| ----------------- | -------------------------------------------------------------------------------- |
-| **Search…**       | Filter by project or folder name. Matching a folder shows all projects inside it |
-| **+ New project** | Create dialog (title, BPM, members, counts per section)                          |
+| Item              | Action                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| **Search…**       | Filter by project or folder name. Matching a folder shows all projects inside it                 |
+| **+ New project** | Create dialog (title, BPM, members, counts per section)                                          |
 | **Folder**        | Add a new folder (default name: “New folder”). Button label is **Folder**; tooltip: “New folder” |
 
 The **PROJECTS** heading, search field, and action buttons use brighter text and borders for readability.
@@ -299,14 +299,14 @@ Current count formation only.
 
 ## 11. Keyboard shortcuts
 
-| Key                | Action                                                      |
-| ------------------ | ----------------------------------------------------------- |
-| Space              | Play / pause                                                |
-| ← → or [ ]         | Previous / next count                                       |
-| Delete / Backspace | Member selected: hide on current count / else: delete count |
-| ⌘C / Ctrl+C        | Copy formation                                              |
-| ⌘V / Ctrl+V        | Paste formation                                             |
-| ⌘Z / Ctrl+Z        | Undo                                                        |
+| Key                | Action                                                          |
+| ------------------ | --------------------------------------------------------------- |
+| Space              | Play / pause                                                    |
+| ← → or [ ]         | Previous / next count                                           |
+| Delete / Backspace | Member selected: hide on current count / else: delete count     |
+| ⌘C / Ctrl+C        | Copy formation                                                  |
+| ⌘V / Ctrl+V        | Paste formation                                                 |
+| ⌘Z / Ctrl+Z        | Undo                                                            |
 | Escape             | Deselect member, close panels, stop playback (deselect drawing) |
 
 Some shortcuts are disabled while typing in a field.
