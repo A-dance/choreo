@@ -234,7 +234,7 @@ body {
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text2);
+  color: var(--text);
 }
 
 .project-sidebar-projects {
@@ -542,9 +542,9 @@ body {
   gap: 8px;
   min-width: 0;
   padding: 0 10px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 10px;
-  background: var(--bg2);
+  background: var(--bg3);
 }
 
 .project-search-icon {
@@ -552,7 +552,7 @@ body {
   display: inline-flex;
   width: 14px;
   height: 14px;
-  color: var(--text2);
+  color: rgba(232, 235, 248, 0.88);
 }
 
 .project-search-input {
@@ -566,7 +566,7 @@ body {
 }
 
 .project-search-input::placeholder {
-  color: var(--text2);
+  color: rgba(232, 235, 248, 0.58);
 }
 
 .project-search-input:focus {
@@ -574,7 +574,8 @@ body {
 }
 
 .project-search-field:focus-within {
-  border-color: rgba(124, 92, 252, 0.55);
+  border-color: rgba(124, 92, 252, 0.65);
+  background: rgba(124, 92, 252, 0.08);
 }
 
 .project-new-folder-btn {
@@ -585,10 +586,10 @@ body {
   flex-shrink: 0;
   min-width: 0;
   padding: 10px 12px;
-  border: 1px dashed var(--border);
+  border: 1px dashed rgba(255, 255, 255, 0.24);
   border-radius: 10px;
   background: transparent;
-  color: var(--text2);
+  color: var(--text);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -627,7 +628,7 @@ body {
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text2);
+  color: rgba(232, 235, 248, 0.9);
 }
 
 .project-sidebar-block-label-icon {
@@ -684,7 +685,7 @@ body {
   display: inline-flex;
   width: 14px;
   height: 14px;
-  color: var(--text2);
+  color: rgba(232, 235, 248, 0.82);
 }
 
 .project-section-icon.on {
@@ -709,7 +710,7 @@ body {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.03em;
-  color: var(--text2);
+  color: rgba(232, 235, 248, 0.9);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -728,7 +729,7 @@ body {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text2);
+  color: rgba(232, 235, 248, 0.78);
   cursor: pointer;
 }
 
@@ -749,7 +750,7 @@ body {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text2);
+  color: rgba(232, 235, 248, 0.78);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
@@ -854,10 +855,10 @@ body {
   min-width: 0;
   margin: 0;
   padding: 10px 12px;
-  border: 1px dashed var(--border);
+  border: 1px dashed rgba(255, 255, 255, 0.24);
   border-radius: 10px;
   background: transparent;
-  color: var(--text2);
+  color: var(--text);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
