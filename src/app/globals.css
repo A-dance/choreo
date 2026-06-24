@@ -1286,82 +1286,64 @@ body {
 
 .sec-tab-wrap {
   display: inline-flex;
-  align-items: center;
-  gap: 2px;
+  align-items: flex-end;
+  gap: 0;
   flex-shrink: 0;
-  position: relative;
-}
-
-.sec-tab-wrap.has-section-del .sec-tab {
-  padding-right: 18px;
-}
-
-.sec-tab-wrap.has-section-del .sec-tab-inp {
-  padding-right: 22px;
 }
 
 .sec-tab-wrap.selected {
-  padding-right: 2px;
+  padding-right: 0;
 }
 
 .sec-tab-wrap.editing {
-  padding-right: 2px;
+  padding-right: 0;
 }
 
 .sec-tab-section-del,
 .cnt-slot-del {
-  position: absolute;
-  z-index: 3;
-  width: auto;
-  height: auto;
-  min-width: 14px;
-  min-height: 14px;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 16px;
+  height: 16px;
   border: none;
   border-radius: 0;
   background: transparent;
   color: var(--text2);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
   padding: 0;
-  opacity: 0.55;
-  transition:
-    opacity 0.15s ease,
-    color 0.15s ease;
+  margin: 0 0 6px;
+  transition: color 0.15s ease;
 }
 
 .sec-tab-section-del {
-  top: 4px;
-  right: 2px;
+  margin-left: -4px;
+}
+
+.sec-tab-wrap.editing .sec-tab-section-del {
+  margin-bottom: 2px;
 }
 
 .cnt-slot-del {
-  top: -2px;
-  right: -2px;
-}
-
-.sec-tab-wrap:hover .sec-tab-section-del,
-.cnt-wrap:hover .cnt-slot-del {
-  opacity: 0.8;
+  margin-left: 1px;
+  margin-bottom: 0;
+  align-self: center;
 }
 
 .sec-tab-section-del:hover,
 .cnt-slot-del:hover {
-  opacity: 1;
   color: var(--text);
 }
 
 .cnt-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   flex-shrink: 0;
-  position: relative;
 }
 
 .sec-tab {

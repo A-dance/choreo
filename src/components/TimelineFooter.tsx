@@ -105,8 +105,8 @@ export function TimelineFooter() {
     removeCountAt(sectionId, slotIndex);
   };
 
-  const renderSectionDeleteButton = (sectionId: string, name: string) => {
-    if (!canDeleteSection) return null;
+  const renderSectionDeleteButton = (sectionId: string, name: string, show: boolean) => {
+    if (!canDeleteSection || !show) return null;
     return (
       <button
         type="button"
@@ -213,10 +213,7 @@ export function TimelineFooter() {
             return (
               <div
                 key={sec.id}
-                className={
-                  "sec-tab-wrap selected editing" +
-                  (canDeleteSection ? " has-section-del" : "")
-                }
+                className="sec-tab-wrap selected editing"
               >
                 <input
                   className="sec-tab-inp"
@@ -230,7 +227,7 @@ export function TimelineFooter() {
                   }}
                   aria-label={UI.sectionName}
                 />
-                {renderSectionDeleteButton(sec.id, sec.name)}
+                {renderSectionDeleteButton(sec.id, sec.name, true)}
               </div>
             );
           }
@@ -238,11 +235,7 @@ export function TimelineFooter() {
           return (
             <div
               key={sec.id}
-              className={
-                "sec-tab-wrap" +
-                (isSelected ? " selected" : "") +
-                (canDeleteSection ? " has-section-del" : "")
-              }
+              className={"sec-tab-wrap" + (isSelected ? " selected" : "")}
             >
               <button
                 type="button"
@@ -278,7 +271,7 @@ export function TimelineFooter() {
                 )}
                 {sec.name}
               </button>
-              {renderSectionDeleteButton(sec.id, sec.name)}
+              {renderSectionDeleteButton(sec.id, sec.name, isSelected)}
             </div>
           );
         })}
@@ -326,13 +319,7 @@ export function TimelineFooter() {
                         +
                       </button>
                     )}
-                    <div
-                      className={
-                        "cnt-wrap" +
-                        (isActive ? " selected" : "") +
-                        (!isViewOnly && canDeleteCountInSection ? " has-count-del" : "")
-                      }
-                    >
+                    <div className={"cnt-wrap" + (isActive ? " selected" : "")}>
                       <button
                         type="button"
                         className={
@@ -347,7 +334,7 @@ export function TimelineFooter() {
                       >
                         {label}
                       </button>
-                      {!isViewOnly && canDeleteCountInSection && (
+                      {!isViewOnly && canDeleteCountInSection && isActive && (
                         <button
                           type="button"
                           className="cnt-slot-del"

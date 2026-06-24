@@ -317,9 +317,9 @@ body {
 
   .sec-tab-section-del,
   .cnt-slot-del {
-    min-width: 18px;
-    min-height: 18px;
-    font-size: 14px;
+    width: 18px;
+    height: 18px;
+    font-size: 15px;
   }
 
   .member-dot {
