@@ -106,7 +106,7 @@ export function TimelineFooter() {
   };
 
   const renderSectionDeleteButton = (sectionId: string, name: string, show: boolean) => {
-    if (!canDeleteSection || !show) return null;
+    if (!canDeleteSection || !show || state.isPlaying) return null;
     return (
       <button
         type="button"
@@ -334,7 +334,7 @@ export function TimelineFooter() {
                       >
                         {label}
                       </button>
-                      {!isViewOnly && canDeleteCountInSection && isActive && (
+                      {!isViewOnly && canDeleteCountInSection && isActive && !state.isPlaying && (
                         <button
                           type="button"
                           className="cnt-slot-del"
